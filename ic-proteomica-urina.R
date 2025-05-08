@@ -16,7 +16,7 @@ library(ggtext) # to provide Markdown and HTML formatting in ggplot2
 library(ggrepel) # to avoid the overlapping of the labels in the plots
 library(kableExtra) # to format the tables
 library(limma)  # to calculate the differential abundance
-
+#library(ggplot2)
 
 install.packages("devtools", dependencies=TRUE)
 library(devtools)
@@ -35,8 +35,11 @@ theme_update(
 )
 
 
+
+reportParquetDIR = "/home/pedro/Documentos/data-proteomica-urina/report.parquet"
+
 # Import and filter the report.parquet file from DIA-NN v2.0.2 search for mix A and B
-diann_report <- arrow::read_parquet("/report.parquet") %>%
+diann_report <- arrow::read_parquet(reportParquetDIR) %>%
   dplyr::filter(Lib.PG.Q.Value <= 0.01 & Lib.Q.Value <= 0.01 & PG.Q.Value <= 0.01) %>%
   dplyr::mutate(
     Run = case_when(
@@ -66,7 +69,7 @@ diann_report <- arrow::read_parquet("/report.parquet") %>%
       Run == "P2_12" ~ "iCatepsina 50mg r2",
       Run == "P2_13" ~ "Veneno + iCatepsina 50mg r1",
       Run == "P2_14" ~ "Veneno + iCatepsina 50mg r2",
-      Run == "P2_15" ~ "Veneno + iCatepsina 50mg r3")
+      Run == "P2_15" ~ "Veneno + iCatepsina 50mg r3"),
     Run = factor(Run, levels = c(
       "Salina r1", "Salina r2", "Salina r3",
       "Veneno r1", "Veneno r2",
