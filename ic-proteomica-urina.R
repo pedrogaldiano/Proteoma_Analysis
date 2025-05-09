@@ -35,11 +35,8 @@ theme_update(
 )
 
 
-
-reportParquetDIR = "/home/pedro/Documentos/data-proteomica-urina/report.parquet"
-
 # Import and filter the report.parquet file from DIA-NN v2.0.2 search for mix A and B
-diann_report <- arrow::read_parquet(reportParquetDIR) %>%
+diann_report <- arrow::read_parquet("/home/pedro/Documentos/data-proteomica-urina/report.parquet") %>%
   dplyr::filter(Lib.PG.Q.Value <= 0.01 & Lib.Q.Value <= 0.01 & PG.Q.Value <= 0.01) %>%
   dplyr::mutate(
     Run = case_when(
@@ -84,11 +81,19 @@ diann_report <- arrow::read_parquet(reportParquetDIR) %>%
     ),
     File.Name = Run,
     peptide_length = nchar(Stripped.Sequence)
-  ) %>%
-  dplyr::filter(str_detect(Protein.Ids, "cRAP", negate = TRUE))
+  )
+#%>%
+ # dplyr::filter(str_detect(Protein.Ids, "cRAP", negate = TRUE))
 
-
-
-
-
+#Como instalar o maldito do arrow (acho que foi assim)
+#Baixar o source file (https://packagemanager.posit.co/client/#/repos/cran/packages/arrow/overview?search=arrow#package-details)
+#Extrair o arquivo, rodar ./configure (demora horrores e não dá log nenhum)
+#Comprimir para tar.gz e rodar:
+  #Sys.setenv(LIBARROW_MINIMAL = "false", ARROW_WITH_ZSTD = "ON")
+  #install.packages("/Users/chaves/Downloads/arrow_17.0.0.1.tar.gz",
+   #              repos = NULL, type = "source", force = TRUE)
+#É pra instalar, mas vai dar erro por causa de um CODEC
+#rodar:
+  # arrow_install()
+#Pode ser necessário abrir e fechar o Rstudio ou dar load no package
 
