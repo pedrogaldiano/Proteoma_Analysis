@@ -1,0 +1,1708 @@
+---
+title: "Investigação preliminar do perfil de carbamilação em proteínas excretadas na urina 24 horas após injeção de veneno de Bothrops jararaca em modelo murino"
+author: "Pedro Galdiano de Castro"
+execute:
+  echo: true
+  warning: false
+  message: false
+format: html
+code-fold: true
+editor_options: 
+  chunk_output_type: console
+---
+
+## ABSTRACT
+
+O envenenamento por Bothrops jararaca é considerada uma doença negligenciada pela Organização Mundial da Saúde que causa grande morbimortalidade. Entre as principais causas de mortalidade por envenenamento botrópico está a insuficiência renal aguda. Investigações do proteoma por espectrometria de massas em amostras de plasma ou tecido renal em modelos murinos sugerem potenciais candidatos a marcadores de injuria renal aguda, como NGAL e ITIH4. Uma abordagem pouco explorada para busca de marcadores de lesão renal é a investigação de modificações de proteínas excretadas na urina de indivíduos envenenados. Entre as alterações comumente detectadas em amostras de sangue de indivíduos vítimas de acidente ofídico, a elevação da ureia plasmática é uma característica marcante. A uremia é um sinal de deterioração da função renal e está associada à carbamilação do amino-terminal e resíduos de Lys em proteínas. A carbamilação é uma marca de envelhecimento, que pode ser detectada no proteoma, mas é pouco investigada como marca de doenças que evoluem com elevação da ureia. O presente projeto propõe a investigação do perfil de carbamilação em proteínas excretadas na urina de 24 horas em animais injetados com veneno de B. jararaca. O experimento in vivo com camundongos Swiss foi conduzido no Laboratório de Toxinologia Aplicada (Instituto Butantan) e o presente projeto propõe a avaliação das amostras de urina dos animais injetados com 1.6 mg/kg de veneno de B. jararaca, pré-tratados com inibidores de catepsina ou meprina. As amostras serão precipitadas com acetona/metanol, ressuspendidas em HEPES 100 mM, reduzidas com TCEP 5 mM, alquiladas com cloroacetamida 20 mM e digeridas com tripsina (1:100) utilizando o protocolo SP3 (Single-Pot, Solid-Phase-enhanced Sample Preparation). As amostras serão analisadas no sistema Vanquish Neo – Obritrap Exploris 480 em modo de aquisição dependente de dados (DDA). As identificações de peptídeos e inferência de proteínas serão realizadas usando os softwares FragPipe v23 para busca com banco de dados e InstaNovo+ para busca de novo. As análises estatísticas serão realizadas utilizando a linguagem R versão 4.2.2 com scripts desenvolvidos especificamente para o projeto.
+
+Required R packages:
+
+```{r}
+library(diann) # to extract the MaxLFQ matrix from DIANN report
+library(arrow) # to read the report.parquet file
+library(here) # to avoid the need for use the path while loading the data
+library(tidyverse) # to do the data wrangling, plots, etc...
+library(janitor) # to clean the column names
+library(ggpointdensity) # to reconstruct the m/z density map
+library(naniar) # for sparsity analysis
+library(factoextra) # to plot the PCA
+library(patchwork) # to combine plots
+library(lsa) # to calculate the cosine similarity
+library(ggvenn) # to plot the Venn diagram
+library(paletteer) # to use the nice color palette
+library(ggtext) # to provide Markdown and HTML formatting in ggplot2
+library(ggrepel) # to avoid the overlapping of the labels in the plots
+library(kableExtra) # to format the tables
+library(limma)  # to calculate the differential abundance
+library(DIAgui) # to extract iBAQ values
+
+
+# make the text in the plots more readable
+theme_update(
+    text = element_text(color = "black", size = 20),
+    axis.text = element_text(color = "black"),
+    axis.title = element_text(color = "black", face = "bold"),
+    strip.background = element_blank(),
+    strip.text = element_text(face = "bold"),
+    legend.title = element_text(face = "bold", hjust = 0.5),
+    legend.title.position = "top"
+)
+```
+
+# Load the functions to be used in the analysis
+
+```{r}
+# function to extract the coefficients of variation from the data
+cv_mtx <- function(data, condition) {
+  data %>%
+    as.data.frame() %>%
+    rownames_to_column("protein") %>%
+    dplyr::select(protein, 
+                  str_subset(colnames(data), condition)
+                  ) %>%
+    rowwise() %>%
+    dplyr::mutate(cv = sd(c_across(where(is.numeric)), na.rm = TRUE) / mean(c_across(where(is.numeric)), na.rm = TRUE) * 100,
+                  condition = condition) %>% 
+    dplyr::select(protein, cv, condition)
+}
+
+# function to stratify the proteins by variance using the data, DIANN version and the m/z window as arguments
+extract_variance_mtx <- function(data, condition, QuantUMS.score) {
+  data %>%
+    log2() %>%
+    as.data.frame() %>%
+    rownames_to_column("protein") %>%
+    dplyr::select(protein, 
+                  str_subset(colnames(data), condition)
+                  ) %>%
+    dplyr::mutate(variance = apply(across(where(is.numeric)), 1, var, na.rm = TRUE)) %>%
+    dplyr::mutate(var_group = case_when(
+      variance < 0.5 ~ "Low",
+      variance >= 0.5 & variance < 1 ~ "Medium",
+      variance >= 1 ~ "High")
+    ) %>%
+    dplyr::arrange(desc(variance)) %>%
+    dplyr::select(-variance) %>%
+    pivot_longer(-c(protein, var_group),
+                 names_to = "Sample", values_to = "Intensity") %>% 
+    dplyr::mutate(QuantUMS.score = QuantUMS.score)
+}
+
+# This function will create a column to store the percentage of missing values for each protein
+protein_missingness <- function(x) {
+    missingness_prop <- function(x) {
+        sum(is.na(x)) / length(x) # calculate the percentage of missing values
+    }
+    x <- as.data.frame(x) %>% # convert the matrix to a dataframe
+    dplyr::mutate(prot_miss = apply(x, 1, missingness_prop)) # apply the missingness_prop function to each row
+}
+
+# This function works to remove the proteins with more than a specific percentage of missing values
+remove_missing <- function(x, threshold) {
+    x <- as.data.frame(x) %>% # convert the matrix to a dataframe (just to make sure you are working with a dataframe)
+    dplyr::filter(prot_miss <= threshold) %>% # filter the proteins with less than or equal to the threshold
+    dplyr::select(-prot_miss) %>% # remove the prot_miss column
+    as.matrix() # convert the dataframe back to a matrix
+}
+```
+
+# Import and filter the report.parquet file from DIA-NN v2.1.0 search for mix A and B
+We filter the data using Lib.PG.Q.Value ≤ 0.01, Lib.Q.Value ≤ 0.01, and PG.Q.Value ≤ 0.01
+
+```{r}
+diann_report <- arrow::read_parquet("report.parquet") %>%
+    dplyr::filter(Lib.PG.Q.Value <= 0.01 & Lib.Q.Value <= 0.01 & PG.Q.Value <= 0.01) %>%
+    dplyr::mutate(
+      Run = case_when(
+      Run == "P1_02" ~ "Venom_r1",
+      Run == "P1_03" ~ "Venom_r2",
+      Run == "P1_04" ~ "Actinonin_30mg_r1",
+      Run == "P1_05" ~ "Actinonin_30mg_r2",
+      Run == "P1_07" ~ "Ven_Actn_30mg_r1",
+      Run == "P1_08" ~ "Ven_Actn_30mg_r2",
+      Run == "P1_09" ~ "Ven_Actn_30mg_r3",
+      Run == "P1_10" ~ "JPMOEt_100mg_r1",
+      Run == "P1_11" ~ "JPMOEt_100mg_r2",
+      Run == "P1_12" ~ "JPMOEt_100mg_r3",
+      Run == "P1_13" ~ "Ven_jPMOEt_100mg_r1",
+      Run == "P1_14" ~ "Ven_jPMOEt_100mg_r2",
+      Run == "P1_15" ~ "Ven_jPMOEt_100mg_r3",
+      Run == "P2_01" ~ "NaCl_r1",
+      Run == "P2_02" ~ "NaCl_r2",
+      Run == "P2_03" ~ "NaCl_r3",
+      Run == "P2_04" ~ "Actinonin_15mg_r1",
+      Run == "P2_05" ~ "Actinonin_15mg_r2",
+      Run == "P2_06" ~ "Actinonin_15mg_r3",
+      Run == "P2_07" ~ "Ven_Actn_15mg_r1",
+      Run == "P2_08" ~ "Ven_Actn_15mg_r2",
+      Run == "P2_09" ~ "Ven_Actn_15mg_r3",
+      Run == "P2_11" ~ "JPMOEt_50mg_r1",
+      Run == "P2_12" ~ "JPMOEt_50mg_r2",
+      Run == "P2_13" ~ "Ven_jPMOEt_50mg_r1",
+      Run == "P2_14" ~ "Ven_jPMOEt_50mg_r2",
+      Run == "P2_15" ~ "Ven_jPMOEt_50mg_r3"),
+    Run = factor(Run, levels = c(
+      "NaCl_r1", "NaCl_r2", "NaCl_r3", "Actinonin_15mg_r1", "Actinonin_15mg_r2", "Actinonin_15mg_r3",
+      "Actinonin_30mg_r1", "Actinonin_30mg_r2", "JPMOEt_50mg_r1", "JPMOEt_50mg_r2",
+      "JPMOEt_100mg_r1", "JPMOEt_100mg_r2", "JPMOEt_100mg_r3",
+      "Venom_r1", "Venom_r2",
+      "Ven_Actn_15mg_r1", "Ven_Actn_15mg_r2", "Ven_Actn_15mg_r3",
+      "Ven_Actn_30mg_r1", "Ven_Actn_30mg_r2", "Ven_Actn_30mg_r3",
+      "Ven_jPMOEt_50mg_r1", "Ven_jPMOEt_50mg_r2", "Ven_jPMOEt_50mg_r3",
+      "Ven_jPMOEt_100mg_r1", "Ven_jPMOEt_100mg_r2", "Ven_jPMOEt_100mg_r3")
+    ),
+    condition = str_remove(Run, "_r1|_r2|_r3"),
+        File.Name = Run,
+        peptide_length = nchar(Stripped.Sequence)
+    ) %>% 
+  dplyr::filter(str_detect(Protein.Names, "MOUSE", negate = FALSE))
+
+# extracting the matrix of abundance from DIA-NN report.parquet file
+unique_genes <- diann::diann_matrix(diann_report,
+    id.header = "Protein.Group",
+    quantity.header = "Genes.MaxLFQ.Unique",
+    proteotypic.only = T,
+    pg.q = .01)
+
+# count the number of proteins per sample and save it in a new data frame called proteins
+proteins <- diann_report %>%
+    dplyr::group_by(Run, condition) %>%
+    dplyr::summarise(
+        n_proteins = n_distinct(Protein.Ids)
+    )
+```
+
+# Reconstruction of the ion chromatograms, the precursor quantity is plotted over the retention time (min) for each sample.
+
+```{r}
+precursor_rt <- diann_report %>%
+  dplyr::mutate(Run = str_replace(Run, "Ven_Actn", "Ven + Actn"),
+                Run = str_replace(Run, "Ven_jPMOEt", "Ven + jPMOEt"),
+                Run = str_replace(Run, "_", " "),
+                Run = str_replace(Run, "mg", " mg"),
+                Run = str_replace(Run, "Actinonin", "Actn"),
+                Run = str_replace(Run, "JPMOEt", "JPM-OEt"),
+                Run = str_replace(Run, "jPMOEt", "JPM-OEt"),
+                Run = str_replace(Run, "_r", " r"),
+                Run = str_replace(Run, "OEt_", "OEt "),
+                Run = str_replace(Run, "Actn_", "Actn "),
+  ) %>% 
+    ggplot(aes(x = RT, y = Precursor.Quantity)) +
+      geom_rect(aes(xmin = 14, xmax = 15.3, ymin = -Inf, ymax = Inf),
+              fill = "grey80", alpha = 0.1) +
+      geom_rect(aes(xmin = 40, xmax = 42, ymin = -Inf, ymax = Inf),
+              fill = "grey80", alpha = 0.1) +
+      geom_rect(aes(xmin = 50.5, xmax = 51.5, ymin = -Inf, ymax = Inf),
+              fill = "grey80", alpha = 0.1) +
+    geom_line(aes(color = condition), show.legend = FALSE) +
+  scale_color_manual(values = c("#FED789FF", "#023743FF", "#72874EFF", "#476F84FF", "#A4BED5FF", "#453947FF", "#66C2A5", "#FC8D62", "#FFD92F", "#8DA0CB")) +
+    labs(x = "Retention time (min)",
+        y = "Precursor quantity",
+        color = NULL) +
+  facet_wrap(~Run, ncol = 6, scales = "free") +
+  theme(strip.background = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA),
+        panel.background = element_blank()
+        )
+
+diann_report %>% 
+  dplyr::filter(str_detect(Modified.Sequence, "UniMod:5")) %>%
+  view()
+```
+
+# For the m/z map, the density of ions collected is plotted over the scan range (m/z) for each sample.
+
+```{r}
+mz_map_density_plot <- diann_report %>%
+    dplyr::mutate(Run = str_replace(Run, "Ven_Actn", "Ven + Actn"),
+                Run = str_replace(Run, "Ven_jPMOEt", "Ven + jPMOEt"),
+                Run = str_replace(Run, "_", " "),
+                Run = str_replace(Run, "mg", " mg"),
+                Run = str_replace(Run, "Actinonin", "Actn"),
+                Run = str_replace(Run, "JPMOEt", "JPM-OEt"),
+                Run = str_replace(Run, "jPMOEt", "JPM-OEt"),
+                Run = str_replace(Run, "_r", " r"),
+                Run = str_replace(Run, "OEt_", "OEt "),
+                Run = str_replace(Run, "Actn_", "Actn "),
+  ) %>% 
+    ggplot(aes(x = RT, y = Precursor.Mz)) +
+    ggpointdensity::geom_pointdensity(size = 0.25) +
+    viridis::scale_color_viridis(option = "H") +
+    scale_x_continuous(limits = c(0, 90)) +
+    labs(x = "Retention time (min)",
+        y = " Scan range (m/z)",
+        color = NULL) +
+  facet_wrap(~Run, scales = "free", ncol = 6) +
+  theme(strip.background = element_blank(),
+        legend.position = "bottom",
+        legend.key.width = unit(1.5, "cm"),
+        legend.key.height = unit(0.25, "cm"),
+        panel.border = element_rect(color = "black", fill = NA),
+        panel.background = element_blank()
+    )
+```
+
+Log2(MS1 area) distribution
+
+```{r}
+# extract the median value of the MS1 area for each run and condition
+ms1_median_values <- diann_report %>%
+    dplyr::mutate(Run = str_replace(Run, "Ven_Actn", "Ven + Actn"),
+                Run = str_replace(Run, "Ven_jPMOEt", "Ven + jPMOEt"),
+                Run = str_replace(Run, "_", " "),
+                Run = str_replace(Run, "mg", " mg"),
+                Run = str_replace(Run, "Actinonin", "Actn"),
+                Run = str_replace(Run, "JPMOEt", "JPM-OEt"),
+                Run = str_replace(Run, "jPMOEt", "JPM-OEt"),
+                Run = str_replace(Run, "_r", " r"),
+                Run = str_replace(Run, "OEt_", "OEt "),
+                Run = str_replace(Run, "Actn_", "Actn "),
+  ) %>% 
+  dplyr::group_by(Run, condition) %>%
+  dplyr::summarise(
+    median_MS1_area = median(log2(Ms1.Area))
+  )
+
+MS1_area <- diann_report %>% 
+    dplyr::mutate(Run = str_replace(Run, "Ven_Actn", "Ven + Actn"),
+                Run = str_replace(Run, "Ven_jPMOEt", "Ven + jPMOEt"),
+                Run = str_replace(Run, "_", " "),
+                Run = str_replace(Run, "mg", " mg"),
+                Run = str_replace(Run, "Actinonin", "Actn"),
+                Run = str_replace(Run, "JPMOEt", "JPM-OEt"),
+                Run = str_replace(Run, "jPMOEt", "JPM-OEt"),
+                Run = str_replace(Run, "_r", " r"),
+                Run = str_replace(Run, "OEt_", "OEt "),
+                Run = str_replace(Run, "Actn_", "Actn "),
+  ) %>% 
+  ggplot() +
+  geom_histogram(aes(x = log2(Ms1.Area), fill = condition),
+                 bins = 50, color = "black", linewidth = 0.2) +
+  scale_fill_manual(values = c("#FED789FF", "#023743FF", "#72874EFF", "#476F84FF", "#A4BED5FF", "#453947FF", "#66C2A5", "#FC8D62", "#FFD92F", "#8DA0CB")) +
+  geom_vline(data = ms1_median_values,
+             aes(xintercept = median_MS1_area),
+             linetype = "dashed", color = "red") +
+  geom_text(data = ms1_median_values,
+            aes(x = 25, y = 300, label = round(median_MS1_area, 2)),
+            hjust = 0, vjust = 0, size = 8, color = "red") +
+  facet_wrap(~Run, ncol = 6) +
+  labs(x = "log2(MS1 Area)",
+    y = "Count") +
+  theme(strip.background = element_blank(),
+    legend.position = "none",
+    panel.border = element_rect(color = "black", fill = NA),
+    panel.background = element_blank()
+    )
+```
+
+# Counting the number of peptides per sample
+
+```{r}
+peptides_plot <- diann_report %>%
+    dplyr::mutate(Run = str_replace(Run, "Ven_Actn", "Ven + Actn"),
+                Run = str_replace(Run, "Ven_jPMOEt", "Ven + JPM-OEt"),
+                Run = str_replace(Run, "_", " "),
+                Run = str_replace(Run, "mg", " mg"),
+                Run = str_replace(Run, "Actinonin", "Actn"),
+                Run = str_replace(Run, "JPMOEt", "JPM-OEt"),
+                Run = str_replace(Run, "jPMOEt", "JPM-OEt"),
+                Run = str_replace(Run, "_r", " r"),
+                Run = str_replace(Run, "OEt_", "OEt "),
+                Run = str_replace(Run, "Actn_", "Actn "),
+  ) %>% 
+    dplyr::group_by(Run, condition) %>%
+    dplyr::summarise(
+        n_peptides = n_distinct(Stripped.Sequence)
+    ) %>%
+    ggplot(aes(y = Run, 
+               x = n_peptides,
+               fill = condition)) +
+    geom_bar(stat = "identity",
+             position = "dodge",
+             show.legend = FALSE) +
+  scale_fill_manual(values = c("#FED789FF", "#023743FF", "#72874EFF", "#476F84FF", "#A4BED5FF", "#453947FF", "#66C2A5", "#FC8D62", "#FFD92F", "#8DA0CB")) +
+    geom_text(aes(label = n_peptides, hjust = ifelse(n_peptides > 8117, 1.1, -0.15)),
+        color = "black",
+        size = 7, nudge_x = -0.5) +
+    labs(y = NULL,
+        x = "Number of peptides",
+        fill = NULL) +
+    theme(text = element_text(size = 25),
+      axis.text.x = element_text(
+        angle = 90, vjust = 0.5, hjust = 1),
+      panel.border = element_rect(color = "black", fill = NA),
+      panel.background = element_blank()
+      )
+```
+
+# Counting the number of proteins per sample
+
+```{r}
+proteins_plot <- proteins %>%
+    dplyr::mutate(Run = str_replace(Run, "Ven_Actn", "Ven + Actn"),
+                Run = str_replace(Run, "Ven_jPMOEt", "Ven + jPMOEt"),
+                Run = str_replace(Run, "_", " "),
+                Run = str_replace(Run, "mg", " mg"),
+                Run = str_replace(Run, "Actinonin", "Actn"),
+                Run = str_replace(Run, "JPMOEt", "JPM-OEt"),
+                Run = str_replace(Run, "jPMOEt", "JPM-OEt"),
+                Run = str_replace(Run, "_r", " r"),
+                Run = str_replace(Run, "OEt_", "OEt "),
+                Run = str_replace(Run, "Actn_", "Actn "),
+  ) %>% 
+    ggplot(aes(y = Run, x = n_proteins, fill = condition)) +
+    geom_bar(stat = "identity", position = "dodge", show.legend = FALSE) +
+  scale_fill_manual(values = c("#FED789FF", "#023743FF", "#72874EFF", "#476F84FF", "#A4BED5FF", "#453947FF", "#66C2A5", "#FC8D62", "#FFD92F", "#8DA0CB")) +
+    geom_text(aes(label = n_proteins, hjust = ifelse(n_proteins > 1882, 1.1, -0.1)),
+        color = "black",
+        size = 7, nudge_x = -0.5) +
+    labs(y = NULL,
+        x = "Number of proteins",
+        fill = NULL) +
+    theme(text = element_text(size = 25),
+      axis.text.x = element_text(
+        angle = 90, vjust = 0.5, hjust = 1),
+      panel.border = element_rect(color = "black", fill = NA),
+      panel.background = element_blank()
+      )
+```
+
+# evaluate the sparsity pattern for each sample
+
+```{r}
+sparsity_plot <- unique_genes %>%
+  as.data.frame() %>%
+  rename_with(~ str_replace(., "Ven_Actn", "Ven + Actn"), everything()) %>%
+  rename_with(~ str_replace(., "Ven_jPMOEt", "Ven + JPM-OEt"), everything()) %>%
+  rename_with(~ str_replace(., "_", " "), everything()) %>%
+  rename_with(~ str_replace(., "mg", " mg"), everything()) %>%
+  rename_with(~ str_replace(., "Actinonin", "Actn"), everything()) %>%
+  rename_with(~ str_replace(., "JPMOEt", "JPM-OEt"), everything()) %>%
+  rename_with(~ str_replace(., "_r", " r"), everything()) %>%
+    naniar::vis_miss() +
+    labs(x = NULL,
+         y = "Number of proteins") +
+    theme(text = element_text(size = 20),
+        axis.text.y = element_text(color = "black", vjust = 1),
+        axis.text.x = element_text(
+            angle = 90, color = "black"),
+        line = element_blank(),
+        panel.background = element_blank()
+    )
+```
+
+# calculate the cosine similarity in the matrix and plot the heatmap
+
+```{r}
+cosine_similarity <- log2(unique_genes) %>%
+    as.data.frame() %>%
+  rename_with(~ str_replace(., "Ven_Actn", "Ven + Actn"), everything()) %>%
+  rename_with(~ str_replace(., "Ven_jPMOEt", "Ven + JPM-OEt"), everything()) %>%
+  rename_with(~ str_replace(., "_", " "), everything()) %>%
+  rename_with(~ str_replace(., "mg", " mg"), everything()) %>%
+  rename_with(~ str_replace(., "Actinonin", "Actn"), everything()) %>%
+  rename_with(~ str_replace(., "JPMOEt", "JPM-OEt"), everything()) %>%
+  rename_with(~ str_replace(., "_r", " r"), everything()) %>%
+  as.matrix() %>% 
+    na.omit() %>%
+    lsa::cosine() %>%
+    as.data.frame() %>%
+    rownames_to_column(var = "Sample") %>%
+    pivot_longer(-Sample, names_to = "Match", values_to = "value") %>%
+    dplyr::mutate(Similarity = "Cosine similarity",
+                  Sample = factor(Sample, levels = c("NaCl r1", "NaCl r2", "NaCl r3", 
+                                                     "Actn 15 mg r1", "Actn 15 mg r2", "Actn 15 mg r3",
+      "Actn 30 mg r1", "Actn 30 mg r2", "JPM-OEt 50 mg r1", "JPM-OEt 50 mg r2",
+      "JPM-OEt 100 mg r1", "JPM-OEt 100 mg r2", "JPM-OEt 100 mg r3",
+      "Venom r1", "Venom r2",
+      "Ven + Actn 15 mg r1", "Ven + Actn 15 mg r2", "Ven + Actn 15 mg r3",
+      "Ven + Actn 30 mg r1", "Ven + Actn 30 mg r2", "Ven + Actn 30 mg r3",
+      "Ven + JPM-OEt 50 mg r1", "Ven + JPM-OEt 50 mg r2", "Ven + JPM-OEt 50 mg r3",
+      "Ven + JPM-OEt 100 mg r1", "Ven + JPM-OEt 100 mg r2", "Ven + JPM-OEt 100 mg r3")),
+                  Match = factor(Match, levels = c("NaCl r1", "NaCl r2", "NaCl r3", "Actn 15 mg r1", "Actn 15 mg r2", "Actn 15 mg r3",
+      "Actn 30 mg r1", "Actn 30 mg r2", "JPM-OEt 50 mg r1", "JPM-OEt 50 mg r2",
+      "JPM-OEt 100 mg r1", "JPM-OEt 100 mg r2", "JPM-OEt 100 mg r3",
+      "Venom r1", "Venom r2",
+      "Ven + Actn 15 mg r1", "Ven + Actn 15 mg r2", "Ven + Actn 15 mg r3",
+      "Ven + Actn 30 mg r1", "Ven + Actn 30 mg r2", "Ven + Actn 30 mg r3",
+      "Ven + JPM-OEt 50 mg r1", "Ven + JPM-OEt 50 mg r2", "Ven + JPM-OEt 50 mg r3",
+      "Ven + JPM-OEt 100 mg r1", "Ven + JPM-OEt 100 mg r2", "Ven + JPM-OEt 100 mg r3"))) %>%
+    ggplot() +
+    geom_tile(aes(x = Sample, y = Match, fill = value)) +
+    viridis::scale_fill_viridis(option = "E") +
+      labs(title = "Similarity matrix",
+        x = NULL,
+        y = NULL,
+        fill = "Cosine similarity") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+          text = element_text(size = 20),
+          axis.text.x = element_text(angle = 90,
+            hjust = 1, vjust = 0.5, color = "black"),
+          axis.text.y = element_text(angle = 0,
+            hjust = 1, vjust = 0.5, color = "black"),
+          legend.position = "bottom",
+        legend.title.position = "top",
+        legend.title = element_text(hjust = 0.5),
+          legend.key.width = unit(2.5, "cm"),
+          legend.key.height = unit(0.3, "cm"),
+          panel.border = element_rect(color = "black", fill = NA)
+    )
+```
+
+# K-means method to cluster the PCA plot
+
+```{r}
+pca_object <- log2(unique_genes) %>%
+      as.data.frame() %>%
+  as.matrix() %>% 
+    na.omit() %>%
+    t() %>%
+    prcomp(center = TRUE, scale = TRUE)
+
+summary(pca_object)
+head(pca_object$x)
+
+pca_df <- as.data.frame(pca_object$x[, 1:2])
+
+kmeans_clusters <- fviz_nbclust(pca_df,
+    FUNcluster = kmeans,
+    method = "wss") +
+    geom_point(size = 4, color = "steelblue") +
+    geom_vline(xintercept = 5, linetype = "dashed") +
+  theme_minimal() +
+  labs(title = "Optimal number of clusters") +
+    theme(plot.title = element_text(hjust = 0.5),
+      text = element_text(color = "black", size = 20),
+        title = element_text(color = "black", size = 20, face = "bold", hjust = 0.5),
+        axis.text = element_text(color = "black"),
+        axis.title = element_text(color = "black", face = "bold"),
+      axis.ticks = element_line(color = "black"),
+      panel.border = element_rect(color = "black", fill = NA)
+      )
+
+set.seed(123)
+kmeans_pca <- kmeans(pca_df, centers = 5)
+
+pca_plot <- fviz_pca_ind(pca_object,
+                         geom = c("point", "text"),
+                         habillage = kmeans_pca$cluster,
+                         labelsize = 7, pointsize = 3,
+                         palette = c("tomato", "steelblue", "forestgreen", "firebrick", "black"),
+                         addEllipses = FALSE,
+                         ggtheme = theme_classic(),
+                         repel = TRUE) +
+    labs(title = "PCA clustered by k-means") +
+  theme_minimal() +
+    theme(plot.title = element_text(hjust = 0.5),
+          text = element_text(color = "black", size = 20),
+          title = element_text(color = "black", size = 20,
+                               face = "bold", hjust = 0.5),
+        axis.text = element_text(color = "black"),
+        axis.title = element_text(color = "black", face = "bold"),
+        strip.background = element_rect(fill = "grey90"),
+        strip.text = element_text(face = "bold"),
+        legend.title = element_text(face = "bold", hjust = 0.5),
+        legend.title.position = "top",
+        legend.position = "none",
+        panel.border = element_rect(color = "black", fill = NA)
+        )
+```
+
+# plot the scores of quality of the QuantUMS
+Information from DIA-NN documentation:
+Quantity.Quality: when using QuantUMS is equal to 1.0 / (1.0 + SD), where SD is the standard deviation of the LC-MS-derived error in relative precursor quantification.
+Empirical.Quality: when using QuantUMS reflects the agreement of relative precursor quantities obtained using different quantitative features (MS1 / fragment ions).
+PG.MaxLFQ.Quality: when using QuantUMS reflects the quality of PG.MaxLFQ.
+
+```{r}
+low_scores_peptide <- diann_report %>% 
+        dplyr::mutate(Run = str_replace(Run, "Ven_Actn", "Ven + Actn"),
+                Run = str_replace(Run, "Ven_jPMOEt", "Ven + JPM-OEt"),
+                Run = str_replace(Run, "_", " "),
+                Run = str_replace(Run, "mg", " mg"),
+                Run = str_replace(Run, "Actinonin", "Actn"),
+                Run = str_replace(Run, "JPMOEt", "JPM-OEt"),
+                Run = str_replace(Run, "jPMOEt", "JPM-OEt"),
+                Run = str_replace(Run, "_r", " r"),
+                Run = str_replace(Run, "OEt_", "OEt "),
+                Run = str_replace(Run, "Actn_", "Actn "),
+  ) %>% 
+  dplyr::filter(Quantity.Quality < 0.75 & Empirical.Quality < 0.75) %>%
+  group_by(Run, condition) %>%
+  summarise(
+    n = n_distinct(Stripped.Sequence)
+  )
+
+QuantUMS_evaluation <- diann_report %>%
+      dplyr::mutate(Run = str_replace(Run, "Ven_Actn", "Ven + Actn"),
+                Run = str_replace(Run, "Ven_jPMOEt", "Ven + JPM-OEt"),
+                Run = str_replace(Run, "_", " "),
+                Run = str_replace(Run, "mg", " mg"),
+                Run = str_replace(Run, "Actinonin", "Actn"),
+                Run = str_replace(Run, "JPMOEt", "JPM-OEt"),
+                Run = str_replace(Run, "jPMOEt", "JPM-OEt"),
+                Run = str_replace(Run, "_r", " r"),
+                Run = str_replace(Run, "OEt_", "OEt "),
+                Run = str_replace(Run, "Actn_", "Actn "),
+  ) %>% 
+    ggplot(aes(
+        x = Quantity.Quality,
+        y = Empirical.Quality)
+    ) +
+    geom_pointdensity(size = 0.25) +
+    geom_vline(xintercept = 0.75, linetype = "dashed", color = "black") +
+    geom_hline(yintercept = 0.75, linetype = "dashed", color = "black") +
+    viridis::scale_color_viridis(option = "plasma") +
+    geom_text(data = low_scores_peptide,
+        aes(x = 0.25, y = 0.35, label = n),
+        hjust = -0.1, vjust = 0.5, 
+        size = 9, fontface = "bold", 
+        color = "red", show.legend = FALSE) +
+    labs(title = "QuantUMS scores for peptides",
+        x = "qQ score",
+        y = "eQ score",
+        color = NULL) +
+    facet_wrap(~Run, ncol = 6) +
+    theme(plot.title = element_text(size = 30, 
+                                    face = "bold", hjust = 0.5),
+      strip.background = element_blank(),
+      strip.text = element_text(face = "bold", size = 25),
+      text = element_text(size = 25),
+      axis.title = element_text(size = 30),
+      axis.text.x = element_text(color = "black",
+            angle = 90, vjust = 0.5, hjust = 1),
+        legend.position = "none",
+      panel.border = element_rect(color = "black", fill = NA),
+      panel.background = element_rect(fill = "white")
+      )
+
+PG_MaxLFQ_quality <- diann_report %>%
+        dplyr::mutate(Run = str_replace(Run, "Ven_Actn", "Ven + Actn"),
+                Run = str_replace(Run, "Ven_jPMOEt", "Ven + JPM-OEt"),
+                Run = str_replace(Run, "_", " "),
+                Run = str_replace(Run, "mg", " mg"),
+                Run = str_replace(Run, "Actinonin", "Actn"),
+                Run = str_replace(Run, "JPMOEt", "JPM-OEt"),
+                Run = str_replace(Run, "jPMOEt", "JPM-OEt"),
+                Run = str_replace(Run, "_r", " r"),
+                Run = str_replace(Run, "OEt_", "OEt "),
+                Run = str_replace(Run, "Actn_", "Actn "),
+  ) %>% 
+    ggplot(aes(
+        x = Precursor.Mz,
+        y = PG.MaxLFQ.Quality)
+    ) +
+    geom_pointdensity(size = 0.25) +
+    geom_hline(
+        yintercept = 0.75, linewidth = 1.5,
+        linetype = "dashed", color = "black") +
+    viridis::scale_color_viridis(option = "plasma") +
+    labs(title = "QuantUMS scores for proteins",
+         x = "Scan range (m/z)",
+        y = "Protein group MaxLFQ quality score",
+        color = NULL) +
+    facet_wrap(~Run, ncol = 6) +
+    theme(plot.title = element_text(size = 30, 
+                                    face = "bold", hjust = 0.5),
+          strip.background = element_blank(),
+          strip.text = element_text(face = "bold", size = 25),
+          text = element_text(size = 25),
+          axis.title = element_text(size = 30),
+          axis.text.x = element_text(
+            angle = 90,
+            vjust = 0.5,
+            hjust = 1),
+        legend.position = "none",
+        panel.border = element_rect(color = "black", fill = NA),
+        panel.background = element_rect(fill = "white")
+        )
+```
+
+# Calculating the iBAQ for samples
+
+```{r}
+unique_genes_iBAQ <- DIAgui::diann_matrix(diann_report,
+    id.header = "Precursor.Id",
+    quantity.header = "Precursor.Normalised",
+    proteotypic.only = TRUE,
+    pg.q = .01
+)
+
+sequence_list <- DIAgui::getallseq(
+    spec = "Mus musculus",
+    pr_id = unique_genes_iBAQ$Protein.Group,
+    bank_name = "UP000000589_10090.fasta",
+    fasta_file = TRUE
+    )
+
+# get the iBAQ values for each protein
+iBAQ <- DIAgui::get_iBAQ(
+  unique_genes_iBAQ,
+  proteinDB = sequence_list,
+  id_name = "Protein.Group",
+  ecol = 7:33,       # here we need to specify the indexes of the columns containing the intensity values
+  peptideLength = c(5, 35),
+  nbMiscleavages = 0,
+  proteaseRegExp = getProtease("trypsin"),
+  log2_transformed = TRUE,
+  keep_original = FALSE
+)
+
+# Extracting the relative iBAQ for each sample
+df_riBAQ <- iBAQ %>%
+    dplyr::select(Protein.Group, Genes, starts_with("iBAQ")) %>%
+      pivot_longer(
+        -c(Protein.Group, Genes),
+          names_to = "sample", values_to = "iBAQ"
+  ) %>%
+  group_by(sample) %>%
+  na.omit() %>%
+  mutate(sum_iBAQ = sum(iBAQ)) %>%
+  ungroup() %>%
+  mutate(riBAQ = (iBAQ / sum_iBAQ) * 100)
+
+riBAQ_plot <- df_riBAQ %>%
+  dplyr::mutate(sample = str_remove(sample, "iBAQ_"),
+                condition = str_remove(sample, "_r1|_r2|_r3")) %>%
+  ggplot() +
+  geom_boxplot(aes(x = sample, y = riBAQ, fill = condition)) +
+  scale_fill_manual(values = c("#FED789FF", "#023743FF", "#72874EFF", "#476F84FF", "#A4BED5FF", "#453947FF", "#66C2A5", "#FC8D62", "#FFD92F", "#8DA0CB")) +
+  labs(y = "Relative iBAQ", x = NULL) +
+      theme(plot.title = element_text(size = 30, 
+                                    face = "bold", hjust = 0.5),
+          strip.background = element_blank(),
+          strip.text = element_text(face = "bold", size = 25),
+          text = element_text(size = 25),
+          axis.title = element_text(size = 30),
+          axis.text.x = element_text(
+            angle = 90,
+            vjust = 0.5,
+            hjust = 1),
+        legend.position = "none",
+        panel.border = element_rect(color = "black", fill = NA),
+        panel.background = element_rect(fill = "white")
+        )
+
+iBAQ_plot <- df_riBAQ %>% 
+    dplyr::mutate(sample = str_remove(sample, "iBAQ_"),
+                  condition = str_remove(sample, "_r1|_r2|_r3"),
+                  condition = str_replace(condition, "Ven_Actn", "Ven + Actn"),
+                condition = str_replace(condition, "Ven_jPMOEt", "Ven + jPMOEt"),
+                condition = str_replace(condition, "_", " "),
+                condition = str_replace(condition, "mg", " mg"),
+                condition = str_replace(condition, "Actn", "Actinonin"),
+                condition = str_replace(condition, "jPMOEt", "JPMOEt"),
+                condition = str_replace(condition, "JPMOEt", "JPM-OEt"),
+                condition = factor(condition, 
+                                   levels = c("NaCl", "Actinonin 15 mg", "Actinonin 30 mg", 
+                                              "JPM-OEt 50 mg", "JPM-OEt 100 mg", "Venom",
+                                              "Ven + Actinonin 15 mg", "Ven + Actinonin 30 mg",
+                                              "Ven + JPM-OEt 50 mg", "Ven + JPM-OEt 100 mg"))
+                ) %>%
+  ggplot(aes(x = sample, y = iBAQ, fill = condition)) +
+  geom_boxplot() +
+  scale_x_discrete(labels = c("r1", "r2", "r3", "r1", "r2", "r1", "r2", "r3", "r1", "r2",
+                              "r1", "r2", "r3", "r1", "r2", "r3", "r1", "r2",
+                              "r3", "r1", "r2", "r3", "r1", "r2", "r3", "r1", "r2")) +
+  scale_fill_manual(values = c("#FED789FF", "#023743FF", "#72874EFF", "#476F84FF", "#A4BED5FF", "#453947FF", "#66C2A5", "#FC8D62", "#FFD92F", "#8DA0CB")) +
+  labs(y = "iBAQ", 
+       x = NULL,
+       fill = "Experimental group") +
+  theme(plot.title = element_text(size = 30, 
+                                    face = "bold", hjust = 0.5),
+          strip.background = element_blank(),
+          strip.text = element_text(face = "bold", size = 25),
+          text = element_text(size = 25),
+          axis.title = element_text(size = 30),
+        legend.position = "bottom",
+        panel.border = element_rect(color = "black", fill = NA),
+        panel.background = element_rect(fill = "white")
+        )
+```
+
+# Measuring the coefficient of variation (CV) for each protein in each condition
+
+```{r}
+# return the log values to the original
+CV_NaCl <- cv_mtx(unique_genes, "NaCl")
+CV_iMeprin_15mg <- cv_mtx(unique_genes, "Actinonin_15mg")
+CV_iMeprin_30mg <- cv_mtx(unique_genes, "Actinonin_30mg")
+CV_iCathepsin_50mg <- cv_mtx(unique_genes, "JPMOEt_50mg")
+CV_iCathepsin_100mg <- cv_mtx(unique_genes, "JPMOEt_100mg")
+CV_Venom <- cv_mtx(unique_genes, "Venom")
+CV_Venom_iMeprin_15mg <- cv_mtx(unique_genes, "Ven_Actn_15mg")
+CV_Venom_iMeprin_30mg <- cv_mtx(unique_genes, "Ven_Actn_30mg")
+CV_Venom_iCathepsin_50mg <- cv_mtx(unique_genes, "Ven_jPMOEt_50mg")
+CV_Venom_iCathepsin_100mg <- cv_mtx(unique_genes, "Ven_jPMOEt_100mg")
+
+# combine the results using a full join
+df_mat_cv <- bind_rows(CV_NaCl, CV_iMeprin_15mg, CV_iMeprin_30mg, 
+                       CV_iCathepsin_50mg, CV_iCathepsin_100mg, CV_Venom, 
+                       CV_Venom_iMeprin_15mg, CV_Venom_iMeprin_30mg, 
+                       CV_Venom_iCathepsin_50mg, CV_Venom_iCathepsin_100mg) %>%
+  dplyr::mutate(condition = str_replace(condition, "Ven_Actn", "Ven + Actn"),
+                condition = str_replace(condition, "Ven_jPMOEt", "Ven + jPMOEt"),
+                condition = str_replace(condition, "_", " "),
+                condition = str_replace(condition, "mg", " mg"),
+                condition = str_replace(condition, "Actn", "Actinonin"),
+                condition = str_replace(condition, "jPMOEt", "JPMOEt"),
+                condition = str_replace(condition, "JPMOEt", "JPM-OEt"),
+                condition = factor(condition, 
+                                   levels = c("NaCl", "Actinonin 15 mg", "Actinonin 30 mg", 
+                                              "JPM-OEt 50 mg", "JPM-OEt 100 mg", "Venom",
+                                              "Ven + Actinonin 15 mg", "Ven + Actinonin 30 mg",
+                                              "Ven + JPM-OEt 50 mg", "Ven + JPM-OEt 100 mg"))
+  )
+```
+
+# plot the coefficient of variation for each protein across conditions
+
+```{r}
+cv_plot <- df_mat_cv %>%
+    ggplot(aes(y = condition, x = cv, fill = condition)) +
+    geom_violin(linewidth = 0.2) +
+    geom_boxplot(width = 0.2, fill = "white",
+                 linewidth = 0.2, outlier.alpha = 0.5) +
+    geom_vline(xintercept = 20, linetype = "dashed", color = "black") +
+  scale_fill_manual(values = c("#FED789FF", "#023743FF", "#72874EFF", "#476F84FF", "#A4BED5FF", "#453947FF", "#66C2A5", "#FC8D62", "#FFD92F", "#8DA0CB")) +
+    labs(
+        y = NULL,
+        x = "Coefficient of variation (%)",
+        fill = NULL) +
+  theme_linedraw() +
+    theme(
+        legend.position = "none",
+        axis.title = element_text(size = 20, face = "bold"),
+        axis.text = element_text(color = "black", size = 20, face = "bold"),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+        axis.ticks = element_line(),
+        line = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_text(size = 20, face = "bold", color = "black")
+    )
+```
+
+# Stratify the proteins by variance with different QuantUMS scores
+
+```{r}
+high_score_pgQ <- diann_report %>% 
+  dplyr::filter(PG.MaxLFQ.Quality >= 0.75)
+
+high_score_combined <- diann_report %>% 
+  dplyr::filter(PG.MaxLFQ.Quality >= 0.75 & Empirical.Quality >= 0.75)
+
+no_score_mtx <- diann::diann_matrix(diann_report,
+    id.header = "Protein.Group",
+    quantity.header = "Genes.MaxLFQ.Unique",
+    proteotypic.only = TRUE,
+    pg.q = .01)
+
+high_score_pgQ_mtx <- diann::diann_matrix(high_score_pgQ,
+    id.header = "Protein.Group",
+    quantity.header = "Genes.MaxLFQ.Unique",
+    proteotypic.only = TRUE,
+    pg.q = .01)
+
+high_score_combined_mtx <- diann::diann_matrix(high_score_combined,
+    id.header = "Protein.Group",
+    quantity.header = "Genes.MaxLFQ.Unique",
+    proteotypic.only = TRUE,
+    pg.q = .01)
+
+variance_mtx_NaCl_raw <- extract_variance_mtx(no_score_mtx, "NaCl", "No score")
+variance_mtx_iMeprin_15mg_raw <- extract_variance_mtx(no_score_mtx, "Actinonin_15mg", "No score")
+variance_mtx_iMeprin_30mg_raw <- extract_variance_mtx(no_score_mtx, "Actinonin_30mg", "No score")
+variance_mtx_iCathepsin_50mg_raw <- extract_variance_mtx(no_score_mtx, "JPMOEt_50mg", "No score")
+variance_mtx_iCathepsin_100mg_raw <- extract_variance_mtx(no_score_mtx, "JPMOEt_100mg", "No score")
+variance_mtx_Venom_raw <- extract_variance_mtx(no_score_mtx, "Venom", "No score")
+variance_mtx_Venom_iMeprin_15mg_raw <- extract_variance_mtx(no_score_mtx, "Ven_Actn_15mg", "No score")
+variance_mtx_Venom_iMeprin_30mg_raw <- extract_variance_mtx(no_score_mtx, "Ven_Actn_30mg", "No score")
+variance_mtx_Venom_iCathepsin_50mg_raw <- extract_variance_mtx(no_score_mtx, "Ven_jPMOEt_50mg", "No score")
+variance_mtx_Venom_iCathepsin_100mg_raw <- extract_variance_mtx(no_score_mtx, "Ven_jPMOEt_100mg", "No score")
+
+variance_mtx_NaCl_high <- extract_variance_mtx(high_score_pgQ_mtx, "NaCl", "pgQ ≥ 0.75")
+variance_mtx_iMeprin_15mg_high <- extract_variance_mtx(high_score_pgQ_mtx, "Actinonin_15mg", "pgQ ≥ 0.75")
+variance_mtx_iMeprin_30mg_high <- extract_variance_mtx(high_score_pgQ_mtx, "Actinonin_30mg", "pgQ ≥ 0.75")
+variance_mtx_iCathepsin_50mg_high <- extract_variance_mtx(high_score_pgQ_mtx, "JPMOEt_50mg", "pgQ ≥ 0.75")
+variance_mtx_iCathepsin_100mg_high <- extract_variance_mtx(high_score_pgQ_mtx, "JPMOEt_100mg", "pgQ ≥ 0.75")
+variance_mtx_Venom_high <- extract_variance_mtx(high_score_pgQ_mtx, "Venom", "pgQ ≥ 0.75")
+variance_mtx_Venom_iMeprin_15mg_high <- extract_variance_mtx(high_score_pgQ_mtx, "Ven_Actn_15mg", "pgQ ≥ 0.75")
+variance_mtx_Venom_iMeprin_30mg_high <- extract_variance_mtx(high_score_pgQ_mtx, "Ven_Actn_30mg", "pgQ ≥ 0.75")
+variance_mtx_Venom_iCathepsin_50mg_high <- extract_variance_mtx(high_score_pgQ_mtx, "Ven_jPMOEt_50mg", "pgQ ≥ 0.75")
+variance_mtx_Venom_iCathepsin_100mg_high <- extract_variance_mtx(high_score_pgQ_mtx, "Ven_jPMOEt_100mg", "pgQ ≥ 0.75")
+
+variance_mtx_NaCl_high_combined <- extract_variance_mtx(high_score_combined_mtx, "NaCl", "pgQ + eQ ≥ 0.75")
+variance_mtx_iMeprin_15mg_high_combined <- extract_variance_mtx(high_score_combined_mtx, "Actinonin_15mg", "pgQ + eQ ≥ 0.75")
+variance_mtx_iMeprin_30mg_high_combined <- extract_variance_mtx(high_score_combined_mtx, "Actinonin_30mg", "pgQ + eQ ≥ 0.75")
+variance_mtx_iCathepsin_50mg_high_combined <- extract_variance_mtx(high_score_combined_mtx, "JPMOEt_50mg", "pgQ + eQ ≥ 0.75")
+variance_mtx_iCathepsin_100mg_high_combined <- extract_variance_mtx(high_score_combined_mtx, "JPMOEt_100mg", "pgQ + eQ ≥ 0.75")
+variance_mtx_Venom_high_combined <- extract_variance_mtx(high_score_combined_mtx, "Venom", "pgQ + eQ ≥ 0.75")
+variance_mtx_Venom_iMeprin_15mg_high_combined <- extract_variance_mtx(high_score_combined_mtx, "Ven_Actn_15mg", "pgQ + eQ ≥ 0.75")
+variance_mtx_Venom_iMeprin_30mg_high_combined <- extract_variance_mtx(high_score_combined_mtx, "Ven_Actn_30mg", "pgQ + eQ ≥ 0.75")
+variance_mtx_Venom_iCathepsin_50mg_high_combined <- extract_variance_mtx(high_score_combined_mtx, "Ven_jPMOEt_50mg", "pgQ + eQ ≥ 0.75")
+variance_mtx_Venom_iCathepsin_100mg_high_combined <- extract_variance_mtx(high_score_combined_mtx, "Ven_jPMOEt_100mg", "pgQ + eQ ≥ 0.75")
+
+variance_mtx_combined <- bind_rows(variance_mtx_NaCl_raw,
+                                   variance_mtx_iMeprin_15mg_raw,
+                                   variance_mtx_iMeprin_30mg_raw,
+                                   variance_mtx_iCathepsin_50mg_raw,
+                                   variance_mtx_iCathepsin_100mg_raw,
+                                   variance_mtx_Venom_raw,
+                                   variance_mtx_Venom_iMeprin_15mg_raw,
+                                   variance_mtx_Venom_iMeprin_30mg_raw,
+                                   variance_mtx_Venom_iCathepsin_50mg_raw,
+                                   variance_mtx_Venom_iCathepsin_100mg_raw,
+                                   variance_mtx_NaCl_high,
+                                   variance_mtx_iMeprin_15mg_high,
+                                   variance_mtx_iMeprin_30mg_high,
+                                   variance_mtx_iCathepsin_50mg_high,
+                                   variance_mtx_iCathepsin_100mg_high,
+                                   variance_mtx_Venom_high,
+                                   variance_mtx_Venom_iMeprin_15mg_high,
+                                   variance_mtx_Venom_iMeprin_30mg_high,
+                                   variance_mtx_Venom_iCathepsin_50mg_high,
+                                   variance_mtx_Venom_iCathepsin_100mg_high,
+                                   variance_mtx_NaCl_high_combined,
+                                   variance_mtx_iMeprin_15mg_high_combined,
+                                   variance_mtx_iMeprin_30mg_high_combined,
+                                   variance_mtx_iCathepsin_50mg_high_combined,
+                                   variance_mtx_iCathepsin_100mg_high_combined,
+                                   variance_mtx_Venom_high_combined,
+                                   variance_mtx_Venom_iMeprin_15mg_high_combined,
+                                   variance_mtx_Venom_iMeprin_30mg_high_combined,
+                                   variance_mtx_Venom_iCathepsin_50mg_high_combined,
+                                   variance_mtx_Venom_iCathepsin_100mg_high_combined) %>%
+  dplyr::mutate(condition = str_remove(Sample, "_r1|_r2|_r3"),
+                condition = factor(condition, levels = c("NaCl", "Actinonin_15mg", "Actinonin_30mg", 
+                                                        "JPMOEt_50mg", "JPMOEt_100mg", "Venom",
+                                                        "Ven_Actn_15mg", "Ven_Actn_30mg",
+                                                        "Ven_jPMOEt_50mg", "Ven_jPMOEt_100mg")),
+                QuantUMS.score = factor(QuantUMS.score,
+                                        levels = c("No score", "pgQ ≥ 0.75", "pgQ + eQ ≥ 0.75"))
+                )
+
+
+write_rds(variance_mtx_combined, "Rdata/variance_mtx_combined.rds")
+
+# list of proteins with low variance
+low_variance_proteins <- variance_mtx_combined %>% 
+  dplyr::filter(var_group == "Low") %>%
+  dplyr::select(protein) %>% 
+  distinct()
+
+high_var_proteins_count <- variance_mtx_combined %>%
+  dplyr::filter(var_group == "High") %>%
+  distinct(protein, condition, QuantUMS.score) %>%
+  group_by(condition, QuantUMS.score) %>%
+  summarise(proteins = n()) %>%
+  dplyr::arrange(condition) %>%
+  ggplot(aes(x = proteins, 
+             y = condition, 
+             fill = QuantUMS.score)) +
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  geom_text(aes(label = proteins,
+                hjust = ifelse(proteins > 250, 1.1, -0.1)),
+            size = 7, fontface = "bold",
+            show.legend = FALSE) +
+  scale_fill_manual(values = c("#FED789FF", "#023743FF", "#72874EFF")) +
+  labs(title = "QuantUMS score effect on high variance",
+      x = "Number of proteins with *S*<sup>2</sup> ≥ 1",
+      y = NULL,
+      fill = NULL) +
+  facet_wrap(~QuantUMS.score, scales = "free_x") +
+  theme_linedraw() +
+  theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5),
+    axis.text = element_text(size = 15, color = "black", face = "bold"),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    axis.ticks = element_line(),
+    axis.title = element_markdown(size = 15, color = "black", face = "bold"),
+    line = element_blank(),
+    strip.background = element_blank(),
+    strip.text = element_text(size = 20, face = "bold", color = "black")
+    )
+
+medium_var_proteins_count <- variance_mtx_combined %>% 
+  filter(var_group == "Medium") %>%
+  distinct(protein, condition, QuantUMS.score) %>%
+  group_by(condition, QuantUMS.score) %>%
+  summarise(proteins = n()) %>%
+  dplyr::arrange(condition) %>%
+  ggplot(aes(x = proteins, 
+             y = condition, 
+             fill = QuantUMS.score)) +
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  geom_text(aes(label = proteins,
+                hjust = ifelse(proteins > 145, 1.1, -0.1)),
+            size = 7, fontface = "bold",
+            show.legend = FALSE) +
+  scale_fill_manual(values = c("#FED789FF", "#023743FF", "#72874EFF")) +
+  labs(title = "QuantUMS score effect on medium variance",
+      x = "Number of proteins with 0.5 ≤ *S*<sup>2</sup> < 1",
+      y = NULL,
+      fill = NULL) +
+  facet_wrap(~QuantUMS.score, scales = "free_x") +
+  theme_linedraw() +
+  theme(plot.title = element_text(size = 25, face = "bold", hjust = 0.5),
+    axis.text = element_text(size = 15, color = "black", face = "bold"),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    axis.ticks = element_line(),
+    axis.title = element_markdown(size = 15, color = "black", face = "bold"),
+    line = element_blank(),
+    strip.background = element_blank(),
+    strip.text = element_text(size = 20, face = "bold", color = "black")
+    )
+
+high_var_proteins_filter_plot <- variance_mtx_combined %>% 
+  filter(var_group == "High") %>%
+  ggplot(aes(x = Sample,
+             y = Intensity,
+             fill = protein,
+             color = protein)
+         ) +
+  geom_line(aes(group = protein)) +
+  geom_point(shape = 21, alpha = 0.5, size = 2) +
+  scale_fill_viridis_d() +
+  scale_color_viridis_d() +
+  labs(title = "High variance proteins",
+    x = NULL,
+    y = "log2(Intensity)",
+    fill = NULL) +
+  facet_grid(QuantUMS.score~condition, scales = "free_x") +
+  theme_linedraw() +
+  theme(plot.title = element_text(size = 25, hjust = 0.5, face = "bold"),
+    axis.text = element_text(size = 15, color = "black", face = "bold"),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    axis.ticks = element_line(),
+    axis.title = element_text(size = 15, color = "black", face = "bold"),
+    legend.position = "none",
+    strip.text = element_text(size = 20, face = "bold", color = "black"),
+    strip.text.y = element_text(size = 15),
+    strip.background = element_blank(),
+    line = element_blank())
+
+medium_var_proteins_filter_plot <- variance_mtx_combined %>% 
+  dplyr::filter(var_group == "Medium") %>%
+  ggplot(aes(x = Sample,
+             y = Intensity,
+             fill = protein,
+             color = protein)
+         ) +
+  geom_line(aes(group = protein), alpha = 0.8) +
+  geom_point(shape = 21, alpha = 0.5, size = 2) +
+  scale_fill_viridis_d() +
+  scale_color_viridis_d() +
+  labs(title = "Medium variance proteins",
+    x = NULL,
+    y = "log2(Intensity)",
+    fill = NULL) +
+  facet_grid(QuantUMS.score~condition, scales = "free_x") +
+  theme_linedraw() +
+  theme(plot.title = element_text(size = 25, hjust = 0.5, face = "bold"),
+    axis.text = element_text(size = 15, color = "black", face = "bold"),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    axis.ticks = element_line(),
+    axis.title = element_text(size = 15, color = "black", face = "bold"),
+    legend.position = "none",
+    strip.text = element_text(size = 20, face = "bold", color = "black"),
+    strip.text.y = element_text(size = 15),
+    strip.background = element_blank(),
+    line = element_blank())
+```
+
+join the variance data with CV data
+
+```{r}
+var_cv_combined <- variance_mtx_combined %>%
+  inner_join(df_mat_cv, by = c("protein", "condition"))
+```
+
+plot the CV vs Intensity
+
+```{r}
+int_vs_cv_plot <- var_cv_combined %>% 
+  ggplot(aes(x = cv, 
+           y = Intensity, 
+           color = condition, 
+           fill = condition)) +
+  geom_point(shape = 21, size = 2, color = "black", alpha = 0.25) +
+  geom_smooth(aes(group = QuantUMS.score), method = "lm", se = FALSE) +
+  ggpubr::stat_cor(aes(x = cv,
+                       y = Intensity,
+                       label = after_stat(r.label)),
+                   color = "black", fontface = "bold",
+                   method = "spearman",
+                   size = 6,
+                   r.accuracy = 0.01,
+                   label.x = 10,
+                   label.y = 5) +
+  scale_fill_manual(values = c("#FED789FF", "#023743FF", "#72874EFF", "#476F84FF", "#A4BED5FF", "#453947FF", "#66C2A5", "#FC8D62", "#FFD92F", "#8DA0CB")) +
+  scale_color_manual(values = c("#FED789FF", "#023743FF", "#72874EFF", "#476F84FF", "#A4BED5FF", "#453947FF", "#66C2A5", "#FC8D62", "#FFD92F", "#8DA0CB")) +
+  labs(title = "Spearman's correlation",
+    y = "log2(Intensity)",
+       x = "Coefficient of variation (%)",
+       fill = NULL,
+       color = NULL) +
+  facet_grid(QuantUMS.score~condition) +
+  theme_linedraw() +
+  theme(plot.title = element_text(size = 25, hjust = 0.5, face = "bold"),
+    legend.position = "none",
+        axis.title = element_text(size = 20, face = "bold"),
+        axis.text = element_text(color = "black", size = 15, face = "bold"),
+        axis.ticks = element_line(),
+        strip.text = element_text(size = 20, face = "bold", color = "black"),
+        strip.background = element_blank(),
+        line = element_blank()
+  )
+```
+
+Stratify the matrices by variance
+
+```{r}
+high_var_long_data <- variance_mtx_combined %>% 
+  dplyr::filter(var_group == "High")
+
+medium_var_long_data <- variance_mtx_combined %>% 
+  dplyr::filter(var_group == "Medium")
+
+low_var_long_data <- variance_mtx_combined %>%
+  dplyr::filter(var_group == "Low")
+
+high_var_plot <- high_var_long_data %>% 
+  ggplot(aes(x = Sample,
+    y = Intensity,
+    color = protein,
+    fill = protein)
+    ) +
+  geom_line(aes(group = protein,
+                color = protein), alpha = 1) +
+  geom_point(size = 3, shape = 21, alpha = 0.5) +
+  scale_color_viridis_d() +
+  scale_fill_viridis_d() +
+  labs(title = "High variance",
+    x = NULL,
+       y = "log2(Intensity)",
+       fill = NULL) +
+  facet_wrap(~condition, ncol = 4, scales = "free_x") +
+  scale_x_discrete(label = c("r1", "r2", "r3")) +
+  theme_linedraw() +
+  theme(plot.title = element_text(size = 25, hjust = 0.5, face = "bold"),
+        axis.text = element_text(size = 14, color = "black", face = "bold"),
+        axis.title = element_text(size = 20, color = "black", face = "bold"),
+        axis.ticks = element_line(color = "black"),
+        legend.position = "none",
+        strip.text = element_text(size = 20, face = "bold", color = "black"),
+        strip.background = element_blank(),
+        line = element_blank())
+
+medium_var_plot <- medium_var_long_data %>% 
+  ggplot(aes(x = Sample,
+    y = Intensity,
+    color = protein,
+    fill = protein)
+    ) +
+  geom_line(aes(group = protein,
+                color = protein), alpha = 1) +
+  geom_point(size = 3, shape = 21, alpha = 0.5) +
+  scale_color_viridis_d() +
+  scale_fill_viridis_d() +
+  labs(title = "Medium variance",
+    x = NULL,
+       y = "log2(Intensity)",
+       fill = NULL) +
+  facet_wrap(~condition, ncol = 4, scales = "free_x") +
+  scale_x_discrete(label = c("r1", "r2", "r3")) +
+  theme_linedraw() +
+  theme(plot.title = element_text(size = 25, hjust = 0.5, face = "bold"),
+    axis.text = element_text(size = 14, color = "black", face = "bold"),
+    axis.title = element_text(size = 20, color = "black", face = "bold"),
+    axis.ticks = element_line(color = "black"),
+    legend.position = "none",
+    strip.text = element_text(size = 20, face = "bold", color = "black"),
+    strip.background = element_blank(),
+    line = element_blank())
+
+low_var_plot <- low_var_long_data %>% 
+  ggplot(aes(x = Sample,
+    y = Intensity,
+    color = condition)
+    ) +
+  geom_line(aes(group = protein), alpha = 0.1) +
+  geom_point(shape = 21, alpha = 0.5, size = 2) +
+  geom_boxplot(color = "black", alpha = 0.5,
+               width = 0.5, linewidth = 0.25) +
+  scale_color_viridis_d() +
+  scale_fill_viridis_d() +
+  labs(title = "Low variance",
+    x = NULL,
+       y = "log2(Intensity)",
+       fill = NULL) +
+  facet_wrap(~condition, ncol = 4, scales = "free_x") +
+  scale_x_discrete(label = c("r1", "r2", "r3")) +
+  theme_linedraw() +
+  theme(plot.title = element_text(size = 25, hjust = 0.5, face = "bold"),
+    axis.text = element_text(size = 14, color = "black", face = "bold"),
+    axis.title = element_text(size = 20, color = "black", face = "bold"),
+    axis.ticks = element_line(color = "black"),
+    legend.position = "none",
+    strip.text = element_text(size = 20, face = "bold", color = "black"),
+    strip.background = element_blank(),
+    line = element_blank())
+```
+
+# Feature selection using near zero variance filtering
+
+```{r}
+results_nzv <- select_genes_by_nzv(unique_genes,
+                      freqCut = 95/5,
+                      uniqueCut = 10,
+                      saveMetrics = TRUE,
+                      create_plots = TRUE)
+
+# Run the zero analysis and display the plot
+zero_analysis <- analyze_zeros(limma_mtx_nearZero_2mz_Hs,
+                               results_nzv_2mz_Hs$removed_genes,
+                               results_nzv_2mz_Hs$kept_genes)
+
+print(zero_analysis$plot)
+
+# Display plots
+grid.arrange(
+      results_nzv$plots$scatter,
+      results_nzv$plots$variance,
+      results_nzv$plots$meanvar,
+      results_nzv$plots$heatmap,
+      ncol = 2)
+```
+
+limma analysi using different filtering criteria
+
+```{r}
+high_score_pgQ_mtx <- diann_report %>% 
+  dplyr::filter(PG.MaxLFQ.Quality > 0.75) %>%
+  diann::diann_matrix(.,
+    id.header = "Protein.Group",
+    quantity.header = "Genes.MaxLFQ.Unique",
+    proteotypic.only = T,
+    pg.q = .01)
+
+high_score_eQ_mtx <- diann_report %>% 
+  dplyr::filter(Empirical.Quality > 0.75) %>% 
+    diann::diann_matrix(.,
+    id.header = "Protein.Group",
+    quantity.header = "Genes.MaxLFQ.Unique",
+    proteotypic.only = T,
+    pg.q = .01)
+
+high_score_qQ_mtx <- diann_report %>% 
+  dplyr::filter(Quantity.Quality > 0.75) %>% 
+    diann::diann_matrix(.,
+    id.header = "Protein.Group",
+    quantity.header = "Genes.MaxLFQ.Unique",
+    proteotypic.only = T,
+    pg.q = .01)
+
+high_score_combined_mtx <- diann_report %>%
+  dplyr::filter(PG.MaxLFQ.Quality > 0.75 & Empirical.Quality > 0.75) %>% 
+    diann::diann_matrix(.,
+    id.header = "Protein.Group",
+    quantity.header = "Genes.MaxLFQ.Unique",
+    proteotypic.only = T,
+    pg.q = .01)
+
+# Create a matrix for limma analysis
+limma_mtx <- log2(unique_genes) %>% 
+  as.data.frame()
+
+limma_mtx_pgQ <- log2(high_score_pgQ_mtx) %>% 
+  as.data.frame()
+
+limma_mtx_eQ <- log2(high_score_eQ_mtx) %>%
+  as.data.frame()
+
+limma_mtx_qQ <- log2(high_score_qQ_mtx) %>%
+  as.data.frame()
+
+limma_mtx_combined <- log2(high_score_combined_mtx) %>% 
+  as.data.frame()
+
+limma_mtx_low_variance <- log2(unique_genes) %>% 
+  as.data.frame() %>%
+  dplyr::filter(rownames(.) %in% low_variance_proteins$protein)
+
+# Create a design matrix for limma using the colnames(unique_genes)
+design_groups <- str_extract(colnames(limma_mtx), "NaCl|Actinonin_15mg|Actinonin_30mg|JPMOEt_50mg|JPMOEt_100mg|Venom|Ven_Actn_15mg|Ven_Actn_30mg|Ven_jPMOEt_50mg|Ven_jPMOEt_100mg") %>% 
+  factor(levels = c("NaCl", "Actinonin_15mg", "Actinonin_30mg", "JPMOEt_50mg", "JPMOEt_100mg", "Venom", "Ven_Actn_15mg", "Ven_Actn_30mg", "Ven_jPMOEt_50mg", "Ven_jPMOEt_100mg"))
+design <- model.matrix(~ 0 + design_groups)
+colnames(design) <- str_remove(colnames(design), "design_groups")
+
+# Create a contrast matrix to compare the conditions
+contrast_matrix <- limma::makeContrasts(
+  Actinonin_15mg_vs_NaCl = Actinonin_15mg - NaCl,
+  Actinonin_30mg_vs_NaCl = Actinonin_30mg - NaCl,
+  JPMOEt_50mg_vs_NaCl = JPMOEt_50mg - NaCl,
+  JPMOEt_100mg_vs_NaCl = JPMOEt_100mg - NaCl,
+  Venom_vs_NaCl = Venom - NaCl,
+  Ven_Actn_15mg_vs_NaCl = Ven_Actn_15mg - NaCl,
+  Ven_Actn_30mg_vs_NaCl = Ven_Actn_30mg - NaCl,
+  Ven_jPMOEt_50mg_vs_NaCl = Ven_jPMOEt_50mg - NaCl,
+  Ven_jPMOEt_100mg_vs_NaCl = Ven_jPMOEt_100mg - NaCl,
+  Actinonin_15mg_vs_Actinonin_30mg = Actinonin_15mg - Actinonin_30mg,
+  JPMOEt_50mg_vs_JPMOEt_100mg = JPMOEt_50mg - JPMOEt_100mg,
+  Ven_Actn_15mg_vs_Venom = Ven_Actn_15mg - Venom,
+  Ven_Actn_30mg_vs_Venom = Ven_Actn_30mg - Venom,
+  Ven_jPMOEt_50mg_vs_Venom = Ven_jPMOEt_50mg - Venom,
+  Ven_jPMOEt_100mg_vs_Venom = Ven_jPMOEt_100mg - Venom,
+  levels = design
+)
+
+# Fit the linear model for different matrices
+# Raw data
+fit_raw <- limma::lmFit(limma_mtx,
+                    design,
+                    method = "ls")
+contrast_fit_raw <- limma::contrasts.fit(fit_raw,
+                                     contrast_matrix) %>% 
+  limma::eBayes()
+# eQ filtered data
+fit_eQ <- limma::lmFit(limma_mtx_eQ,
+                    design,
+                    method = "ls")
+contrast_fit_eQ <- limma::contrasts.fit(fit_eQ,
+                                     contrast_matrix) %>%
+  limma::eBayes()
+# qQ filtered data
+fit_qQ <- limma::lmFit(limma_mtx_qQ,
+                    design,
+                    method = "ls")
+contrast_fit_qQ <- limma::contrasts.fit(fit_qQ,
+                                     contrast_matrix) %>%
+  limma::eBayes()
+# pqQ filtered data
+fit_pgQ <- limma::lmFit(limma_mtx_pgQ,
+                    design,
+                    method = "ls")
+contrast_fit_pgQ <- limma::contrasts.fit(fit_pgQ,
+                                     contrast_matrix) %>%
+  limma::eBayes()
+
+# pgQ + eQ filtered data
+fit_combined <- limma::lmFit(limma_mtx_combined,
+                    design,
+                    method = "ls")
+contrast_fit_combined <- limma::contrasts.fit(fit_combined,
+                                     contrast_matrix) %>%
+  limma::eBayes()
+
+# Low variance filtered data
+fit_low_variance <- limma::lmFit(limma_mtx_low_variance,
+                    design,
+                    method = "ls")
+contrast_fit_low_variance <- limma::contrasts.fit(fit_low_variance,
+                                     contrast_matrix) %>%
+  limma::eBayes()
+```
+
+# Get the results for each contrast
+
+```{r}
+# Get the results for each contrast
+results_Actinonin_15mg_vs_NaCl_raw <- limma::topTable(contrast_fit_raw,
+                               coef = "Actinonin_15mg_vs_NaCl",
+                               number = Inf,
+                               adjust.method = "BH") %>% 
+  rownames_to_column("proteins") %>% 
+  dplyr::mutate(status = case_when(
+            logFC > 0.58 & adj.P.Val <= 0.05 ~ "Increased",
+            logFC < -0.58 & adj.P.Val <= 0.05 ~ "Decreased",
+            TRUE ~ "Not significant"),
+            status = factor(status, levels = c("Decreased", "Not significant", "Increased")),
+            condition = "Actn 15mg vs NaCl"
+  )
+results_Actinonin_30mg_vs_NaCl_raw <- limma::topTable(contrast_fit_raw,
+                               coef = "Actinonin_30mg_vs_NaCl",
+                               number = Inf,
+                               adjust.method = "BH") %>%
+  rownames_to_column("proteins") %>%
+  dplyr::mutate(status = case_when(
+            logFC > 0.58 & adj.P.Val <= 0.05 ~ "Increased",
+            logFC < -0.58 & adj.P.Val <= 0.05 ~ "Decreased",
+            TRUE ~ "Not significant"),
+            status = factor(status, levels = c("Decreased", "Not significant", "Increased")),
+            condition = "Actn 30mg vs NaCl"
+  )
+results_JPMOEt_50mg_vs_NaCl_raw <- limma::topTable(contrast_fit_raw,
+                               coef = "JPMOEt_50mg_vs_NaCl",
+                               number = Inf,
+                               adjust.method = "BH") %>%
+  rownames_to_column("proteins") %>%
+  dplyr::mutate(status = case_when(
+            logFC > 0.58 & adj.P.Val <= 0.05 ~ "Increased",
+            logFC < -0.58 & adj.P.Val <= 0.05 ~ "Decreased",
+            TRUE ~ "Not significant"),
+            status = factor(status, levels = c("Decreased", "Not significant", "Increased")),
+            condition = "JPM-OEt 50mg vs NaCl"
+  )
+results_JPMOEt_100mg_vs_NaCl_raw <- limma::topTable(contrast_fit_raw,
+                               coef = "JPMOEt_100mg_vs_NaCl",
+                               number = Inf,
+                               adjust.method = "BH") %>%
+  rownames_to_column("proteins") %>%
+  dplyr::mutate(status = case_when(
+            logFC > 0.58 & adj.P.Val <= 0.05 ~ "Increased",
+            logFC < -0.58 & adj.P.Val <= 0.05 ~ "Decreased",
+            TRUE ~ "Not significant"),
+            status = factor(status, levels = c("Decreased", "Not significant", "Increased")),
+            condition = "JPM-OEt 100mg vs NaCl"
+  )
+results_Venom_vs_NaCl_raw <- limma::topTable(contrast_fit_raw,
+                               coef = "Venom_vs_NaCl",
+                               number = Inf,
+                               adjust.method = "BH") %>%
+  rownames_to_column("proteins") %>%
+  dplyr::mutate(status = case_when(
+            logFC > 0.58 & adj.P.Val <= 0.05 ~ "Increased",
+            logFC < -0.58 & adj.P.Val <= 0.05 ~ "Decreased",
+            TRUE ~ "Not significant"),
+            status = factor(status, levels = c("Decreased", "Not significant", "Increased")),
+            condition = "Venom vs NaCl"
+  )
+results_Ven_Actn_15mg_vs_NaCl_raw <- limma::topTable(contrast_fit_raw,
+                               coef = "Ven_Actn_15mg_vs_NaCl",
+                               number = Inf,
+                               adjust.method = "BH") %>%
+  rownames_to_column("proteins") %>%
+  dplyr::mutate(status = case_when(
+            logFC > 0.58 & adj.P.Val <= 0.05 ~ "Increased",
+            logFC < -0.58 & adj.P.Val <= 0.05 ~ "Decreased",
+            TRUE ~ "Not significant"),
+            status = factor(status, levels = c("Decreased", "Not significant", "Increased")),
+            condition = "Venom + Actn 15mg vs NaCl"
+  )
+results_Ven_Actn_30mg_vs_NaCl_raw <- limma::topTable(contrast_fit_raw,
+                               coef = "Ven_Actn_30mg_vs_NaCl",
+                               number = Inf,
+                               adjust.method = "BH") %>%
+  rownames_to_column("proteins") %>%
+  dplyr::mutate(status = case_when(
+            logFC > 0.58 & adj.P.Val <= 0.05 ~ "Increased",
+            logFC < -0.58 & adj.P.Val <= 0.05 ~ "Decreased",
+            TRUE ~ "Not significant"),
+            status = factor(status, levels = c("Decreased", "Not significant", "Increased")),
+            condition = "Venom + Actn 30mg vs NaCl"
+  )
+results_Ven_jPMOEt_50mg_vs_NaCl_raw <- limma::topTable(contrast_fit_raw,
+                               coef = "Ven_jPMOEt_50mg_vs_NaCl",
+                               number = Inf,
+                               adjust.method = "BH") %>%
+  rownames_to_column("proteins") %>%
+  dplyr::mutate(status = case_when(
+            logFC > 0.58 & adj.P.Val <= 0.05 ~ "Increased",
+            logFC < -0.58 & adj.P.Val <= 0.05 ~ "Decreased",
+            TRUE ~ "Not significant"),
+            status = factor(status, levels = c("Decreased", "Not significant", "Increased")),
+            condition = "Venom + JPM-OEt 50mg vs NaCl"
+  )
+results_Ven_jPMOEt_100mg_vs_NaCl_raw <- limma::topTable(contrast_fit_raw,
+                               coef = "Ven_jPMOEt_100mg_vs_NaCl",
+                               number = Inf,
+                               adjust.method = "BH") %>%
+  rownames_to_column("proteins") %>%
+  dplyr::mutate(status = case_when(
+            logFC > 0.58 & adj.P.Val <= 0.05 ~ "Increased",
+            logFC < -0.58 & adj.P.Val <= 0.05 ~ "Decreased",
+            TRUE ~ "Not significant"),
+            status = factor(status, levels = c("Decreased", "Not significant", "Increased")),
+            condition = "Venom + JPM-OEt 100mg vs NaCl"
+  )
+results_Actinonin_15mg_vs_Actinonin_30mg_raw <- limma::topTable(contrast_fit_raw,
+                               coef = "Actinonin_15mg_vs_Actinonin_30mg",
+                               number = Inf,
+                               adjust.method = "BH") %>%
+  rownames_to_column("proteins") %>%
+  dplyr::mutate(status = case_when(
+            logFC > 0.58 & adj.P.Val <= 0.05 ~ "Increased",
+            logFC < -0.58 & adj.P.Val <= 0.05 ~ "Decreased",
+            TRUE ~ "Not significant"),
+            status = factor(status, levels = c("Decreased", "Not significant", "Increased")),
+            condition = "Actn 15mg vs Actn 30mg"
+  )
+results_JPMOEt_50mg_vs_JPMOEt_100mg_raw <- limma::topTable(contrast_fit_raw,
+                               coef = "JPMOEt_50mg_vs_JPMOEt_100mg",
+                               number = Inf,
+                               adjust.method = "BH") %>%
+  rownames_to_column("proteins") %>%
+  dplyr::mutate(status = case_when(
+            logFC > 0.58 & adj.P.Val <= 0.05 ~ "Increased",
+            logFC < -0.58 & adj.P.Val <= 0.05 ~ "Decreased",
+            TRUE ~ "Not significant"),
+            status = factor(status, levels = c("Decreased", "Not significant", "Increased")),
+            condition = "JPM-OEt 50mg vs JPM-OEt 100mg"
+  )
+results_Ven_Actn_15mg_vs_Venom_raw <- limma::topTable(contrast_fit_raw,
+                               coef = "Ven_Actn_15mg_vs_Venom",
+                               number = Inf,
+                               adjust.method = "BH") %>%
+  rownames_to_column("proteins") %>%
+  dplyr::mutate(status = case_when(
+            logFC > 0.58 & adj.P.Val <= 0.05 ~ "Increased",
+            logFC < -0.58 & adj.P.Val <= 0.05 ~ "Decreased",
+            TRUE ~ "Not significant"),
+            status = factor(status, levels = c("Decreased", "Not significant", "Increased")),
+            condition = "Venom + Actn 15mg vs Venom"
+  )
+results_Ven_Actn_30mg_vs_Venom_raw <- limma::topTable(contrast_fit_raw,
+                               coef = "Ven_Actn_30mg_vs_Venom",
+                               number = Inf,
+                               adjust.method = "BH") %>%
+  rownames_to_column("proteins") %>%
+  dplyr::mutate(status = case_when(
+            logFC > 0.58 & adj.P.Val <= 0.05 ~ "Increased",
+            logFC < -0.58 & adj.P.Val <= 0.05 ~ "Decreased",
+            TRUE ~ "Not significant"),
+            status = factor(status, levels = c("Decreased", "Not significant", "Increased")),
+            condition = "Venom + Actn 30mg vs Venom"
+  )
+results_Ven_jPMOEt_50mg_vs_Venom_raw <- limma::topTable(contrast_fit_raw,
+                               coef = "Ven_jPMOEt_50mg_vs_Venom",
+                               number = Inf,
+                               adjust.method = "BH") %>%
+  rownames_to_column("proteins") %>%
+  dplyr::mutate(status = case_when(
+            logFC > 0.58 & adj.P.Val <= 0.05 ~ "Increased",
+            logFC < -0.58 & adj.P.Val <= 0.05 ~ "Decreased",
+            TRUE ~ "Not significant"),
+            status = factor(status, levels = c("Decreased", "Not significant", "Increased")),
+            condition = "Venom + JPM-OEt 50mg vs Venom"
+  )
+results_Ven_jPMOEt_100mg_vs_Venom_raw <- limma::topTable(contrast_fit_raw,
+                               coef = "Ven_jPMOEt_100mg_vs_Venom",
+                               number = Inf,
+                               adjust.method = "BH") %>%
+  rownames_to_column("proteins") %>%
+  dplyr::mutate(status = case_when(
+            logFC > 0.58 & adj.P.Val <= 0.05 ~ "Increased",
+            logFC < -0.58 & adj.P.Val <= 0.05 ~ "Decreased",
+            TRUE ~ "Not significant"),
+            status = factor(status, levels = c("Decreased", "Not significant", "Increased")),
+            condition = "Venom + JPM-OEt 100mg vs Venom"
+  )
+
+# combined raw limma results
+combined_raw_limma_results <- bind_rows(
+  results_Actinonin_15mg_vs_NaCl_raw,
+  results_Actinonin_30mg_vs_NaCl_raw,
+  results_JPMOEt_50mg_vs_NaCl_raw,
+  results_JPMOEt_100mg_vs_NaCl_raw,
+  results_Venom_vs_NaCl_raw,
+  results_Ven_Actn_15mg_vs_NaCl_raw,
+  results_Ven_Actn_30mg_vs_NaCl_raw,
+  results_Ven_jPMOEt_50mg_vs_NaCl_raw,
+  results_Ven_jPMOEt_100mg_vs_NaCl_raw,
+  results_Actinonin_15mg_vs_Actinonin_30mg_raw,
+  results_JPMOEt_50mg_vs_JPMOEt_100mg_raw,
+  results_Ven_Actn_15mg_vs_Venom_raw,
+  results_Ven_Actn_30mg_vs_Venom_raw,
+  results_Ven_jPMOEt_50mg_vs_Venom_raw,
+  results_Ven_jPMOEt_100mg_vs_Venom_raw) %>% 
+  dplyr::mutate(score = "No score") %>% 
+  left_join(diann_report[, c("Protein.Group", "Genes")],
+                               by = c("proteins" = "Protein.Group")
+            )
+```
+
+# Plot the results
+
+```{r}
+# count the number of proteins in each status
+signif_proteins <- combined_raw_limma_results %>%
+  dplyr::filter(status != "Not significant") %>%
+  group_by(status, condition) %>%
+  dplyr::summarise(proteins = n())
+
+# Bland-Altman / Tukey Mean-Difference plot (MD plot)
+MD_plot <- ggplot(combined_raw_limma_results,
+                  aes(x = AveExpr,
+                      y = logFC,
+                      color = status)
+                  ) +
+  geom_point(alpha = 0.3) +
+  guides(color = guide_legend(override.aes = list(size = 5, alpha = 1)),
+         shape = guide_legend(override.aes = list(size = 5, alpha = 1))) +
+  geom_hline(yintercept = c(-0.58, 0.58), linetype = "dashed", color = "black") +
+  scale_color_manual(values = c("Decreased" = "steelblue",
+                                "Not significant" = "grey70",
+                                "Increased" = "firebrick")) +
+  facet_wrap(~condition, scales = "free", ncol = 6) +
+    geom_text(data = signif_proteins %>% 
+                dplyr::filter(status == "Decreased"),
+            aes(x = 8, y = -3, label = paste0(proteins)),
+            size = 8, fontface = "bold",
+            hjust = 0.5,
+            vjust = -1, 
+            show.legend = FALSE) +
+      geom_text(data = signif_proteins %>% 
+                dplyr::filter(status == "Increased"),
+            aes(x = 8, y = 2, label = paste0(proteins)),
+            size = 8, fontface = "bold",
+            hjust = 0.5,
+            vjust = -1, 
+            show.legend = FALSE) +
+    labs(title = "Bland-Altman plots of limma analysis",
+       x = "log<sub>2</sub>(Average protein abundance)",
+       y = "log<sub>2</sub>FC") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        text = element_text(size = 20),
+        legend.position = "bottom",
+        legend.title = element_blank(),
+        legend.box = "vertical",
+        strip.text = element_text(size = 15, face = "bold", color = "black"),
+        axis.text = element_text(color = "black"),
+        axis.title = element_markdown(size = 20, face = "bold"),
+        axis.ticks = element_line(color = "black"),
+        panel.border = element_rect(color = "black", 
+                                    fill = NA)
+        )
+
+# boxplot of log2FC
+boxplot_logFC <- combined_raw_limma_results %>%
+  ggplot(aes(y = condition,
+             x = logFC,
+             fill = condition)) +
+  geom_boxplot(outlier.alpha = 0.4, linewidth = 0.25, fill = "#476F84FF") +
+  geom_vline(xintercept = c(0), linetype = "dashed", color = "red") +
+  labs(y = NULL,
+       x = "log<sub>2</sub>FC") +
+  theme_minimal() +
+  theme(text = element_text(size = 20),
+        legend.position = "none",
+        strip.text = element_text(size = 20, face = "bold", color = "black"),
+        axis.text = element_text(color = "black"),
+        axis.title = element_markdown(size = 20, face = "bold"),
+        axis.ticks = element_line(color = "black"),
+        panel.border = element_rect(color = "black", fill=NA)
+        )
+```
+
+# Saving the figures for the report
+
+Figure 1
+
+```{r}
+Figure_1 <- (precursor_rt / mz_map_density_plot) + 
+  plot_annotation(tag_levels = "A") & 
+  theme(plot.tag = element_text(size = 30, face = "bold"))
+
+ggsave("Figure_1.png",
+    path = "plots", Figure_1,
+    width = 24, height = 20,
+    units = "in", dpi = 300)
+```
+
+Figure 2
+
+```{r}
+Figure_2 <- MS1_area
+
+ggsave("Figure_2.png",
+    path = "plots",
+    Figure_2,
+    width = 20,
+    height = 15,
+    units = "in",
+    dpi = 300)
+```
+
+Figure 3
+
+```{r}
+Figure_3 <- (peptides_plot | proteins_plot | free(sparsity_plot)) + 
+  plot_annotation(tag_levels = "A") & 
+  theme(plot.tag = element_text(size = 30, face = "bold"))
+
+ggsave("Figure_3.png",
+    path = "plots", Figure_3,
+    width = 25, height = 15,
+    units = "in", dpi = 300)
+```
+
+Figure 4
+
+```{r}
+Figure_4 <- (kmeans_clusters | pca_plot) + 
+  plot_annotation(tag_levels = "A") & 
+  theme(plot.tag = element_text(size = 30, face = "bold"))
+
+ggsave("Figure_4.png",
+    path = "plots", Figure_4,
+    width = 18, height = 10,
+    units = "in", dpi = 300)
+```
+
+Figure 5
+
+```{r}
+Figure_5 <- (cosine_similarity / cv_plot) + 
+  plot_annotation(tag_levels = "A") & 
+  theme(plot.tag = element_text(size = 30, face = "bold"))
+
+ggsave("Figure_5.png",
+    path = "plots", Figure_5,
+    width = 13, height = 18,
+    units = "in", dpi = 300)
+```
+
+Figure 6
+
+```{r}
+Figure_6 <- ((high_var_proteins_count | medium_var_proteins_count) / (high_var_proteins_filter_plot | medium_var_proteins_filter_plot)) + 
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag = element_text(size = 30, face = "bold"))
+
+ggsave("Figure_6.png",
+  path = "plots",
+  Figure_6,
+  width = 25,
+  height = 20,
+  units = "in",
+  dpi = 300)
+```
+
+Figure 7
+
+```{r}
+Figure_7 <- (QuantUMS_evaluation / PG_MaxLFQ_quality) + 
+  plot_annotation(tag_levels = "A") & 
+  theme(plot.tag = element_text(size = 35, face = "bold"))
+
+ggsave("Figure_7.png",
+    path = "plots", Figure_7,
+    width = 30, height = 30,
+    units = "in", dpi = 300)
+```
+
+Figure 8
+
+```{r}
+Figure_8 <- (free(iBAQ_plot) / boxplot_logFC) + 
+  plot_annotation(tag_levels = "A") & 
+  theme(plot.tag = element_text(size = 30, face = "bold"))
+
+ggsave("Figure_8.png",
+    path = "plots", Figure_8,
+    width = 22, height = 15,
+    units = "in", dpi = 300)
+```
+
+Figure 9
+
+```{r}
+Figure_9 <- MD_plot
+
+ggsave("Figure_9.png",
+    path = "plots", Figure_9,
+    width = 25, height = 12,
+    units = "in", dpi = 300,
+    bg = "white")
+```
