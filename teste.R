@@ -25,7 +25,7 @@ packages_activate <- function() {
 # Helper functions
 
 # Return a dataset with the coefficients of variation
-cv_matrix <- function(data, condition) {
+CV_Matrix <- function(data, condition) {
   
   df <- as.data.frame(data)
   
@@ -45,7 +45,8 @@ cv_matrix <- function(data, condition) {
                            condition = condition)
   
   
-  #TODO: Não dá pra usar o apply (protein_missingness) ao invés de usar o rowwise + mutate + select?
+  #TODO: Não dá pra usar o apply (protein_missingness) 
+  # ao invés de usar o rowwise + mutate + select?
   
   return(
     dplyr::select(mutated,
@@ -55,18 +56,27 @@ cv_matrix <- function(data, condition) {
     )
 }
 
-# Return a dataset without lines with a missingness above a threhold
-protein_missingness <- function(data, threhold) {
-  
+
+# This function works to remove the proteins with more 
+# than a specific percentage of missing values
+RemoveMissingAboveThreshold <- function(data, threshold) {
   df <- as.data.frame(data)
- 
-  # Add the mean of missingness (NA) per line
-  missingness = dplyr::mutate(df,
-                              prot_miss = apply(df, 1, mean(df))
-                              )
-   
-  dplyr::filter(prot_miss)
   
+  MeanOfMissing <- function(df) {
+    return(
+      mean(is.na(df))
+    )
+  }
+  
+  addedMissingness = 
+    dplyr::mutate(df,
+                  prot_miss = apply(df,1,MeanOfMissing)
+    )
+  
+  return(
+    dplyr::filter(addedMissingness,
+                  prot_miss > threshold)
+  )
 }
 
 

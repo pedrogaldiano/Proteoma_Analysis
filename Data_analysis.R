@@ -13,8 +13,6 @@
 
 ## ABSTRACT
 
-C:\Users\pgc\Documents\ic_urina\data\DIANN_results
-
 library(diann) # to extract the MaxLFQ matrix from DIANN report
 library(arrow) # to read the report.parquet file
 library(here) # to avoid the need for use the path while loading the data
@@ -62,21 +60,28 @@ cv_mtx <- function(data, condition) {
     dplyr::select(protein,str_subset(colnames(data), condition), cv, condition)
 }
 
-# This function will create a column to store the percentage of missing values for each protein
-protein_missingness <- function(x) {
-    missingness_prop <- function(x) {
-        sum(is.na(x)) / length(x) # calculate the percentage of missing values
-    }
-    x <- as.data.frame(x) %>% # convert the matrix to a dataframe
-    dplyr::mutate(prot_miss = apply(x, 1, missingness_prop)) # apply the missingness_prop function to each row
-}
+
+# ---- cima ----
 
 # This function works to remove the proteins with more than a specific percentage of missing values
-remove_missing <- function(x, threshold) {
-    x <- as.data.frame(x) %>% # convert the matrix to a dataframe (just to make sure you are working with a dataframe)
-    dplyr::filter(prot_miss <= threshold) %>% # filter the proteins with less than or equal to the threshold
-    dplyr::select(-prot_miss) %>% # remove the prot_miss column
-    as.matrix() # convert the dataframe back to a matrix
+RemoveMissingAboveThreshold <- function(data, threshold) {
+  df <- as.data.frame(data)
+  
+  MeanOfMissing <- function(df) {
+    return(
+      mean(is.na(df))
+      )
+  }
+  
+  addedMissingness = 
+    dplyr::mutate(df,
+                  prot_miss = apply(df,1,MeanOfMissing)
+                  )
+  
+  return(
+    dplyr::filter(addedMissingness,
+                  prot_miss > threshold)
+  )
 }
 
 
@@ -84,7 +89,7 @@ remove_missing <- function(x, threshold) {
 #We filter the data using Lib.PG.Q.Value ≤ 0.01, Lib.Q.Value ≤ 0.01, and PG.Q.Value ≤ 0.01 for the analysis.
 
 
-diann_report <- arrow::read_parquet("report.parquet") %>%
+diann_report <- arrow::read_parquet("../data/DIANN_results/report.parquet") %>%
     dplyr::filter(Lib.PG.Q.Value <= 0.01 & Lib.Q.Value <= 0.01 & PG.Q.Value <= 0.01) %>%
     dplyr::mutate(
       Run = case_when(
@@ -336,8 +341,11 @@ quantums_mtx_sparsity_plot <- quantums_mtx %>%
         panel.background = element_blank()
     )
 
-abundance_mtx_reduced <- protein_missingness(quantums_mtx[, -1]) %>% 
-    remove_missing(threshold = 0.3)
+# ---- baixo ----
+abundance_mtx_reduced <- RemoveMissingAboveThreshold(quantums_mtx[, -1], threshold = 0.3)
+  
+
+
 
 quantums_mtx_sparsity_reduced_plot <- abundance_mtx_reduced %>% 
     as.data.frame() %>%
