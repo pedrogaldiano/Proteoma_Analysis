@@ -48,6 +48,8 @@ CV_Matrix <- function(data, condition) {
   #TODO: Não dá pra usar o apply (protein_missingness) 
   # ao invés de usar o rowwise + mutate + select?
   
+  Cat("Coefficient of variation calculated for each protein (row)\n")
+  
   return(
     dplyr::select(mutated,
                   protein,
@@ -72,6 +74,11 @@ RemoveMissingAboveThreshold <- function(data, threshold) {
     dplyr::mutate(df,
                   prot_miss = apply(df,1,MeanOfMissing)
     )
+  
+  Cat("Proteins with missingness above",
+      threshold,
+      "were removed from dataset\n"
+      )
   
   return(
     dplyr::filter(addedMissingness,
