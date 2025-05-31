@@ -13,7 +13,7 @@
 
 ## ABSTRACT
 
-
+C:\Users\pgc\Documents\ic_urina\data\DIANN_results
 
 library(diann) # to extract the MaxLFQ matrix from DIANN report
 library(arrow) # to read the report.parquet file
