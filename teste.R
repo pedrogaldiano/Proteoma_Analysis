@@ -1,6 +1,6 @@
 
 # Load all packages
-packages_activate <- function() {
+ActivePackages <- function() {
   library(diann) # to extract the MaxLFQ matrix from DIANN report
   library(arrow) # to read the report.parquet file
   library(here) # to avoid the need for use the path while loading the data
@@ -19,7 +19,7 @@ packages_activate <- function() {
   library(limma)  # to calculate the differential abundance
   library(DIAgui) # to extract iBAQ values
   
-  cat("All the necessary packages were activated.")
+  cat("All the necessary packages were activated.\n")
 }
 
 # Helper functions
@@ -38,24 +38,15 @@ CV_Matrix <- function(data, condition) {
   mutated <- dplyr::mutate(selected_rowwise,
                            across(where(is.numeric),~2^(.) - 1),
                            cv = 100 * 
-                            (
-                              sd(c_across(where(is.numeric)),na.rm = TRUE) /
-                              mean(c_across(where(is.numeric)),na.rm = TRUE)
-                            ),
+                             (
+                               sd(c_across(where(is.numeric)),na.rm = TRUE) /
+                                 mean(c_across(where(is.numeric)),na.rm = TRUE)
+                             ),
                            condition = condition)
-  
-  
-  #TODO: Não dá pra usar o apply (protein_missingness) 
-  # ao invés de usar o rowwise + mutate + select?
   
   Cat("Coefficient of variation calculated for each protein (row)\n")
   
-  return(
-    dplyr::select(mutated,
-                  protein,
-                  cv,
-                  condition)
-    )
+  return(dplyr::select(mutated, protein, cv, condition))
 }
 
 
@@ -65,29 +56,47 @@ RemoveMissingAboveThreshold <- function(data, threshold) {
   df <- as.data.frame(data)
   
   MeanOfMissing <- function(df) {
-    return(
-      mean(is.na(df))
-    )
+    return(mean(is.na(df)))
   }
   
-  addedMissingness = 
-    dplyr::mutate(df,
-                  prot_miss = apply(df,1,MeanOfMissing)
-    )
-  
-  Cat("Proteins with missingness above",
-      threshold,
-      "were removed from dataset\n"
-      )
-  
-  return(
-    dplyr::filter(addedMissingness,
-                  prot_miss > threshold)
+  addedMissingness = dplyr::mutate(df,
+                                   prot_miss = apply(df,1,MeanOfMissing)
   )
+  
+  Cat("Proteins with missingness above", threshold, "were removed from dataset\n")
+  
+  return(dplyr::filter(addedMissingness, prot_miss > threshold))
 }
 
 
+# fig 1
+# precursor_rt
+# diann_report ok
 
+
+DiannReport <- function(labels, levels, directory = "..data/DIANN_results/") {
+  
+  labels <- as.character(labels)
+  levels <- as.character(levels)
+  
+  report <- arrow::read_parquet(paste(directory, "report.parquet", sep=""))
+  
+  reportFiltered <- dplyr::filter(report,
+                                  Lib.PG.Q.Value <= 0.01 
+                                  & Lib.Q.Value <= 0.01 
+                                  & PG.Q.Value <= 0.01)
+  
+  
+  reportRecoded <- dplyr::mutate(reportFiltered,
+                                Run = recode(Run, !!!run_labels),
+                                Run = factor(Run, levels = runLevels),
+                                condition = str_remove(Run, " r1| r2| r3"),
+                                File.Name = Run,
+                                peptide_length = nchar(Stripped.Sequence)
+  )
+  
+  return(dplyr::filter(reportRecoded, str_detect(Protein.Names, "MOUSE")))
+}
 
 
 

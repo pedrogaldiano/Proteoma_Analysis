@@ -23,6 +23,51 @@ source("teste.R")
 packages_activate() #Load all the dependencies
 
 
+labels <- c(
+  P1_02 = "Venom r1",
+  P1_03 = "Venom r2",
+  P1_04 = "Actinonin 30 mg r1",
+  P1_05 = "Actinonin 30 mg r2",
+  P1_07 = "Ven + Actn 30 mg r1",
+  P1_08 = "Ven + Actn30 mg r2",
+  P1_09 = "Ven + Actn_30 mg r3",
+  P1_10 = "JPMOEt 100 mg r1",
+  P1_11 = "JPMOEt 100 mg r2",
+  P1_12 = "JPMOEt 100 mg r3",
+  P1_13 = "Ven + jPMOEt 100 mg r1",
+  P1_14 = "Ven + jPMOEt 100 mg r2",
+  P1_15 = "Ven + jPMOEt 100 mg r3",
+  P2_01 = "NaCl r1",
+  P2_02 = "NaCl r2",
+  P2_03 = "NaCl r3",
+  P2_04 = "Actinonin 15 mg r1",
+  P2_05 = "Actinonin 15 mg r2",
+  P2_06 = "Actinonin 15 mg r3",
+  P2_07 = "Ven + Actn 15 mg r1",
+  P2_08 = "Ven + Actn 15 mg r2",
+  P2_09 = "Ven + Actn 15 mg r3",
+  P2_11 = "JPMOEt 50 mg r1",
+  P2_12 = "JPMOEt 50 mg r2",
+  P2_13 = "Ven + jPMOEt 50 mg r1",
+  P2_14 = "Ven + jPMOEt 50 mg r2",
+  P2_15 = "Ven + jPMOEt 50 mg r3"
+)
+                
+levels <- c(
+  "NaCl_r1", "NaCl_r2", "NaCl_r3",
+  "Actinonin_15mg_r1", "Actinonin_15mg_r2", "Actinonin_15mg_r3",
+  "Actinonin_30mg_r1", "Actinonin_30mg_r2", 
+  "JPMOEt_50mg_r1", "JPMOEt_50mg_r2",
+  "JPMOEt_100mg_r1", "JPMOEt_100mg_r2", "JPMOEt_100mg_r3",
+  "Venom_r1", "Venom_r2",
+  "Ven_Actn_15mg_r1", "Ven_Actn_15mg_r2", "Ven_Actn_15mg_r3",
+  "Ven_Actn_30mg_r1", "Ven_Actn_30mg_r2", "Ven_Actn_30mg_r3",
+  "Ven_jPMOEt_50mg_r1", "Ven_jPMOEt_50mg_r2", "Ven_jPMOEt_50mg_r3",
+  "Ven_jPMOEt_100mg_r1", "Ven_jPMOEt_100mg_r2", "Ven_jPMOEt_100mg_r3")
+
+
+
+
 
 ```
 
