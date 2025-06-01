@@ -61,7 +61,6 @@ cv_mtx <- function(data, condition) {
 }
 
 
-# ---- cima ----
 
 # This function works to remove the proteins with more than a specific percentage of missing values
 RemoveMissingAboveThreshold <- function(data, threshold) {
@@ -88,56 +87,71 @@ RemoveMissingAboveThreshold <- function(data, threshold) {
 # Import and filter the report.parquet file from DIA-NN v2.1.0 search
 #We filter the data using Lib.PG.Q.Value ≤ 0.01, Lib.Q.Value ≤ 0.01, and PG.Q.Value ≤ 0.01 for the analysis.
 
+# diann_report <- arrow::read_parquet("../data/DIANN_results/report.parquet")
 
-diann_report <- arrow::read_parquet("../data/DIANN_results/report.parquet") %>%
-    dplyr::filter(Lib.PG.Q.Value <= 0.01 & Lib.Q.Value <= 0.01 & PG.Q.Value <= 0.01) %>%
-    dplyr::mutate(
-      Run = case_when(
-      Run == "P1_02" ~ "Venom_r1",
-      Run == "P1_03" ~ "Venom_r2",
-      Run == "P1_04" ~ "Actinonin_30mg_r1",
-      Run == "P1_05" ~ "Actinonin_30mg_r2",
-      Run == "P1_07" ~ "Ven_Actn_30mg_r1",
-      Run == "P1_08" ~ "Ven_Actn_30mg_r2",
-      Run == "P1_09" ~ "Ven_Actn_30mg_r3",
-      Run == "P1_10" ~ "JPMOEt_100mg_r1",
-      Run == "P1_11" ~ "JPMOEt_100mg_r2",
-      Run == "P1_12" ~ "JPMOEt_100mg_r3",
-      Run == "P1_13" ~ "Ven_jPMOEt_100mg_r1",
-      Run == "P1_14" ~ "Ven_jPMOEt_100mg_r2",
-      Run == "P1_15" ~ "Ven_jPMOEt_100mg_r3",
-      Run == "P2_01" ~ "NaCl_r1",
-      Run == "P2_02" ~ "NaCl_r2",
-      Run == "P2_03" ~ "NaCl_r3",
-      Run == "P2_04" ~ "Actinonin_15mg_r1",
-      Run == "P2_05" ~ "Actinonin_15mg_r2",
-      Run == "P2_06" ~ "Actinonin_15mg_r3",
-      Run == "P2_07" ~ "Ven_Actn_15mg_r1",
-      Run == "P2_08" ~ "Ven_Actn_15mg_r2",
-      Run == "P2_09" ~ "Ven_Actn_15mg_r3",
-      Run == "P2_11" ~ "JPMOEt_50mg_r1",
-      Run == "P2_12" ~ "JPMOEt_50mg_r2",
-      Run == "P2_13" ~ "Ven_jPMOEt_50mg_r1",
-      Run == "P2_14" ~ "Ven_jPMOEt_50mg_r2",
-      Run == "P2_15" ~ "Ven_jPMOEt_50mg_r3"),
-    Run = factor(Run, levels = c(
-      "NaCl_r1", "NaCl_r2", "NaCl_r3", "Actinonin_15mg_r1", "Actinonin_15mg_r2", "Actinonin_15mg_r3",
-      "Actinonin_30mg_r1", "Actinonin_30mg_r2", "JPMOEt_50mg_r1", "JPMOEt_50mg_r2",
-      "JPMOEt_100mg_r1", "JPMOEt_100mg_r2", "JPMOEt_100mg_r3",
-      "Venom_r1", "Venom_r2",
-      "Ven_Actn_15mg_r1", "Ven_Actn_15mg_r2", "Ven_Actn_15mg_r3",
-      "Ven_Actn_30mg_r1", "Ven_Actn_30mg_r2", "Ven_Actn_30mg_r3",
-      "Ven_jPMOEt_50mg_r1", "Ven_jPMOEt_50mg_r2", "Ven_jPMOEt_50mg_r3",
-      "Ven_jPMOEt_100mg_r1", "Ven_jPMOEt_100mg_r2", "Ven_jPMOEt_100mg_r3")
-    ),
-    condition = str_remove(Run, "_r1|_r2|_r3"),
-        File.Name = Run,
-        peptide_length = nchar(Stripped.Sequence)
-    ) %>% 
-  dplyr::filter(str_detect(Protein.Names, "MOUSE", negate = FALSE))
+report <- arrow::read_parquet("../data/DIANN_results/report.parquet")
+
+reportFiltered <- 
+  dplyr::filter(report,
+                Lib.PG.Q.Value <= 0.01 & Lib.Q.Value <= 0.01 & PG.Q.Value <= 0.01)
+
+
+labels <- c(
+  P1_02 = "Venom r1",
+  P1_03 = "Venom r2",
+  P1_04 = "Actn 30 mg r1",
+  P1_05 = "Actn 30 mg r2",
+  P1_07 = "Ven + Actn 30 mg r1",
+  P1_08 = "Ven + Actn 30 mg r2",
+  P1_09 = "Ven + Actn 30 mg r3",
+  P1_10 = "JPM-OEt 100 mg r1",
+  P1_11 = "JPM-OEt 100 mg r2",
+  P1_12 = "JPM-OEt 100 mg r3",
+  P1_13 = "Ven + JPM-OEt 100 mg r1",
+  P1_14 = "Ven + JPM-OEt 100 mg r2",
+  P1_15 = "Ven + JPM-OEt 100 mg r3",
+  P2_01 = "NaCl r1",
+  P2_02 = "NaCl r2",
+  P2_03 = "NaCl r3",
+  P2_04 = "Actn 15 mg r1",
+  P2_05 = "Actn 15 mg r2",
+  P2_06 = "Actn 15 mg r3",
+  P2_07 = "Ven + Actn 15 mg r1",
+  P2_08 = "Ven + Actn 15 mg r2",
+  P2_09 = "Ven + Actn 15 mg r3",
+  P2_11 = "JPM-OEt 50 mg r1",
+  P2_12 = "JPM-OEt 50 mg r2",
+  P2_13 = "Ven + JPM-OEt 50 mg r1",
+  P2_14 = "Ven + JPM-OEt 50 mg r2",
+  P2_15 = "Ven + JPM-OEt 50 mg r3"
+)
+
+levels <- c(
+  "NaCl r1", "NaCl r2", "NaCl r3",
+  "Actn 15 mg r1", "Actn 15 mg r2", "Actn 15 mg r3",
+  "Actn 30 mg r1", "Actn 30 mg r2", 
+  "JPM-OEt 50 mg r1", "JPM-OEt 50 mg r2",
+  "JPM-OEt 100 mg r1", "JPM-OEt 100 mg r2", "JPM-OEt 100 mg r3",
+  "Venom r1", "Venom r2",
+  "Ven + Actn 15 mg r1", "Ven + Actn 15 mg r2", "Ven + Actn 15 mg r3",
+  "Ven + Actn 30 mg r1", "Ven + Actn 30 mg r2", "Ven + Actn 30 mg r3",
+  "Ven + JPM-OEt 50 mg r1", "Ven + JPM-OEt 50 mg r2", "Ven + JPM-OEt 50 mg r3",
+  "Ven + JPM-OEt 100 mg r1", "Ven + JPM-OEt 100 mg r2", "Ven + JPM-OEt 100 mg r3")
+
+renameandshit <- dplyr::mutate(reportFiltered,
+                               Run = recode(Run, !!!labels),
+                               Run = factor(Run, levels = levels),
+                               condition = str_remove(Run, " r1| r2| r3"),
+                               File.Name = Run,
+                               peptide_length = nchar(Stripped.Sequence)
+)
+
+diann_report <- dplyr::filter(
+  renameandshit,str_detect(Protein.Names, "MOUSE"))
+
 
 # extracting the matrix of abundance from DIA-NN report.parquet file
-unique_genes <- diann::diann_matrix(diann_report,
+unique_genes3 <- diann::diann_matrix(diann_report,
     id.header = "Protein.Group",
     quantity.header = "Genes.MaxLFQ.Unique",
     proteotypic.only = T,
@@ -162,26 +176,9 @@ proteins <- diann_report %>%
 
 # Reconstruction of the ion chromatograms, the precursor quantity is plotted over the retention time (min) for each sample.
 
-
+#TODO: Parei aqui, não entendo nada dos ggs da vida
 precursor_rt <- diann_report %>%
-  dplyr::mutate(Run = str_replace(Run, "Ven_Actn", "Ven + Actn"),
-                Run = str_replace(Run, "Ven_jPMOEt", "Ven + jPMOEt"),
-                Run = str_replace(Run, "_", " "),
-                Run = str_replace(Run, "mg", " mg"),
-                Run = str_replace(Run, "Actinonin", "Actn"),
-                Run = str_replace(Run, "JPMOEt", "JPM-OEt"),
-                Run = str_replace(Run, "jPMOEt", "JPM-OEt"),
-                Run = str_replace(Run, "_r", " r"),
-                Run = str_replace(Run, "OEt_", "OEt "),
-                Run = str_replace(Run, "Actn_", "Actn "),
-  ) %>% 
     ggplot(aes(x = RT, y = Precursor.Quantity)) +
-      geom_rect(aes(xmin = 14, xmax = 15.3, ymin = -Inf, ymax = Inf),
-              fill = "grey80", alpha = 0.1) +
-      geom_rect(aes(xmin = 40, xmax = 42, ymin = -Inf, ymax = Inf),
-              fill = "grey80", alpha = 0.1) +
-      geom_rect(aes(xmin = 50.5, xmax = 51.5, ymin = -Inf, ymax = Inf),
-              fill = "grey80", alpha = 0.1) +
     geom_line(aes(color = condition), show.legend = FALSE) +
   scale_color_manual(values = c("#FED789FF", "#023743FF", "#72874EFF", "#476F84FF", "#A4BED5FF", "#453947FF", "#66C2A5", "#FC8D62", "#FFD92F", "#8DA0CB")) +
     labs(x = "Retention time (min)",
@@ -192,6 +189,16 @@ precursor_rt <- diann_report %>%
         panel.border = element_rect(color = "black", fill = NA),
         panel.background = element_blank()
         )
+
+
+Figure_1 <- (precursor_rt) +
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag = element_text(size = 30, face = "bold"))
+
+ggsave("Figure_1.png",
+    path = "plots", Figure_1,
+    width = 24, height = 20,
+    units = "in", dpi = 300)
 
 
 # For the m/z map, the density of ions collected is plotted over the scan range (m/z) for each sample.
@@ -341,7 +348,6 @@ quantums_mtx_sparsity_plot <- quantums_mtx %>%
         panel.background = element_blank()
     )
 
-# ---- baixo ----
 abundance_mtx_reduced <- RemoveMissingAboveThreshold(quantums_mtx[, -1], threshold = 0.3)
   
 
