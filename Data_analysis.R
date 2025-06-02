@@ -151,7 +151,7 @@ diann_report <- dplyr::filter(
 
 
 # extracting the matrix of abundance from DIA-NN report.parquet file
-unique_genes3 <- diann::diann_matrix(diann_report,
+unique_genes <- diann::diann_matrix(diann_report,
     id.header = "Protein.Group",
     quantity.header = "Genes.MaxLFQ.Unique",
     proteotypic.only = T,
@@ -169,34 +169,33 @@ quantums_mtx <- diann_report %>%
 # count the number of proteins per sample and save it in a new data frame called proteins
 proteins <- diann_report %>%
     dplyr::group_by(Run, condition) %>%
-    dplyr::summarise(
-        n_proteins = n_distinct(Protein.Ids)
-    )
-
+      dplyr::summarise(
+          n_proteins = n_distinct(Protein.Ids)
+      )
 
 # Reconstruction of the ion chromatograms, the precursor quantity is plotted over the retention time (min) for each sample.
 
-#TODO: Parei aqui, não entendo nada dos ggs da vida
+
 precursor_rt <- diann_report %>%
     ggplot(aes(x = RT, y = Precursor.Quantity)) +
     geom_line(aes(color = condition), show.legend = FALSE) +
   scale_color_manual(values = c("#FED789FF", "#023743FF", "#72874EFF", "#476F84FF", "#A4BED5FF", "#453947FF", "#66C2A5", "#FC8D62", "#FFD92F", "#8DA0CB")) +
     labs(x = "Retention time (min)",
         y = "Precursor quantity",
-        color = NULL) +
+          color = NULL) +
   facet_wrap(~Run, ncol = 6, scales = "free") +
   theme(strip.background = element_blank(),
         panel.border = element_rect(color = "black", fill = NA),
         panel.background = element_blank()
         )
 
-
 Figure_1 <- (precursor_rt) +
   plot_annotation(tag_levels = "A") &
   theme(plot.tag = element_text(size = 30, face = "bold"))
 
-ggsave("Figure_1.png",
-    path = "plots", Figure_1,
+ggsave(filename = "this.png",
+    path = "plots",
+    plot = Figure_1,
     width = 24, height = 20,
     units = "in", dpi = 300)
 
