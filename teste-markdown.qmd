@@ -249,7 +249,11 @@ cat("\n\nGraph ",quote(precursorRT_and_mzMapDensity),".png were created.\n", sep
 
 
 diannReportByRun <- dplyr::group_by(DiannReport(labels),Run, condition) %>% 
-  dplyr::summarise(n_peptides = n_distinct(Stripped.Sequence))
+  dplyr::summarise(n_peptides = n_distinct(Stripped.Sequence),
+                   n_proteins = n_distinct(Protein.Ids))
+
+
+#TODO: get the proteins_plot, it's probably a good idea to create a generic function for both plots
 
 # Counting the number of peptides per sample
 peptides_plot <- diannReportByRun %>% 
