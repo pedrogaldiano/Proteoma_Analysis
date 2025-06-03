@@ -233,8 +233,6 @@ mz_map_density_plot <- diann_report %>%
 
 
 # Counting the number of peptides per sample
-
-
 peptides_plot <- diann_report %>%
     dplyr::mutate(Run = str_replace(Run, "Ven_Actn", "Ven + Actn"),
                 Run = str_replace(Run, "Ven_jPMOEt", "Ven + JPM-OEt"),
