@@ -15,9 +15,10 @@ editor_options:
 
 Envenomation by *Bothrops jararaca* is considered a neglected disease by the World Health Organization that causes high morbidity and mortality. Among the main causes of mortality due to *Bothrops* envenomation is acute renal failure. Investigations of the proteome by mass spectrometry in plasma or renal tissue samples in murine models suggest potential candidates for markers of acute renal injury, such as the proteins NGAL and ITIH4. A less explored approach to search for markers of renal injury is the investigation of post translation modifications of proteins excreted in the urine of envenomed individuals. Elevated plasma urea levels are a striking feature among the changes commonly detected in blood samples from individuals who have been victims of snakebite. Uremia can be a sign of deterioration of renal function and can be associated with carbamylation of the amino terminus of proteins and the side chain of Lys residues. Carbamylation is a hallmark of aging that can be detected in the proteome, but it is underestimated as a hallmark of diseases that evolve with elevated urea. The present project aims to investigate the carbamylation profile of proteins excreted in 24-hour urine of animals injected with *B. jararaca* venom. The *in vivo* experiment with Swiss mice was conducted at the Laboratory of Applied Toxinology of Butantan Institute and the present project proposes the evaluation of urine samples from animals injected with 1.6 mg/kg of *B. jararaca* venom, pretreated with cathepsin or meprin inhibitors. The samples were reduced with 5 mM TCEP, alkylated with 20 mM chloroacetamide and digested with trypsin (1:100) using the SP3 protocol (Single-Pot, Solid-Phase-enhanced Sample Preparation). The samples were analyzed in the Vanquish Neo – Obritrap Exploris 480 system in data-independent acquisition (DIA) mode. Peptide identifications and protein inference were performed using the DIA-NN v2.1.0 search engine with the *Mus musculus* reference database containing only canonical sequences. Statistical analyses were performed using R version 4.2.2 with scripts developed specifically for the project.
 
-M
-# Load source file and packages dependencies
+
+# Load packages dependencies
 ```{r}
+#| label: Load packages
 library(diann) # to extract the MaxLFQ matrix from DIANN report
 library(arrow) # to read the report.parquet file
 library(here) # to avoid the need for use the path while loading the data
@@ -140,11 +141,11 @@ MeanOfMissing <- function(df) {
 # Generate the diannReport.rds from report.parquet file
 DiannReport <- function(labels, directory = "../data/DIANN_results/") {
   
-  if(file.exists("diannReport.rds")) { 
-    
-    cat("\nDiannReport.rds were loaded.\n")
-    return(read_rds("diannReport.rds"))
-  }
+  # if(file.exists("diannReport.rds")) { 
+  #   
+  #   cat("\nDiannReport.rds were loaded.\n")
+  #   return(read_rds("diannReport.rds"))
+  # }
     #TODO: find a way to delete the file manually if needed
     #The variable "directory" does not exist if I just run this line
     #file.remove(paste(directory),diannReport.rds")) 
@@ -168,7 +169,7 @@ DiannReport <- function(labels, directory = "../data/DIANN_results/") {
   diannReport <- dplyr::filter(reportRecoded,
                                str_detect(Protein.Names, "MOUSE"))
   
-  write_rds(diannReport, file = "diannReport.rds")
+  # write_rds(diannReport, file = "diannReport.rds")
   cat("\ndiannReport.rds were created.\ndiannReport were loaded.\n")
   
   return(diannReport)
@@ -246,23 +247,29 @@ cat("\n\nGraph ",quote(precursorRT_and_mzMapDensity),".png were created.\n", sep
 # Graph: Peptides | Proteins ----
 ```{r}
 
-diannReportByCondition <- dplyr::group_by(data ,Run, condition) %>% 
+
+diannReportByRun <- dplyr::group_by(DiannReport(labels),Run, condition) %>% 
   dplyr::summarise(n_peptides = n_distinct(Stripped.Sequence))
 
 # Counting the number of peptides per sample
-peptides_plot <- diannReportByCondition %>% 
-    dplyr::summarise(n_peptides = n_distinct(Stripped.Sequence)) %>%
+peptides_plot <- diannReportByRun %>% 
     ggplot(aes(y = Run, x = n_peptides, fill = condition)) +
+  
     geom_bar(stat = "identity",
              position = "dodge",
              show.legend = FALSE) +
+  
   scale_fill_manual(values = colors) +
-    geom_text(aes(label = n_peptides, hjust = ifelse(n_peptides > 8117, 1.1, -0.15)),
-        color = "black",
-        size = 7, nudge_x = -0.5) +
+  
+  geom_text(aes(label = n_peptides,
+                hjust = ifelse(n_peptides > 8117, 1.1, -0.15)),
+            color = "black",
+            size = 7, nudge_x = -0.5) +
+  
     labs(y = NULL,
         x = "Number of peptides",
         fill = NULL) +
+  
     theme(text = element_text(size = 25),
       axis.text.x = element_text(
         angle = 90, vjust = 0.5, hjust = 1),
@@ -270,8 +277,11 @@ peptides_plot <- diannReportByCondition %>%
       panel.background = element_blank()
       )
 
-cat("\n\nTotal number of peptides:",n_distinct(diannReport$Stripped.Sequence),
-    "\nTotal number of proteins:", n_distinct(diannReport$Protein.Ids,"\n"))
+cat("\n\nTotal number of unique  peptides:",
+    n_distinct(diannReport$Stripped.Sequence),
+    
+    "\nTotal number of unique proteins:",
+    n_distinct(diannReport$Protein.Ids,"\n"))
 
 ```
 
