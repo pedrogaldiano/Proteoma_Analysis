@@ -138,6 +138,7 @@ MeanOfMissing <- function(df) {
   return(dplyr::filter(addedMissingness, prot_miss > threshold))
 }
 
+#TODO: o labels é uma variável global. Não faz sentido passar ela como argumento... :c
 # Generate the diannReport.rds from report.parquet file
 DiannReport <- function(labels, directory = "../data/DIANN_results/") {
   
@@ -193,6 +194,44 @@ cat("\n\nHelper functions were loaded.\n")
 
 ```
 
+
+# Graph functions ----
+```{r}
+
+GenBarGraph <- function(data, x, y, condition, labelX, nmax) {
+  
+  ggplot(data, aes(y = Run, x = n_peptides, fill = condition)) +
+    
+    geom_bar(stat = "identity",
+             position = "dodge",
+             show.legend = FALSE) +
+    
+    scale_fill_manual(values = colors) +
+    
+    geom_text(aes(label = n_peptides,
+                  hjust = ifelse(n_peptides > nmax, 1.1, -0.15)),
+              color = "black",
+              size = 7, nudge_x = -0.5) +
+    
+    labs(y = NULL,
+         x = labelX,
+         fill = NULL) +
+    
+    theme(text = element_text(size = 17),
+          axis.text.x = element_text(
+            angle = 90, vjust = 0.5, hjust = 1),
+          panel.border = element_rect(color = "black", fill = NA),
+          panel.background = element_blank()
+    )
+  
+}
+
+cat("\n\nGraph functions were loaded.\n")
+
+```
+
+
+
 # Graph: Precursor x RT / Density Map ----
 ```{r}
 
@@ -247,45 +286,48 @@ cat("\n\nGraph ",quote(precursorRT_and_mzMapDensity),".png were created.\n", sep
 # Graph: Peptides | Proteins ----
 ```{r}
 
+diannReport <- DiannReport(labels)
 
-diannReportByRun <- dplyr::group_by(DiannReport(labels),Run, condition) %>% 
+# Counting the number of unique peptides and proteins per run
+diannReportByRun <- dplyr::group_by(diannReport, Run, condition) %>% 
   dplyr::summarise(n_peptides = n_distinct(Stripped.Sequence),
                    n_proteins = n_distinct(Protein.Ids))
 
 
-#TODO: get the proteins_plot, it's probably a good idea to create a generic function for both plots
+# Create the peptides graph
+peptidesPlot <- GenBarGraph(diannReportByRun,
+                             x = n_peptides,
+                             y = Run,
+                             condition = condition,
+                             labelX = "Number of peptides",
+                             nmax = 8200)
 
-# Counting the number of peptides per sample
-peptides_plot <- diannReportByRun %>% 
-    ggplot(aes(y = Run, x = n_peptides, fill = condition)) +
-  
-    geom_bar(stat = "identity",
-             position = "dodge",
-             show.legend = FALSE) +
-  
-  scale_fill_manual(values = colors) +
-  
-  geom_text(aes(label = n_peptides,
-                hjust = ifelse(n_peptides > 8117, 1.1, -0.15)),
-            color = "black",
-            size = 7, nudge_x = -0.5) +
-  
-    labs(y = NULL,
-        x = "Number of peptides",
-        fill = NULL) +
-  
-    theme(text = element_text(size = 25),
-      axis.text.x = element_text(
-        angle = 90, vjust = 0.5, hjust = 1),
-      panel.border = element_rect(color = "black", fill = NA),
-      panel.background = element_blank()
-      )
-
-cat("\n\nTotal number of unique  peptides:",
-    n_distinct(diannReport$Stripped.Sequence),
+# Create the proteins graph
+proteinsPlot <- GenBarGraph(diannReportByRun,
+                            x = n_proteins,
+                            y = Run,
+                            condition = condition,
+                            labelX = "Number of proteins",
+                            nmax = 1800)
+                             
     
-    "\nTotal number of unique proteins:",
-    n_distinct(diannReport$Protein.Ids,"\n"))
+
+number_of_peptides_and_proteins <- (peptidesPlot | proteinsPlot) +
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag = element_text(size = 30, face = "bold"))
+
+ggsave(filename = paste(quote(number_of_peptides_and_proteins), ".png", sep=""),
+       path = "plots",
+       plot = number_of_peptides_and_proteins,
+       width = 24, height = 20,
+       units = "in", dpi = 300)
+  
+
+cat("\n\nGraph",quote(number_of_peptides_and_proteins) ,"were created.")
+
+cat("\n\nTotal number of unique  peptides:", n_distinct(diannReport$Stripped.Sequence))
+    
+cat("\nTotal number of unique proteins:", n_distinct(diannReport$Protein.Ids,"\n"))
 
 ```
 
