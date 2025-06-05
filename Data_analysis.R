@@ -1086,8 +1086,8 @@ urinary_antigens_plot <- complete_mtx %>%
 # #Figure 2
 # 
 # 
-# Figure_2 <- (peptides_plot | proteins_plot) + 
-#   plot_annotation(tag_levels = "A") & 
+# Figure_2 <- (peptides_plot | proteins_plot) +
+#   plot_annotation(tag_levels = "A") &
 #   theme(plot.tag = element_text(size = 30, face = "bold"))
 # 
 # ggsave("Figure_2.png",
