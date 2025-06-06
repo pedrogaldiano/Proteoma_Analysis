@@ -1070,7 +1070,7 @@ urinary_antigens_plot <- complete_mtx %>%
 
 # Saving the figures for the final report
 
-#Figure 1
+#Figure 1 -> ok
 
 
 # Figure_1 <- (precursor_rt / mz_map_density_plot) + 
@@ -1083,7 +1083,7 @@ urinary_antigens_plot <- complete_mtx %>%
 #     units = "in", dpi = 300)
 # 
 # 
-# #Figure 2
+# #Figure 2 -> ok
 # 
 # 
 # Figure_2 <- (peptides_plot | proteins_plot) +

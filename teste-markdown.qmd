@@ -140,7 +140,7 @@ MeanOfMissing <- function(df) {
 
 #TODO: o labels é uma variável global. Não faz sentido passar ela como argumento... :c
 # Generate the diannReport.rds from report.parquet file
-DiannReport <- function(labels, directory = "../data/DIANN_results/") {
+DiannReport <- function(runs, directory = "../data/DIANN_results/") {
   
   # if(file.exists("diannReport.rds")) { 
   #   
@@ -162,7 +162,7 @@ DiannReport <- function(labels, directory = "../data/DIANN_results/") {
   
   reportRecoded <- dplyr::mutate(reportFiltered,
                                 Run = recode(Run, !!!labels),
-                                Run = factor(Run, levels = unname(labels)),
+                                Run = factor(Run, levels = unname(runs)),
                                 condition = str_remove(Run, " r1| r2| r3"),
                                 File.Name = Run,
                                 peptide_length = nchar(Stripped.Sequence))
@@ -194,13 +194,14 @@ cat("\n\nHelper functions were loaded.\n")
 
 ```
 
-
 # Graph functions ----
 ```{r}
 
-GenBarGraph <- function(data, x, y, condition, labelX, nmax) {
+GenBarGraph <- function(data, xValue, yValue, condition, xLabel, nmax) {
   
-  ggplot(data, aes(y = Run, x = n_peptides, fill = condition)) +
+  ggplot(data, aes(y = yValue,
+                   x = xValue,
+                   fill = condition)) +
     
     geom_bar(stat = "identity",
              position = "dodge",
@@ -208,13 +209,13 @@ GenBarGraph <- function(data, x, y, condition, labelX, nmax) {
     
     scale_fill_manual(values = colors) +
     
-    geom_text(aes(label = n_peptides,
-                  hjust = ifelse(n_peptides > nmax, 1.1, -0.15)),
+    geom_text(aes(label = xLabel,
+                  hjust = ifelse(xLabel > nmax, 1.1, -0.15)),
               color = "black",
               size = 7, nudge_x = -0.5) +
     
     labs(y = NULL,
-         x = labelX,
+         x = xLabel,
          fill = NULL) +
     
     theme(text = element_text(size = 17),
@@ -223,111 +224,129 @@ GenBarGraph <- function(data, x, y, condition, labelX, nmax) {
           panel.border = element_rect(color = "black", fill = NA),
           panel.background = element_blank()
     )
-  
 }
 
 cat("\n\nGraph functions were loaded.\n")
 
 ```
 
-
-
 # Graph: Precursor x RT / Density Map ----
 ```{r}
 
-diannReport <- DiannReport(labels)
-
 # Reconstruction of the ion chromatograms, the precursor quantity is
 #  plotted over the retention time (min) for each sample.
-precursorRT <- diannReport %>%
-  ggplot(aes(x = RT, y = Precursor.Quantity)) +
-  geom_line(aes(color = condition), show.legend = FALSE) +
-  scale_color_manual(values = colors) +
-  labs(x = "Retention time (min)",
-       y = "Precursor quantity",
-       color = NULL) +
-  facet_wrap(~Run, ncol = 6, scales = "free") +
-  theme(strip.background = element_blank(),
-        panel.border = element_rect(color = "black", fill = NA),
-        panel.background = element_blank())
+GraphPrecursorRT_mzMapDensity <- function(runs) {
 
-# For the m/z map, the density of ions collected is plotted over 
-# the scan range (m/z) for each sample.
-mzMapDensity <- diannReport %>% 
-  ggplot(aes(x = RT, y = Precursor.Mz)) +
-  ggpointdensity::geom_pointdensity(size = 0.25) +
-  viridis::scale_color_viridis(option = "H") +
-  scale_x_continuous(limits = c(0, 90)) +
-  labs(x = "Retention time (min)",
-       y = "Scan range (m/z)",
-       color = NULL) +
-  facet_wrap(~Run, scales = "free", ncol = 6) +
-  theme(strip.background = element_blank(),
-        legend.position = "bottom",
-        legend.key.width = unit(1.5,"cm"),
-        legend.key.height = unit(0.25, "cm"),
-        panel.border = element_rect(color = "black", fill = NA),
-        panel.background = element_blank())
+  diannReport <- DiannReport(runs)
+  
+  precursorRT <- diannReport %>%
+    ggplot(aes(x = RT, y = Precursor.Quantity)) +
+    geom_line(aes(color = condition), show.legend = FALSE) +
+    scale_color_manual(values = colors) +
+    labs(x = "Retention time (min)",
+         y = "Precursor quantity",
+         color = NULL) +
+    facet_wrap(~Run, ncol = 6, scales = "free") +
+    theme(strip.background = element_blank(),
+          panel.border = element_rect(color = "black", fill = NA),
+          panel.background = element_blank())
+  
+  # For the m/z map, the density of ions collected is plotted over 
+  # the scan range (m/z) for each sample.
+  mzMapDensity <- diannReport %>% 
+    ggplot(aes(x = RT, y = Precursor.Mz)) +
+    ggpointdensity::geom_pointdensity(size = 0.25) +
+    viridis::scale_color_viridis(option = "H") +
+    scale_x_continuous(limits = c(0, 90)) +
+    labs(x = "Retention time (min)",
+         y = "Scan range (m/z)",
+         color = NULL) +
+    facet_wrap(~Run, scales = "free", ncol = 6) +
+    theme(strip.background = element_blank(),
+          legend.position = "bottom",
+          legend.key.width = unit(1.5,"cm"),
+          legend.key.height = unit(0.25, "cm"),
+          panel.border = element_rect(color = "black", fill = NA),
+          panel.background = element_blank())
+  
+  
+  precursorRT_and_mzMapDensity <- (precursorRT / mzMapDensity) +
+    plot_annotation(tag_levels = "A") &
+    theme(plot.tag = element_text(size = 30, face = "bold"))
+  
+  ggsave(filename = paste(quote(precursorRT_and_mzMapDensity), ".png", sep=""),
+         path = "plots",
+         plot = precursorRT_and_mzMapDensity,
+         width = 24, height = 20,
+         units = "in", dpi = 300)
+  
+  cat("\n\nGraph ",quote(precursorRT_and_mzMapDensity),".png were created.\n", sep="")
+}
 
+GraphPrecursorRT_mzMapDensity(labels)
 
-precursorRT_and_mzMapDensity <- (precursorRT / mzMapDensity) +
-  plot_annotation(tag_levels = "A") &
-  theme(plot.tag = element_text(size = 30, face = "bold"))
-
-ggsave(filename = paste(quote(precursorRT_and_mzMapDensity), ".png", sep=""),
-       path = "plots",
-       plot = precursorRT_and_mzMapDensity,
-       width = 24, height = 20,
-       units = "in", dpi = 300)
-
-cat("\n\nGraph ",quote(precursorRT_and_mzMapDensity),".png were created.\n", sep="")
 ```
 
 # Graph: Peptides | Proteins ----
 ```{r}
-
-diannReport <- DiannReport(labels)
-
 # Counting the number of unique peptides and proteins per run
-diannReportByRun <- dplyr::group_by(diannReport, Run, condition) %>% 
-  dplyr::summarise(n_peptides = n_distinct(Stripped.Sequence),
-                   n_proteins = n_distinct(Protein.Ids))
-
-
-# Create the peptides graph
-peptidesPlot <- GenBarGraph(diannReportByRun,
-                             x = n_peptides,
-                             y = Run,
-                             condition = condition,
-                             labelX = "Number of peptides",
-                             nmax = 8200)
-
-# Create the proteins graph
-proteinsPlot <- GenBarGraph(diannReportByRun,
-                            x = n_proteins,
-                            y = Run,
-                            condition = condition,
-                            labelX = "Number of proteins",
-                            nmax = 1800)
-                             
-    
-
-number_of_peptides_and_proteins <- (peptidesPlot | proteinsPlot) +
-  plot_annotation(tag_levels = "A") &
-  theme(plot.tag = element_text(size = 30, face = "bold"))
-
-ggsave(filename = paste(quote(number_of_peptides_and_proteins), ".png", sep=""),
-       path = "plots",
-       plot = number_of_peptides_and_proteins,
-       width = 24, height = 20,
-       units = "in", dpi = 300)
+GraphNumberOfPeptidesAndProteins <- function(runs, nmaxPeptides, nmaxProteins) {
   
+  diannReport <- DiannReport(labels)
+  diannReportByRun <- dplyr::group_by(diannReport, Run, condition) %>% 
+    dplyr::summarise(n_peptides = n_distinct(Stripped.Sequence),
+                     n_proteins = n_distinct(Protein.Ids))
+  
+  totalUniquePeptides = n_distinct(diannReport$Stripped.Sequence)
+  totalUniqueProteins = n_distinct(diannReport$Protein.Ids)
+  
+  # Create the peptides graph
+  peptidesPlot <- diannReportByRun %>% 
+    ggplot(aes(y = Run, x = n_peptides, fill = condition)) +
+    geom_bar(stat = "identity", position = "dodge", show.legend = FALSE) +
+    scale_fill_manual(values = colors) +
+    geom_text(aes(label = n_peptides,
+                  hjust = ifelse(n_peptides > nmaxPeptides, 1.1, -0.15)),
+              color = "black", size = 7, nudge_x = -0.5, fontface = "bold") +
+    labs(y = NULL, x = "Number of peptides", fill = NULL) +
+    theme(text = element_text(size = 25),
+          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+          panel.border = element_rect(color = "black", fill = NA),
+          panel.background = element_blank())
+  
+  # Create the proteins graph
+  proteinsPlot <- diannReportByRun %>% 
+    ggplot(aes(y = Run, x = n_proteins, fill = condition)) +
+    geom_bar(stat = "identity", position = "dodge", show.legend = FALSE) +
+    scale_fill_manual(values = colors) +
+    geom_text(aes(label = n_proteins,
+                  hjust = ifelse(n_proteins > nmaxProteins, 1.1, -0.15)),
+              color = "black", size = 7, nudge_x = -0.5, fontface = "bold") +
+    labs(y = NULL, x = "Number of proteins", fill = NULL) +
+    theme(text = element_text(size = 25),
+          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+          panel.border = element_rect(color = "black", fill = NA),
+          panel.background = element_blank())
+  
+  
+  # Concatenate peptides plot and proteins plot
+  number_of_peptides_and_proteins <- (peptidesPlot | proteinsPlot) +
+    plot_annotation(tag_levels = "A") &
+    theme(plot.tag = element_text(size = 30, face = "bold"))
+  
+  # Save file
+  ggsave(filename = paste(quote(number_of_peptides_and_proteins), ".png", sep=""),
+         path = "plots",
+         plot = number_of_peptides_and_proteins,
+         width = 24, height = 20,
+         units = "in", dpi = 300)
+  
+  cat("\nGraph ", quote(number_of_peptides_and_proteins),".png were created.\n",
+      "Total number of unique  peptides: ",totalUniquePeptides,
+      "\nTotal number of unique proteins: ",totalUniqueProteins ,"\n", sep="" )
+}
 
-cat("\n\nGraph",quote(number_of_peptides_and_proteins) ,"were created.")
-
-cat("\n\nTotal number of unique  peptides:", n_distinct(diannReport$Stripped.Sequence))
-    
-cat("\nTotal number of unique proteins:", n_distinct(diannReport$Protein.Ids,"\n"))
+GraphNumberOfPeptidesAndProteins(labels, nmaxPeptides = 8200, nmaxProteins = 1900)
 
 ```
 
