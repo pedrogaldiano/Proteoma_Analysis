@@ -74,18 +74,7 @@ labels <- c(
   P1_14 =  "Ven + JPM-OEt 100 mg r2",
   P1_15 = "Ven + JPM-OEt 100 mg r3"
 )
-                
-# levels <- c(
-#   "Actinonin_15mg_r1", "Actinonin_15mg_r2", "Actinonin_15mg_r3",
-#   "Actinonin_30mg_r1", "Actinonin_30mg_r2", 
-#   "JPMOEt_50mg_r1", "JPMOEt_50mg_r2",
-#   "JPMOEt_100mg_r1", "JPMOEt_100mg_r2", "JPMOEt_100mg_r3",
-#   "Venom_r1", "Venom_r2",
-#   "Ven_Actn_15mg_r1", "Ven_Actn_15mg_r2", "Ven_Actn_15mg_r3",
-#   "Ven_Actn_30mg_r1", "Ven_Actn_30mg_r2", "Ven_Actn_30mg_r3",
-#   "Ven_jPMOEt_50mg_r1", "Ven_jPMOEt_50mg_r2", "Ven_jPMOEt_50mg_r3",
-#   "Ven_jPMOEt_100mg_r1", "Ven_jPMOEt_100mg_r2", "Ven_jPMOEt_100mg_r3")
-
+          
 
 colors <- c("#FED789FF", "#023743FF", "#72874EFF", "#476F84FF", "#A4BED5FF"
             , "#453947FF", "#66C2A5", "#FC8D62", "#FFD92F", "#8DA0CB")
@@ -129,28 +118,28 @@ MeanOfMissing <- function(df) {
     return(mean(is.na(df)))
   }
   
-  addedMissingness = dplyr::mutate(df,
-                                   prot_miss = apply(df,1,MeanOfMissing)
-  )
+  data <- dplyr::mutate(df, prot_miss = apply(df,1,MeanOfMissing)) %>% 
+    dplyr::filter(prot_miss <= threshold) %>%
+    dplyr::select(-prot_miss)
   
-  cat("Proteins with missingness above", threshold, "were removed from dataset\n")
+  cat("Proteins with missingness >", threshold, "were removed from dataset\n")
   
-  return(dplyr::filter(addedMissingness, prot_miss > threshold))
+  return(as.matrix(data))
 }
 
 #TODO: o labels é uma variável global. Não faz sentido passar ela como argumento... :c
 # Generate the diannReport.rds from report.parquet file
 DiannReport <- function(runs, directory = "../data/DIANN_results/") {
   
-  # if(file.exists("diannReport.rds")) { 
+  if(file.exists("diannReport.rds")) {
+
+    cat("\nDiannReport.rds were loaded from file.\n")
+    return(read_rds("diannReport.rds"))
+  }
+  # TODO: find a way to delete the file manually if needed
+  # The variable "directory" does not exist if I just run this line
+  # file.remove(paste(directory),diannReport.rds"))
   #   
-  #   cat("\nDiannReport.rds were loaded.\n")
-  #   return(read_rds("diannReport.rds"))
-  # }
-    #TODO: find a way to delete the file manually if needed
-    #The variable "directory" does not exist if I just run this line
-    #file.remove(paste(directory),diannReport.rds")) 
-    
   
   report <- arrow::read_parquet(paste(directory, "report.parquet", sep=""))
   
@@ -159,9 +148,8 @@ DiannReport <- function(runs, directory = "../data/DIANN_results/") {
                                   & Lib.Q.Value <= 0.01 
                                   & PG.Q.Value <= 0.01)
   
-  
   reportRecoded <- dplyr::mutate(reportFiltered,
-                                Run = recode(Run, !!!labels),
+                                Run = recode(Run, !!!runs),
                                 Run = factor(Run, levels = unname(runs)),
                                 condition = str_remove(Run, " r1| r2| r3"),
                                 File.Name = Run,
@@ -170,7 +158,7 @@ DiannReport <- function(runs, directory = "../data/DIANN_results/") {
   diannReport <- dplyr::filter(reportRecoded,
                                str_detect(Protein.Names, "MOUSE"))
   
-  # write_rds(diannReport, file = "diannReport.rds")
+  write_rds(diannReport, file = "diannReport.rds")
   cat("\ndiannReport.rds were created.\ndiannReport were loaded.\n")
   
   return(diannReport)
@@ -178,15 +166,13 @@ DiannReport <- function(runs, directory = "../data/DIANN_results/") {
 
 #TODO: I am not sure if this actually changes something...
 # Adjust the general theme for the plots :
-theme_update(
-  text = element_text(color = "black", size = 20),
-  axis.text = element_text(color = "black"),
-  axis.title = element_text(color = "black", face = "bold"),
-  strip.background = element_blank(),
-  strip.text = element_text(face = "bold"),
-  legend.title = element_text(face = "bold", hjust = 0.5),
-  legend.title.position = "top"
-)
+theme_update(text = element_text(color = "black", size = 20),
+             axis.text = element_text(color = "black"),
+             axis.title = element_text(color = "black", face = "bold"),
+             strip.background = element_blank(),
+             strip.text = element_text(face = "bold"),
+             legend.title = element_text(face = "bold", hjust = 0.5),
+             legend.title.position = "top")
 
 
 
@@ -226,6 +212,22 @@ GenBarGraph <- function(data, xValue, yValue, condition, xLabel, nmax) {
     )
 }
 
+  
+SparsityPlot <- function(df) {
+    df %>%
+    as.data.frame(df) %>%
+    naniar::vis_miss() +
+    labs(x = NULL,
+         y = "Number of proteins") +
+    theme(text = element_text(size = 20),
+          axis.text.y = element_text(color = "black", vjust = 1),
+          axis.text.x = element_text(
+            angle = 90, color = "black"),
+          line = element_blank(),
+          panel.background = element_blank())
+  }
+
+
 cat("\n\nGraph functions were loaded.\n")
 
 ```
@@ -237,9 +239,10 @@ cat("\n\nGraph functions were loaded.\n")
 #  plotted over the retention time (min) for each sample.
 GraphPrecursorRT_mzMapDensity <- function(runs) {
 
-  diannReport <- DiannReport(runs)
   
-  precursorRT <- diannReport %>%
+  diannReport <- DiannReport(runs)
+
+    precursorRT <- diannReport %>%
     ggplot(aes(x = RT, y = Precursor.Quantity)) +
     geom_line(aes(color = condition), show.legend = FALSE) +
     scale_color_manual(values = colors) +
@@ -255,7 +258,7 @@ GraphPrecursorRT_mzMapDensity <- function(runs) {
   # the scan range (m/z) for each sample.
   mzMapDensity <- diannReport %>% 
     ggplot(aes(x = RT, y = Precursor.Mz)) +
-    ggpointdensity::geom_pointdensity(size = 0.25) +
+    ggpointdensity::geom_pointdensity(size = 0.1) +
     viridis::scale_color_viridis(option = "H") +
     scale_x_continuous(limits = c(0, 90)) +
     labs(x = "Retention time (min)",
@@ -281,7 +284,7 @@ GraphPrecursorRT_mzMapDensity <- function(runs) {
          units = "in", dpi = 300)
   
   cat("\n\nGraph ",quote(precursorRT_and_mzMapDensity),".png were created.\n", sep="")
-}
+ }
 
 GraphPrecursorRT_mzMapDensity(labels)
 
@@ -292,7 +295,7 @@ GraphPrecursorRT_mzMapDensity(labels)
 # Counting the number of unique peptides and proteins per run
 GraphNumberOfPeptidesAndProteins <- function(runs, nmaxPeptides, nmaxProteins) {
   
-  diannReport <- DiannReport(labels)
+  diannReport <- DiannReport(runs)
   diannReportByRun <- dplyr::group_by(diannReport, Run, condition) %>% 
     dplyr::summarise(n_peptides = n_distinct(Stripped.Sequence),
                      n_proteins = n_distinct(Protein.Ids))
@@ -347,6 +350,65 @@ GraphNumberOfPeptidesAndProteins <- function(runs, nmaxPeptides, nmaxProteins) {
 }
 
 GraphNumberOfPeptidesAndProteins(labels, nmaxPeptides = 8200, nmaxProteins = 1900)
+
+```
+
+# Graph: Sparsity Matrix ----
+```{r}
+#Genes.MaxLFQ.Unique: matriz de abundância de intensidade normalizada com algoritmo MAX LFQ sendo calculada a partir de peptídeos únicos (peptídeos que dão match apenas com uma proteína)
+
+GraphSparsityMatrix <- function(runs, removeRun = "") {
+
+  diannReport <- DiannReport(runs)
+  
+  # Create sparsity plot with unique genes UNFILTERED
+  uniqueGenes <- diann::diann_matrix(
+    diannReport,
+    id.header = "Protein.Group",
+    quantity.header = "Genes.MaxLFQ.Unique", 
+    proteotypic.only = T,
+    pg.q = .01)
+  
+  sparsityPlotRaw <- SparsityPlot(uniqueGenes)
+  
+  uniqueGenesFiltered <- diannReport %>%
+    dplyr::filter(PG.MaxLFQ.Quality > 0.75 &
+                    Empirical.Quality > 0.75 &
+                    Run != removeRun) %>% 
+    
+    diann::diann_matrix(id.header = "Protein.Group",
+                        quantity.header = "Genes.MaxLFQ.Unique",
+                        proteotypic.only = T,
+                        pg.q = .01)
+  
+  sparsityPlotFiltered <- SparsityPlot(uniqueGenesFiltered)
+  
+  # Create a sparsity plot with unique genes REDUCED and FILTERED
+  uniqueGenesReduced <- RemoveMissingAboveThreshold(uniqueGenesFiltered, threshold=0.3)
+  
+  sparsityPlotReduced <- SparsityPlot(uniqueGenesReduced)
+  
+  
+  sparsity_matrix <- (sparsityPlotRaw | sparsityPlotFiltered | sparsityPlotReduced) +
+    plot_annotation(tag_levels = "A") &
+    theme(plot.tag = element_text(size = 30, face = "bold"))
+  
+  ggsave(filename = paste(quote(sparsity_matrix),".png", sep=""),
+         path = "plots",
+         plot = sparsity_matrix,
+         width = 24, height = 20,
+         units = "in", dpi = 300)
+}
+
+
+GraphSparsityMatrix(labels, removeRun = "NaCl r1")
+
+
+```
+
+# Graph: QuanUMS Evaluation
+```{r}
+
 
 ```
 

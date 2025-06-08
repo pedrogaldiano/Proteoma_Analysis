@@ -348,8 +348,6 @@ quantums_mtx_sparsity_plot <- quantums_mtx %>%
 abundance_mtx_reduced <- RemoveMissingAboveThreshold(quantums_mtx[, -1], threshold = 0.3)
   
 
-
-
 quantums_mtx_sparsity_reduced_plot <- abundance_mtx_reduced %>% 
     as.data.frame() %>%
   rename_with(~ str_replace(., "Ven_Actn", "Ven + Actn"), everything()) %>%
@@ -1096,7 +1094,7 @@ urinary_antigens_plot <- complete_mtx %>%
 #     units = "in", dpi = 300)
 # 
 # 
-# #Figure 3
+# #Figure 3 -> OK
 # 
 # 
 # Figure_3 <- (sparsity_plot | quantums_mtx_sparsity_plot | quantums_mtx_sparsity_reduced_plot) + 
