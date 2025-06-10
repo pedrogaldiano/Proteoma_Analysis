@@ -34,15 +34,15 @@ library(paletteer) # to use the nice color palette
 library(ggtext) # to provide Markdown and HTML formatting in ggplot2
 library(ggrepel) # to avoid the overlapping of the labels in the plots
 library(kableExtra) # to format the tables
-library(limma)  # to calculate the differential abundance
+library(limma) # to calculate the differential abundance
 library(DIAgui) # to extract iBAQ values
-  
+
 cat("\n\nAll packages were activated.\n")
+
 ```
 
 # Global variables
 ```{r}
-
 # This map should be ordered by the sample-name (code = sample_name), this will
 # define the order everything will be ploted
 labels <- c(
@@ -74,10 +74,12 @@ labels <- c(
   P1_14 =  "Ven + JPM-OEt 100 mg r2",
   P1_15 = "Ven + JPM-OEt 100 mg r3"
 )
-          
 
-colors <- c("#FED789FF", "#023743FF", "#72874EFF", "#476F84FF", "#A4BED5FF"
-            , "#453947FF", "#66C2A5", "#FC8D62", "#FFD92F", "#8DA0CB")
+
+colors <- c(
+  "#FED789FF", "#023743FF", "#72874EFF", "#476F84FF", "#A4BED5FF",
+  "#453947FF", "#66C2A5", "#FC8D62", "#FFD92F", "#8DA0CB"
+)
 
 cat("\n\nGlobal variables were loaded.\n")
 ```
@@ -86,329 +88,444 @@ cat("\n\nGlobal variables were loaded.\n")
 ```{r}
 # Return a dataset with the coefficients of variation
 CV_Matrix <- function(data, condition) {
-  
   df <- as.data.frame(data)
-  
-  selected <- dplyr::select(df,
-                            protein,
-                            str_subset(colnames(data), condition))
-  
+
+  selected <- dplyr::select(
+    df,
+    protein,
+    str_subset(colnames(data), condition)
+  )
+
   selected_rowwise <- rowwise(selected)
-  
+
   mutated <- dplyr::mutate(selected_rowwise,
-                           across(where(is.numeric),~2^(.) - 1),
-                           cv = 100 * 
-                             (
-                               sd(c_across(where(is.numeric)),na.rm = TRUE) /
-                                 mean(c_across(where(is.numeric)),na.rm = TRUE)
-                             ),
-                           condition = condition)
-  
+    across(where(is.numeric), ~ 2^(.) - 1),
+    cv = 100 *
+      (
+        sd(c_across(where(is.numeric)), na.rm = TRUE) /
+          mean(c_across(where(is.numeric)), na.rm = TRUE)
+      ),
+    condition = condition
+  )
+
   cat("Coefficient of variation calculated for each protein (row)\n")
-  
+
   return(dplyr::select(mutated, protein, cv, condition))
 }
 
-# This function works to remove the proteins with more 
+# This function works to remove the proteins with more
 # than a specific percentage of missing values
 RemoveMissingAboveThreshold <- function(data, threshold) {
   df <- as.data.frame(data)
-  
-MeanOfMissing <- function(df) {
+
+  MeanOfMissing <- function(df) {
     return(mean(is.na(df)))
   }
-  
-  data <- dplyr::mutate(df, prot_miss = apply(df,1,MeanOfMissing)) %>% 
+
+  data <- dplyr::mutate(df, prot_miss = apply(df, 1, MeanOfMissing)) %>%
     dplyr::filter(prot_miss <= threshold) %>%
     dplyr::select(-prot_miss)
-  
+
   cat("Proteins with missingness >", threshold, "were removed from dataset\n")
-  
+
   return(as.matrix(data))
 }
 
-#TODO: o labels é uma variável global. Não faz sentido passar ela como argumento... :c
+# TODO: o labels é uma variável global. Não faz sentido passar ela como argumento... :c
 # Generate the diannReport.rds from report.parquet file
 DiannReport <- function(runs, directory = "../data/DIANN_results/") {
-  
-  if(file.exists("diannReport.rds")) {
-
+  if (file.exists("diannReport.rds")) {
     cat("\nDiannReport.rds were loaded from file.\n")
     return(read_rds("diannReport.rds"))
   }
   # TODO: find a way to delete the file manually if needed
   # The variable "directory" does not exist if I just run this line
   # file.remove(paste(directory),diannReport.rds"))
-  #   
-  
-  report <- arrow::read_parquet(paste(directory, "report.parquet", sep=""))
-  
-  reportFiltered <- dplyr::filter(report,
-                                  Lib.PG.Q.Value <= 0.01 
-                                  & Lib.Q.Value <= 0.01 
-                                  & PG.Q.Value <= 0.01)
-  
+  #
+
+  report <- arrow::read_parquet(paste(directory, "report.parquet", sep = ""))
+
+  reportFiltered <- dplyr::filter(
+    report,
+    Lib.PG.Q.Value <= 0.01 &
+      Lib.Q.Value <= 0.01 &
+      PG.Q.Value <= 0.01
+  )
+
   reportRecoded <- dplyr::mutate(reportFiltered,
-                                Run = recode(Run, !!!runs),
-                                Run = factor(Run, levels = unname(runs)),
-                                condition = str_remove(Run, " r1| r2| r3"),
-                                File.Name = Run,
-                                peptide_length = nchar(Stripped.Sequence))
-  
-  diannReport <- dplyr::filter(reportRecoded,
-                               str_detect(Protein.Names, "MOUSE"))
-  
+    Run = recode(Run, !!!runs),
+    Run = factor(Run, levels = unname(runs)),
+    condition = str_remove(Run, " r1| r2| r3"),
+    File.Name = Run,
+    peptide_length = nchar(Stripped.Sequence)
+  )
+
+  diannReport <- dplyr::filter(
+    reportRecoded,
+    str_detect(Protein.Names, "MOUSE")
+  )
+
   write_rds(diannReport, file = "diannReport.rds")
   cat("\ndiannReport.rds were created.\ndiannReport were loaded.\n")
-  
+
   return(diannReport)
 }
 
-#TODO: I am not sure if this actually changes something...
+# TODO: I am not sure if this actually changes something...
 # Adjust the general theme for the plots :
-theme_update(text = element_text(color = "black", size = 20),
-             axis.text = element_text(color = "black"),
-             axis.title = element_text(color = "black", face = "bold"),
-             strip.background = element_blank(),
-             strip.text = element_text(face = "bold"),
-             legend.title = element_text(face = "bold", hjust = 0.5),
-             legend.title.position = "top")
+theme_update(
+  text = element_text(color = "black", size = 20),
+  axis.text = element_text(color = "black"),
+  axis.title = element_text(color = "black", face = "bold"),
+  strip.background = element_blank(),
+  strip.text = element_text(face = "bold"),
+  legend.title = element_text(face = "bold", hjust = 0.5),
+  legend.title.position = "top"
+)
 
 
 
 cat("\n\nHelper functions were loaded.\n")
-
 ```
 
 # Graph functions ----
 ```{r}
-
 GenBarGraph <- function(data, xValue, yValue, condition, xLabel, nmax) {
-  
-  ggplot(data, aes(y = yValue,
-                   x = xValue,
-                   fill = condition)) +
-    
-    geom_bar(stat = "identity",
-             position = "dodge",
-             show.legend = FALSE) +
-    
+  ggplot(data, aes(
+    y = yValue,
+    x = xValue,
+    fill = condition
+  )) +
+    geom_bar(
+      stat = "identity",
+      position = "dodge",
+      show.legend = FALSE
+    ) +
     scale_fill_manual(values = colors) +
-    
-    geom_text(aes(label = xLabel,
-                  hjust = ifelse(xLabel > nmax, 1.1, -0.15)),
-              color = "black",
-              size = 7, nudge_x = -0.5) +
-    
-    labs(y = NULL,
-         x = xLabel,
-         fill = NULL) +
-    
-    theme(text = element_text(size = 17),
-          axis.text.x = element_text(
-            angle = 90, vjust = 0.5, hjust = 1),
-          panel.border = element_rect(color = "black", fill = NA),
-          panel.background = element_blank()
+    geom_text(
+      aes(
+        label = xLabel,
+        hjust = ifelse(xLabel > nmax, 1.1, -0.15)
+      ),
+      color = "black",
+      size = 7, nudge_x = -0.5
+    ) +
+    labs(
+      y = NULL,
+      x = xLabel,
+      fill = NULL
+    ) +
+    theme(
+      text = element_text(size = 17),
+      axis.text.x = element_text(
+        angle = 90, vjust = 0.5, hjust = 1
+      ),
+      panel.border = element_rect(color = "black", fill = NA),
+      panel.background = element_blank()
     )
 }
 
-  
+
 SparsityPlot <- function(df) {
-    df %>%
+  df %>%
     as.data.frame(df) %>%
     naniar::vis_miss() +
-    labs(x = NULL,
-         y = "Number of proteins") +
-    theme(text = element_text(size = 20),
-          axis.text.y = element_text(color = "black", vjust = 1),
-          axis.text.x = element_text(
-            angle = 90, color = "black"),
-          line = element_blank(),
-          panel.background = element_blank())
-  }
+    labs(
+      x = NULL,
+      y = "Number of proteins"
+    ) +
+    theme(
+      text = element_text(size = 20),
+      axis.text.y = element_text(color = "black", vjust = 1),
+      axis.text.x = element_text(
+        angle = 90, color = "black"
+      ),
+      line = element_blank(),
+      panel.background = element_blank()
+    )
+}
 
 
 cat("\n\nGraph functions were loaded.\n")
-
 ```
 
 # Graph: Precursor x RT / Density Map ----
 ```{r}
-
 # Reconstruction of the ion chromatograms, the precursor quantity is
 #  plotted over the retention time (min) for each sample.
 GraphPrecursorRT_mzMapDensity <- function(runs) {
-
-  
   diannReport <- DiannReport(runs)
 
-    precursorRT <- diannReport %>%
+  precursorRT <- diannReport %>%
     ggplot(aes(x = RT, y = Precursor.Quantity)) +
     geom_line(aes(color = condition), show.legend = FALSE) +
     scale_color_manual(values = colors) +
-    labs(x = "Retention time (min)",
-         y = "Precursor quantity",
-         color = NULL) +
+    labs(
+      x = "Retention time (min)",
+      y = "Precursor quantity",
+      color = NULL
+    ) +
     facet_wrap(~Run, ncol = 6, scales = "free") +
-    theme(strip.background = element_blank(),
-          panel.border = element_rect(color = "black", fill = NA),
-          panel.background = element_blank())
-  
-  # For the m/z map, the density of ions collected is plotted over 
+    theme(
+      strip.background = element_blank(),
+      panel.border = element_rect(color = "black", fill = NA),
+      panel.background = element_blank()
+    )
+
+  # For the m/z map, the density of ions collected is plotted over
   # the scan range (m/z) for each sample.
-  mzMapDensity <- diannReport %>% 
+  mzMapDensity <- diannReport %>%
     ggplot(aes(x = RT, y = Precursor.Mz)) +
     ggpointdensity::geom_pointdensity(size = 0.1) +
     viridis::scale_color_viridis(option = "H") +
     scale_x_continuous(limits = c(0, 90)) +
-    labs(x = "Retention time (min)",
-         y = "Scan range (m/z)",
-         color = NULL) +
+    labs(
+      x = "Retention time (min)",
+      y = "Scan range (m/z)",
+      color = NULL
+    ) +
     facet_wrap(~Run, scales = "free", ncol = 6) +
-    theme(strip.background = element_blank(),
-          legend.position = "bottom",
-          legend.key.width = unit(1.5,"cm"),
-          legend.key.height = unit(0.25, "cm"),
-          panel.border = element_rect(color = "black", fill = NA),
-          panel.background = element_blank())
-  
-  
+    theme(
+      strip.background = element_blank(),
+      legend.position = "bottom",
+      legend.key.width = unit(1.5, "cm"),
+      legend.key.height = unit(0.25, "cm"),
+      panel.border = element_rect(color = "black", fill = NA),
+      panel.background = element_blank()
+    )
+
+
   precursorRT_and_mzMapDensity <- (precursorRT / mzMapDensity) +
     plot_annotation(tag_levels = "A") &
     theme(plot.tag = element_text(size = 30, face = "bold"))
-  
-  ggsave(filename = paste(quote(precursorRT_and_mzMapDensity), ".png", sep=""),
-         path = "plots",
-         plot = precursorRT_and_mzMapDensity,
-         width = 24, height = 20,
-         units = "in", dpi = 300)
-  
-  cat("\n\nGraph ",quote(precursorRT_and_mzMapDensity),".png were created.\n", sep="")
- }
 
-GraphPrecursorRT_mzMapDensity(labels)
+  ggsave(
+    filename = paste(quote(precursorRT_and_mzMapDensity), ".png", sep = ""),
+    path = "plots",
+    plot = precursorRT_and_mzMapDensity,
+    width = 24, height = 20,
+    units = "in", dpi = 300
+  )
 
+  cat("\n\nGraph ", quote(precursorRT_and_mzMapDensity), ".png were created.\n", sep = "")
+  
+  return(precursorRT_and_mzMapDensity)
+}
+
+# GraphPrecursorRT_mzMapDensity(labels)
 ```
 
 # Graph: Peptides | Proteins ----
 ```{r}
 # Counting the number of unique peptides and proteins per run
 GraphNumberOfPeptidesAndProteins <- function(runs, nmaxPeptides, nmaxProteins) {
-  
   diannReport <- DiannReport(runs)
-  diannReportByRun <- dplyr::group_by(diannReport, Run, condition) %>% 
-    dplyr::summarise(n_peptides = n_distinct(Stripped.Sequence),
-                     n_proteins = n_distinct(Protein.Ids))
-  
-  totalUniquePeptides = n_distinct(diannReport$Stripped.Sequence)
-  totalUniqueProteins = n_distinct(diannReport$Protein.Ids)
-  
+  diannReportByRun <- dplyr::group_by(diannReport, Run, condition) %>%
+    dplyr::summarise(
+      n_peptides = n_distinct(Stripped.Sequence),
+      n_proteins = n_distinct(Protein.Ids)
+    )
+
+  totalUniquePeptides <- n_distinct(diannReport$Stripped.Sequence)
+  totalUniqueProteins <- n_distinct(diannReport$Protein.Ids)
+
   # Create the peptides graph
-  peptidesPlot <- diannReportByRun %>% 
+  peptidesPlot <- diannReportByRun %>%
     ggplot(aes(y = Run, x = n_peptides, fill = condition)) +
     geom_bar(stat = "identity", position = "dodge", show.legend = FALSE) +
     scale_fill_manual(values = colors) +
-    geom_text(aes(label = n_peptides,
-                  hjust = ifelse(n_peptides > nmaxPeptides, 1.1, -0.15)),
-              color = "black", size = 7, nudge_x = -0.5, fontface = "bold") +
+    geom_text(
+      aes(
+        label = n_peptides,
+        hjust = ifelse(n_peptides > nmaxPeptides, 1.1, -0.15)
+      ),
+      color = "black", size = 7, nudge_x = -0.5, fontface = "bold"
+    ) +
     labs(y = NULL, x = "Number of peptides", fill = NULL) +
-    theme(text = element_text(size = 25),
-          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
-          panel.border = element_rect(color = "black", fill = NA),
-          panel.background = element_blank())
-  
+    theme(
+      text = element_text(size = 25),
+      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+      panel.border = element_rect(color = "black", fill = NA),
+      panel.background = element_blank()
+    )
+
   # Create the proteins graph
-  proteinsPlot <- diannReportByRun %>% 
+  proteinsPlot <- diannReportByRun %>%
     ggplot(aes(y = Run, x = n_proteins, fill = condition)) +
     geom_bar(stat = "identity", position = "dodge", show.legend = FALSE) +
     scale_fill_manual(values = colors) +
-    geom_text(aes(label = n_proteins,
-                  hjust = ifelse(n_proteins > nmaxProteins, 1.1, -0.15)),
-              color = "black", size = 7, nudge_x = -0.5, fontface = "bold") +
+    geom_text(
+      aes(
+        label = n_proteins,
+        hjust = ifelse(n_proteins > nmaxProteins, 1.1, -0.15)
+      ),
+      color = "black", size = 7, nudge_x = -0.5, fontface = "bold"
+    ) +
     labs(y = NULL, x = "Number of proteins", fill = NULL) +
-    theme(text = element_text(size = 25),
-          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
-          panel.border = element_rect(color = "black", fill = NA),
-          panel.background = element_blank())
-  
-  
+    theme(
+      text = element_text(size = 25),
+      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+      panel.border = element_rect(color = "black", fill = NA),
+      panel.background = element_blank()
+    )
+
+
   # Concatenate peptides plot and proteins plot
   number_of_peptides_and_proteins <- (peptidesPlot | proteinsPlot) +
     plot_annotation(tag_levels = "A") &
     theme(plot.tag = element_text(size = 30, face = "bold"))
-  
+
   # Save file
-  ggsave(filename = paste(quote(number_of_peptides_and_proteins), ".png", sep=""),
-         path = "plots",
-         plot = number_of_peptides_and_proteins,
-         width = 24, height = 20,
-         units = "in", dpi = 300)
+  ggsave(
+    filename = paste(quote(number_of_peptides_and_proteins), ".png", sep = ""),
+    path = "plots",
+    plot = number_of_peptides_and_proteins,
+    width = 24, height = 20,
+    units = "in", dpi = 300
+  )
+
+  cat("\nGraph ", quote(number_of_peptides_and_proteins), ".png were created.\n",
+    "Total number of unique  peptides: ", totalUniquePeptides,
+    "\nTotal number of unique proteins: ", totalUniqueProteins, "\n",
+    sep = ""
+  )
   
-  cat("\nGraph ", quote(number_of_peptides_and_proteins),".png were created.\n",
-      "Total number of unique  peptides: ",totalUniquePeptides,
-      "\nTotal number of unique proteins: ",totalUniqueProteins ,"\n", sep="" )
+  return(peptidesPlot)
 }
 
-GraphNumberOfPeptidesAndProteins(labels, nmaxPeptides = 8200, nmaxProteins = 1900)
-
+# GraphNumberOfPeptidesAndProteins(labels, nmaxPeptides = 8200, nmaxProteins = 1900)
 ```
 
 # Graph: Sparsity Matrix ----
 ```{r}
-#Genes.MaxLFQ.Unique: matriz de abundância de intensidade normalizada com algoritmo MAX LFQ sendo calculada a partir de peptídeos únicos (peptídeos que dão match apenas com uma proteína)
+# Genes.MaxLFQ.Unique: matriz de abundância de intensidade normalizada 
+#com algoritmo MAX LFQ sendo calculada a partir de peptídeos únicos 
+#(peptídeos que dão match apenas com uma proteína)
 
 GraphSparsityMatrix <- function(runs, removeRun = "") {
-
   diannReport <- DiannReport(runs)
-  
+
   # Create sparsity plot with unique genes UNFILTERED
   uniqueGenes <- diann::diann_matrix(
     diannReport,
     id.header = "Protein.Group",
-    quantity.header = "Genes.MaxLFQ.Unique", 
+    quantity.header = "Genes.MaxLFQ.Unique",
     proteotypic.only = T,
-    pg.q = .01)
-  
+    pg.q = .01
+  )
+
   sparsityPlotRaw <- SparsityPlot(uniqueGenes)
-  
+
   uniqueGenesFiltered <- diannReport %>%
     dplyr::filter(PG.MaxLFQ.Quality > 0.75 &
-                    Empirical.Quality > 0.75 &
-                    Run != removeRun) %>% 
-    
-    diann::diann_matrix(id.header = "Protein.Group",
-                        quantity.header = "Genes.MaxLFQ.Unique",
-                        proteotypic.only = T,
-                        pg.q = .01)
-  
+      Empirical.Quality > 0.75 &
+      Run != removeRun) %>%
+    diann::diann_matrix(
+      id.header = "Protein.Group",
+      quantity.header = "Genes.MaxLFQ.Unique",
+      proteotypic.only = T,
+      pg.q = .01
+    )
+
   sparsityPlotFiltered <- SparsityPlot(uniqueGenesFiltered)
-  
+
   # Create a sparsity plot with unique genes REDUCED and FILTERED
-  uniqueGenesReduced <- RemoveMissingAboveThreshold(uniqueGenesFiltered, threshold=0.3)
-  
+  uniqueGenesReduced <- RemoveMissingAboveThreshold(uniqueGenesFiltered, threshold = 0.3)
+
   sparsityPlotReduced <- SparsityPlot(uniqueGenesReduced)
-  
-  
+
+
   sparsity_matrix <- (sparsityPlotRaw | sparsityPlotFiltered | sparsityPlotReduced) +
     plot_annotation(tag_levels = "A") &
     theme(plot.tag = element_text(size = 30, face = "bold"))
-  
-  ggsave(filename = paste(quote(sparsity_matrix),".png", sep=""),
-         path = "plots",
-         plot = sparsity_matrix,
-         width = 24, height = 20,
-         units = "in", dpi = 300)
+
+  ggsave(
+    filename = paste(quote(sparsity_matrix), ".png", sep = ""),
+    path = "plots",
+    plot = sparsity_matrix,
+    width = 24, height = 20,
+    units = "in", dpi = 300
+  )
+
+    cat("\nGraph ", quote(sparsity_matrix), ".png were created.\n", sep = "")
+
+  return(sparsity_matrix)
 }
 
 
-GraphSparsityMatrix(labels, removeRun = "NaCl r1")
-
-
+# GraphSparsityMatrix(labels, removeRun = "NaCl r1")
 ```
 
 # Graph: QuanUMS Evaluation
 ```{r}
+GraphQuantUMS <- function() {
 
+  diannReport <- DiannReport(labels)
+  
+  lowScoresPeptide <- diannReport %>% 
+    dplyr::filter(PG.MaxLFQ.Quality < 0.75 & Empirical.Quality < 0.75) %>% 
+    dplyr::group_by(Run) %>% 
+    dplyr::summarise(
+      n = n_distinct(Stripped.Sequence)
+    )
+   
+  quantUMS <- diannReport %>% 
+    ggplot(aes(
+    x = PG.MaxLFQ.Quality,
+    y = Empirical.Quality)) +
+    geom_pointdensity(size = 0.5) +
+    geom_vline(xintercept = 0.75, linetype = "dashed", color = "black") +
+    geom_hline(yintercept = 0.75, linetype = "dashed", color = "black") +
+    viridis::scale_color_viridis(option = "plasma") +
+    
+    geom_text(data = lowScoresPeptide, 
+      aes(x = 0.25, y = 0.35, label = n),
+      hjust = -0.1, vjust = 0.5,
+      size = 9, fontface = "bold",
+      color = "red", show.legend = FALSE) +
 
+    labs(title = "QuantUMS scores for feature selection",
+    x = "pgQ Score",
+    y = "eQ Score",
+    color = NULL) +
+
+    facet_wrap(~Run, ncol = 6) +
+        theme(plot.title = element_text(size = 30, 
+                                    face = "bold", hjust = 0.5),
+      strip.background = element_blank(),
+      strip.text = element_text(face = "bold", size = 25),
+      text = element_text(size = 25),
+      axis.title = element_text(size = 30),
+      axis.text.x = element_text(color = "black",
+            angle = 90, vjust = 0.5, hjust = 1),
+        legend.position = "none",
+      panel.border = element_rect(color = "black", fill = NA),
+      panel.background = element_rect(fill = "white")
+      )
+
+  ggsave(
+    filename = paste(quote(quantUMS), ".png", sep = ""),
+    path = "plots",
+    plot = quantUMS,
+    width = 24, height = 20,
+    units = "in", dpi = 300
+  )
+
+  cat("\nGraph ", quote(quantUMS), ".png were created.\n", sep = "")
+
+  return(quantUMS)
+}
+
+GraphQuantUMS()
 ```
 
+
+``` {R}
+
+
+df_mat_cv
+cv_plot
+
+
+# kmeans_clusters | pca_plot) / (cosine_similarity | cv_plot) -->
+```
