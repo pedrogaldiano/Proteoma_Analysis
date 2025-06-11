@@ -18,7 +18,6 @@ Envenomation by *Bothrops jararaca* is considered a neglected disease by the Wor
 
 # Load packages dependencies
 ```{r}
-#| label: Load packages
 library(diann) # to extract the MaxLFQ matrix from DIANN report
 library(arrow) # to read the report.parquet file
 library(here) # to avoid the need for use the path while loading the data
@@ -38,7 +37,6 @@ library(limma) # to calculate the differential abundance
 library(DIAgui) # to extract iBAQ values
 
 cat("\n\nAll packages were activated.\n")
-
 ```
 
 # Global variables
@@ -166,7 +164,7 @@ DiannReport <- function(runs, directory = "../data/DIANN_results/") {
   )
 
   write_rds(diannReport, file = "diannReport.rds")
-  cat("\ndiannReport.rds were created.\ndiannReport were loaded.\n")
+  cat("\ndiannReport.rds were created.\ndiannReport were loaded.")
 
   return(diannReport)
 }
@@ -183,6 +181,26 @@ theme_update(
   legend.title.position = "top"
 )
 
+UniqueGenesFilter <- function(diannReport, removeSample, pgScore = 0.75, eqScore = 0.75) {
+  result <- diannReport %>%
+    dplyr::filter(PG.MaxLFQ.Quality > 0.75 &
+                    Empirical.Quality > 0.75 &
+                    Run != removeSample) %>%
+    diann::diann_matrix(id.header = "Protein.Group",
+                        quantity.header = "Genes.MaxLFQ.Unique",
+                        proteotypic.only = T,
+                        pg.q = .01
+    )
+  
+  cat("\n\nFilter were applied.\nPG.MaxLFQ.Quality >",pgScore,
+      "\nEmpirical.Quality >",eqScore,"\nSample removed:", removeSample,"\n")
+  return(result)
+}
+
+#TODO: Ficou feião isso, mas a Manu ta falando e eu não consigo pensar :c
+UniqueGenesReducer <- function(diannMatrix, threshold) {
+  return(RemoveMissingAboveThreshold(diannMatrix, threshold = threshold))
+}
 
 
 cat("\n\nHelper functions were loaded.\n")
@@ -312,7 +330,7 @@ GraphPrecursorRT_mzMapDensity <- function(runs) {
   return(precursorRT_and_mzMapDensity)
 }
 
-# GraphPrecursorRT_mzMapDensity(labels)
+GraphPrecursorRT_mzMapDensity(labels)
 ```
 
 # Graph: Peptides | Proteins ----
@@ -393,16 +411,14 @@ GraphNumberOfPeptidesAndProteins <- function(runs, nmaxPeptides, nmaxProteins) {
   return(peptidesPlot)
 }
 
-# GraphNumberOfPeptidesAndProteins(labels, nmaxPeptides = 8200, nmaxProteins = 1900)
+x <- GraphNumberOfPeptidesAndProteins(labels, nmaxPeptides = 8200, nmaxProteins = 1900)
 ```
 
 # Graph: Sparsity Matrix ----
 ```{r}
-# Genes.MaxLFQ.Unique: matriz de abundância de intensidade normalizada 
-#com algoritmo MAX LFQ sendo calculada a partir de peptídeos únicos 
-#(peptídeos que dão match apenas com uma proteína)
+# Genes.MaxLFQ.Unique: matriz de abundância de intensidade normalizada com algoritmo MAX LFQ sendo calculada a partir de peptídeos únicos (peptídeos que dão match apenas com uma proteína)
 
-GraphSparsityMatrix <- function(runs, removeRun = "") {
+GraphSparsityMatrix <- function(runs, sampleToRemove = "") {
   diannReport <- DiannReport(runs)
 
   # Create sparsity plot with unique genes UNFILTERED
@@ -413,28 +429,19 @@ GraphSparsityMatrix <- function(runs, removeRun = "") {
     proteotypic.only = T,
     pg.q = .01
   )
-
   sparsityPlotRaw <- SparsityPlot(uniqueGenes)
-
-  uniqueGenesFiltered <- diannReport %>%
-    dplyr::filter(PG.MaxLFQ.Quality > 0.75 &
-      Empirical.Quality > 0.75 &
-      Run != removeRun) %>%
-    diann::diann_matrix(
-      id.header = "Protein.Group",
-      quantity.header = "Genes.MaxLFQ.Unique",
-      proteotypic.only = T,
-      pg.q = .01
-    )
-
+  
+  
+  # Create a sparsity plot with unique genes FILTERED
+  uniqueGenesFiltered <- UniqueGenesFilter(diannReport, sampleToRemove)
   sparsityPlotFiltered <- SparsityPlot(uniqueGenesFiltered)
 
+  
   # Create a sparsity plot with unique genes REDUCED and FILTERED
-  uniqueGenesReduced <- RemoveMissingAboveThreshold(uniqueGenesFiltered, threshold = 0.3)
-
+  uniqueGenesReduced <- UniqueGenesReducer(uniqueGenesFiltered, threshold = 0.3)
   sparsityPlotReduced <- SparsityPlot(uniqueGenesReduced)
 
-
+  
   sparsity_matrix <- (sparsityPlotRaw | sparsityPlotFiltered | sparsityPlotReduced) +
     plot_annotation(tag_levels = "A") &
     theme(plot.tag = element_text(size = 30, face = "bold"))
@@ -446,20 +453,16 @@ GraphSparsityMatrix <- function(runs, removeRun = "") {
     width = 24, height = 20,
     units = "in", dpi = 300
   )
-
-    cat("\nGraph ", quote(sparsity_matrix), ".png were created.\n", sep = "")
-
-  return(sparsity_matrix)
 }
 
+GraphSparsityMatrix(labels, sampleToRemove = "NaCl r1")
 
-# GraphSparsityMatrix(labels, removeRun = "NaCl r1")
 ```
 
 # Graph: QuanUMS Evaluation
 ```{r}
 GraphQuantUMS <- function() {
-
+  
   diannReport <- DiannReport(labels)
   
   lowScoresPeptide <- diannReport %>% 
@@ -468,41 +471,42 @@ GraphQuantUMS <- function() {
     dplyr::summarise(
       n = n_distinct(Stripped.Sequence)
     )
-   
+  
   quantUMS <- diannReport %>% 
-    ggplot(aes(
-    x = PG.MaxLFQ.Quality,
-    y = Empirical.Quality)) +
+    ggplot(aes(    x = PG.MaxLFQ.Quality,
+                   y = Empirical.Quality)) +
+    
     geom_pointdensity(size = 0.5) +
+    
     geom_vline(xintercept = 0.75, linetype = "dashed", color = "black") +
     geom_hline(yintercept = 0.75, linetype = "dashed", color = "black") +
     viridis::scale_color_viridis(option = "plasma") +
     
     geom_text(data = lowScoresPeptide, 
-      aes(x = 0.25, y = 0.35, label = n),
-      hjust = -0.1, vjust = 0.5,
-      size = 9, fontface = "bold",
-      color = "red", show.legend = FALSE) +
-
+              aes(x = 0.25, y = 0.35, label = n),
+              hjust = -0.1, vjust = 0.5,
+              size = 9, fontface = "bold",
+              color = "red", show.legend = FALSE) +
+    
     labs(title = "QuantUMS scores for feature selection",
-    x = "pgQ Score",
-    y = "eQ Score",
-    color = NULL) +
-
+         x = "pgQ Score",
+         y = "eQ Score",
+         color = NULL) +
+    
     facet_wrap(~Run, ncol = 6) +
-        theme(plot.title = element_text(size = 30, 
+    theme(plot.title = element_text(size = 30, 
                                     face = "bold", hjust = 0.5),
-      strip.background = element_blank(),
-      strip.text = element_text(face = "bold", size = 25),
-      text = element_text(size = 25),
-      axis.title = element_text(size = 30),
-      axis.text.x = element_text(color = "black",
-            angle = 90, vjust = 0.5, hjust = 1),
-        legend.position = "none",
-      panel.border = element_rect(color = "black", fill = NA),
-      panel.background = element_rect(fill = "white")
-      )
-
+          strip.background = element_blank(),
+          strip.text = element_text(face = "bold", size = 25),
+          text = element_text(size = 25),
+          axis.title = element_text(size = 30),
+          axis.text.x = element_text(color = "black",
+                                     angle = 90, vjust = 0.5, hjust = 1),
+          legend.position = "none",
+          panel.border = element_rect(color = "black", fill = NA),
+          panel.background = element_rect(fill = "white")
+    )
+  
   ggsave(
     filename = paste(quote(quantUMS), ".png", sep = ""),
     path = "plots",
@@ -510,9 +514,9 @@ GraphQuantUMS <- function() {
     width = 24, height = 20,
     units = "in", dpi = 300
   )
-
+  
   cat("\nGraph ", quote(quantUMS), ".png were created.\n", sep = "")
-
+  
   return(quantUMS)
 }
 
@@ -520,11 +524,9 @@ GraphQuantUMS()
 ```
 
 
-``` {R}
-
-
-df_mat_cv
-cv_plot
+```{r}
+# df_mat_cv
+# cv_plot
 
 
 # kmeans_clusters | pca_plot) / (cosine_similarity | cv_plot) -->
