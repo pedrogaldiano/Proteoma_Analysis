@@ -373,9 +373,9 @@ quantums_mtx_sparsity_reduced_plot <- abundance_mtx_reduced %>%
 
 
 df_for_imputation <- log2(abundance_mtx_reduced + 1) #%>% 
-#   as.data.frame() %>%
-#   rownames_to_column(var = "protein")
-# 
+  as.data.frame() %>%
+  rownames_to_column(var = "protein")
+
 # cat("Percentage of missing values:", 
 #     mean(is.na(df_for_imputation)) * 100, "%\n")
 # 
@@ -411,6 +411,8 @@ cosine_similarity <- complete_mtx %>%
     as.data.frame() %>%
     rownames_to_column(var = "Sample") %>%
     pivot_longer(-Sample, names_to = "Match", values_to = "value") %>%
+  
+  
     dplyr::mutate(Similarity = "Cosine similarity",
                   Sample = factor(Sample, levels = c("NaCl r1", "NaCl r2", "NaCl r3", 
                                                      "Actn 15 mg r1", "Actn 15 mg r2", "Actn 15 mg r3",
