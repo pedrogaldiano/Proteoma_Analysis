@@ -16,7 +16,6 @@ editor_options:
 Envenomation by *Bothrops jararaca* is considered a neglected disease by the World Health Organization that causes high morbidity and mortality. Among the main causes of mortality due to *Bothrops* envenomation is acute renal failure. Investigations of the proteome by mass spectrometry in plasma or renal tissue samples in murine models suggest potential candidates for markers of acute renal injury, such as the proteins NGAL and ITIH4. A less explored approach to search for markers of renal injury is the investigation of post translation modifications of proteins excreted in the urine of envenomed individuals. Elevated plasma urea levels are a striking feature among the changes commonly detected in blood samples from individuals who have been victims of snakebite. Uremia can be a sign of deterioration of renal function and can be associated with carbamylation of the amino terminus of proteins and the side chain of Lys residues. Carbamylation is a hallmark of aging that can be detected in the proteome, but it is underestimated as a hallmark of diseases that evolve with elevated urea. The present project aims to investigate the carbamylation profile of proteins excreted in 24-hour urine of animals injected with *B. jararaca* venom. The *in vivo* experiment with Swiss mice was conducted at the Laboratory of Applied Toxinology of Butantan Institute and the present project proposes the evaluation of urine samples from animals injected with 1.6 mg/kg of *B. jararaca* venom, pretreated with cathepsin or meprin inhibitors. The samples were reduced with 5 mM TCEP, alkylated with 20 mM chloroacetamide and digested with trypsin (1:100) using the SP3 protocol (Single-Pot, Solid-Phase-enhanced Sample Preparation). The samples were analyzed in the Vanquish Neo – Obritrap Exploris 480 system in data-independent acquisition (DIA) mode. Peptide identifications and protein inference were performed using the DIA-NN v2.1.0 search engine with the *Mus musculus* reference database containing only canonical sequences. Statistical analyses were performed using R version 4.2.2 with scripts developed specifically for the project.
 
 # Load packages dependencies
-
 ```{r}
 library(diann) # to extract the MaxLFQ matrix from DIANN report
 library(arrow) # to read the report.parquet file
@@ -40,7 +39,6 @@ cat("\n\nAll packages were activated.\n")
 ```
 
 # Global variables
-
 ```{r}
 # This map should be ordered by the sample-name (code = sample_name), this will
 # define the order everything will be ploted
@@ -92,7 +90,6 @@ cat("\n\nGlobal variables were loaded.\n")
 ```
 
 # Helper functions ----
-
 ```{r}
 # Return a dataset with the coefficients of variation
 CV_Matrix <- function(data, condition) {
@@ -234,7 +231,9 @@ FilterByMissingness <- function(data) {
 }
 
 
-CleanDiannReport <- function(diannReport) {
+CleanDiannReport <- function() {
+  
+  diannReport <- DiannReport(labels) #Not sure if the best approach is to get it inside the function or pass as argument
   
   fileName = "cleanDiannReport.rds"
   
@@ -268,7 +267,6 @@ cat("\n\nHelper functions were loaded.\n")
 ```
 
 # Graph functions ----
-
 ```{r}
 GenBarGraph <- function(data, xValue, yValue, condition, xLabel, nmax) {
   ggplot(data, aes(
@@ -329,9 +327,7 @@ SparsityPlot <- function(df) {
 cat("\n\nGraph functions were loaded.\n")
 ```
 
-
 # Graph: Precursor x RT / Density Map [ok] ----
-
 ```{r}
 # Reconstruction of the ion chromatograms, the precursor quantity is
 #  plotted over the retention time (min) for each sample.
@@ -391,14 +387,13 @@ GraphPrecursorRT_mzMapDensity <- function() {
 
   cat("\n\nGraph ", quote(precursorRT_and_mzMapDensity), ".png were created.\n", sep = "")
   
-  return(precursorRT_and_mzMapDensity)
+  # return(precursorRT_and_mzMapDensity)
 }
 
 GraphPrecursorRT_mzMapDensity()
 ```
 
-# Graph: Peptides \| Proteins [ok] ----
-
+# Graph: Peptides | Proteins [ok] ----
 ```{r}
 # Counting the number of unique peptides and proteins per run
 GraphNumberOfPeptidesAndProteins <- function(nmaxPeptides, nmaxProteins) {
@@ -474,14 +469,13 @@ GraphNumberOfPeptidesAndProteins <- function(nmaxPeptides, nmaxProteins) {
     sep = ""
   )
   
-  return(peptidesPlot)
+  # return(peptidesPlot)
 }
 
 GraphNumberOfPeptidesAndProteins(nmaxPeptides = 8200, nmaxProteins = 1900)
 ```
 
 # Graph: Sparsity Matrix [ok] ----
-
 ```{r}
 # Genes.MaxLFQ.Unique: matriz de abundância de intensidade normalizada com algoritmo MAX LFQ sendo calculada a partir de peptídeos únicos (peptídeos que dão match apenas com uma proteína)
 
@@ -502,8 +496,6 @@ GraphSparsityMatrix <- function() {
   
 
   # Create a sparsity plot with unique genes FILTERED
-  # uniqueGenesFiltered <- UniqueGenesFilter(diannReport, sampleToRemove)
-  
   uniqueGenesFiltered <- diannReport %>% 
                           FilterByScore() %>%
                           FilterBySample() %>%
@@ -514,7 +506,7 @@ GraphSparsityMatrix <- function() {
   
   # Create a sparsity plot with unique genes REDUCED and FILTERED
 
-  uniqueGenesCleaned <- CleanDiannReport(diannReport)
+  uniqueGenesCleaned <- CleanDiannReport()
   sparsityPlotCleaned <- SparsityPlot(uniqueGenesCleaned)
   
   
@@ -536,13 +528,10 @@ GraphSparsityMatrix()
 ```
 
 # Graph: QuanUMS Evaluation [ok] ----
-
 ```{r}
 GraphQuantUMS <- function() {
   
   diannReport <- DiannReport(labels)
-  
-
   
    lowScoresPeptide <- diannReport %>% 
     dplyr::filter(PG.MaxLFQ.Quality < params$pgScore &
@@ -576,8 +565,8 @@ GraphQuantUMS <- function() {
     theme(plot.title = element_text(size = 30, 
                                     face = "bold", hjust = 0.5),
           strip.background = element_blank(),
-          strip.text = element_text(face = "bold", size = 25),
-          text = element_text(size = 25),
+          strip.text = element_text(face = "bold", size = 25), #TODO: diminuir o tamanho?
+          text = element_text(size = 25), #TODO: diminuir o tamanho?
           axis.title = element_text(size = 30),
           axis.text.x = element_text(color = "black",
                                      angle = 90, vjust = 0.5, hjust = 1),
@@ -602,27 +591,27 @@ GraphQuantUMS <- function() {
 GraphQuantUMS()
 ```
 
-# Imputation matrix [Quebrou hard] ----
-
+# Imputation matrix [ok] ----
 ```{r}
-
-CreateImputationMatrix <- function(diannReport,
-                                   sampleToRemove = "",
+CreateImputationMatrix <- function(override = TRUE,
                                    imputationMethod = "rf",
                                    mValue = 1,
                                    maxitValue = 100,
-                                   seedValue = 500) {
-  
-  
-  
-  stringRDS = paste0("imputedMatrix_",imputationMethod,".rds")
-  
-  
-  #TODO: remover esse if, na vida real se eu mexer na função não quero que ele puxe o .rds
-  if (!(file.exists(stringRDS) & file.exists(paste0("result_",stringRDS)))) {
+                                   seedValue = 500) { 
+
+  filenameImputation <- paste0("imputedMatrix_",imputationMethod,".rds")
+  filenameResult <- paste0("result_", filenameImputation)
+  filesExists <- (file.exists(filenameImputation) | file.exists(filenameResult))
+
+  if (!(override) & filesExists) {
     
-    UniqueGenesReduced <- RemoveMissingAboveThreshold(UniqueGenesFilter(diannReport, removeSample = sampleToRemove))
-    matrixForImputation <- log2(UniqueGenesReduced + 1) %>%
+    cat("\nLoad file:",filenameResult)
+    invisible(read_rds(filenameResult))
+  } else {
+
+    uniqueGenesCleaned <- CleanDiannReport()
+    
+    matrixForImputation <- log2(uniqueGenesCleaned + 1) %>%
       as.data.frame() %>%
       rownames_to_column(var = "protein") #%>% 
       # janitor::clean_names() #acho que só precisa do clean_names se eu for plotar a matrix de imputação
@@ -636,36 +625,28 @@ CreateImputationMatrix <- function(diannReport,
                                 seed = seedValue,
                                 printFlag = FALSE)
     
-    # imputedMatrix <- read_rds("imputedMatrix_rf.rds")
-    # resultImputedMatrix <- read_rds("result_imputedMatrix_rf.rds")
-    
     result <- mice::complete(imputedMatrix)
     
-    write_rds(imputedMatrix, file = stringRDS)
-    write_rds(result, file = paste0("result_", stringRDS))
     
-    return (result)
-  } else {
-    return (read_rds(paste0("result_", stringRDS)))
-  }
-  cat("\n\nImputation matrix were created/loaded")
+    cat("\nCreate files:\n", filenameImputation,"\n", filenameResult)
+    write_rds(imputedMatrix, file = filenameImputation)
+    write_rds(result, file = filenameResult)
+  
+    invisible(result)
+    # return(result) #Com o return ele printa o result, não deveria.. Negócio feio.
+}
 }
 
-result <- CreateImputationMatrix(DiannReport(labels))
+CreateImputationMatrix(override = FALSE)
 
 ```
 
-# Graph: Cosine Similarity [quebrou tbm] ----
-
+# Graph: Cosine Similarity [ok] ----
 ```{r}
-GraphCosSimilarity <- function(resultImputedMatrix = "pra facilitar a minha vida", sampleToRemove = "") {
+GraphCosSimilarity <- function()  {
   
-  diann <- DiannReport(labels)
-  cosineSimilarity <- CreateImputationMatrix(
-    RemoveMissingAboveThreshold(
-      UniqueGenesFilter(diann, removeSample = sampleToRemove))) %>% #isso aqui ficou uma merda, em?
-    
-    column_to_rownames("protein") %>%  # Pega os nomes das proteínas e converte elas em nome das linhas (literalmente o que ta escrito dhusiahduiaudi)
+  cosineSimilarity <- CreateImputationMatrix(override = FALSE) %>% 
+    column_to_rownames("protein") %>%
     as.matrix() %>% 
     lsa::cosine() %>% 
     as.data.frame() %>% 
@@ -676,42 +657,41 @@ GraphCosSimilarity <- function(resultImputedMatrix = "pra facilitar a minha vida
                   Sample = factor(Sample, levels = unname(labels)),
                   Match = factor(Match, levels = unname(labels))) %>% 
     
-      ggplot() +
+    ggplot() +
     geom_tile(aes(x = Sample, y = Match, fill = value)) +
     viridis::scale_fill_viridis(option = "E") +
-      labs(title = "Similarity matrix",
-        x = NULL,
-        y = NULL,
-        fill = "Cosine similarity") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+    labs(title = "Similarity matrix",
+         x = NULL,
+         y = NULL,
+         fill = "Cosine similarity") +
+    # theme_minimal() +
+    theme(plot.title = element_text(hjust = 0.5, face = "bold"),
           text = element_text(size = 20),
           axis.text.x = element_text(angle = 90,
-            hjust = 1, vjust = 0.5, color = "black"),
+                                     hjust = 1, vjust = 0.5, color = "black"),
           axis.text.y = element_text(angle = 0,
-            hjust = 1, vjust = 0.5, color = "black"),
+                                     hjust = 1, vjust = 0.5, color = "black"),
           legend.position = "bottom",
-        legend.title.position = "top",
-        legend.title = element_text(hjust = 0.5),
+          legend.title.position = "top",
+          legend.title = element_text(hjust = 0.5),
           legend.key.width = unit(2.5, "cm"),
           legend.key.height = unit(0.3, "cm"),
-          panel.border = element_rect(color = "black", fill = NA)
-    )
+          panel.border = element_rect(color = "black", fill = NA),
+          panel.background = element_blank())
   
   ggsave(
     filename = paste(quote(cosineSimilarity), ".png", sep = ""),
     path = "plots",
     plot = cosineSimilarity,
     width = 24, height = 20,
-    units = "in", dpi = 300
-  )
+    units = "in", dpi = 300)
   
-  cat("\nGraph ", quote(quantUMS), ".png were created.\n", sep = "")
+  cat("\nGraph ", quote(cosineSimilarity), ".png were created.\n", sep = "")
   
   return(cosineSimilarity)  
 } 
 
-cos <- GraphCosSimilarity()
+GraphCosSimilarity()
 
 # kmeans_clusters | pca_plot) / (cosine_similarity | cv_plot) -->
 ```
