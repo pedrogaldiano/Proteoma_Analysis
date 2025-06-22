@@ -41,45 +41,45 @@ cat("\n\nAll packages were activated.\n")
 ```{r}
 # This map should be ordered by the sample-name (code = sample_name), this will
 # define the order everything will be ploted
-# 
+#
 # A amostra precisa terminar com espaço, letra r , número (" r1", " r2", " r637")
 # Sim, é uma gambiarra. E funciona!
 labels <- c(
-  P2_01 =  "NaCl r1",
-  P2_02 = "NaCl r2",
-  P2_03 =  "NaCl r3",
-  P1_02 = "Venom r1",
-  P1_03 =  "Venom r2",
-  P2_04 = "Actn 15 mg r1",
-  P2_05 =  "Actn 15 mg r2",
-  P2_06 = "Actn 15 mg r3",
-  P1_04 = "Actn 30 mg r1",
-  P1_05 =  "Actn 30 mg r2",
-  P2_11 = "JPM-OEt 50 mg r1",
-  P2_12 =  "JPM-OEt 50 mg r2",
-  P1_10 =  "JPM-OEt 100 mg r1",
-  P1_11 = "JPM-OEt 100 mg r2",
-  P1_12 =  "JPM-OEt 100 mg r3",
-  P2_07 =  "Ven + Actn 15 mg r1",
-  P2_08 = "Ven + Actn 15 mg r2",
-  P2_09 =  "Ven + Actn 15 mg r3",
-  P1_07 = "Ven + Actn 30 mg r1",
-  P1_08 =  "Ven + Actn 30 mg r2",
-  P1_09 = "Ven + Actn 30 mg r3",
-  P2_13 = "Ven + JPM-OEt 50 mg r1",
-  P2_14 =  "Ven + JPM-OEt 50 mg r2",
-  P2_15 = "Ven + JPM-OEt 50 mg r3",
-  P1_13 = "Ven + JPM-OEt 100 mg r1",
-  P1_14 =  "Ven + JPM-OEt 100 mg r2",
-  P1_15 = "Ven + JPM-OEt 100 mg r3"
+  P2_01 = "NaCl_r1",
+  P2_02 = "NaCl_r2",
+  P2_03 = "NaCl_r3",
+  P2_04 = "Actinonin_15mg_r1",
+  P2_05 = "Actinonin_15mg_r2",
+  P2_06 = "Actinonin_15mg_r3",
+  P1_04 = "Actinonin_30mg_r1",
+  P1_05 = "Actinonin_30mg_r2",
+  P2_11 = "JPMOEt_50mg_r1",
+  P2_12 = "JPMOEt_50mg_r2",
+  P1_10 = "JPMOEt_100mg_r1",
+  P1_11 = "JPMOEt_100mg_r2",
+  P1_12 = "JPMOEt_100mg_r3",
+  P1_02 = "Venom_r1",
+  P1_03 = "Venom_r2",
+  P2_07 = "Ven_Actn_15mg_r1",
+  P2_08 = "Ven_Actn_15mg_r2",
+  P2_09 = "Ven_Actn_15mg_r3",
+  P1_07 = "Ven_Actn_30mg_r1",
+  P1_08 = "Ven_Actn_30mg_r2",
+  P1_09 = "Ven_Actn_30mg_r3",
+  P2_13 = "Ven_jPMOEt_50mg_r1",
+  P2_14 = "Ven_jPMOEt_50mg_r2",
+  P2_15 = "Ven_jPMOEt_50mg_r3",
+  P1_13 = "Ven_jPMOEt_100mg_r1",
+  P1_14 = "Ven_jPMOEt_100mg_r2",
+  P1_15 = "Ven_jPMOEt_100mg_r3"
 )
 
 # Params to filter by
 params <- list(pgScore = 0.75,
-               eqScore = 0.75,
-               threshold = 0.3,
-               sampleToRemove = "NaCl r1",
-               numberOfClusters = 4)
+  eqScore = 0.75,
+  threshold = 0.3,
+  samplesToRemove = c("NaCl_r1"),
+  numberOfClusters = 4)
 
 colors <- c(
   "#FED789FF", "#023743FF", "#72874EFF", "#476F84FF", "#A4BED5FF",
@@ -96,17 +96,16 @@ cat("\n\nGlobal variables were loaded.\n")
 ```{r}
 # Return a dataset with the coefficients of variation
 CV_Matrix <- function(data, condition, gambiarra) {
-   
   # data <- CreateImputationMatrix()
   # condition <- "Ven + Actn 30 mg"
   # gambiarra <- paste0("^",str_replace(condition, "\\+", "\\\\+")," r[0-9]+")
-  # 
-    selected <- dplyr::select(
+  #
+  selected <- dplyr::select(
     data,
     protein,
     str_subset(colnames(data), gambiarra)
   )
-  
+
   selected_rowwise <- rowwise(selected)
 
   mutated <- dplyr::mutate(selected_rowwise,
@@ -123,14 +122,6 @@ CV_Matrix <- function(data, condition, gambiarra) {
 
 # Generate the diannReport.rds from report.parquet file
 DiannReport <- function(runs, directory = "../data/DIANN_results/") {
-  # if (file.exists("diannReport.rds")) {
-  #   cat("\nDiannReport.rds were loaded from file.\n")
-  #   return(read_rds("diannReport.rds"))
-  # }
-  # TODO: find a way to delete the file manually if needed
-  # The variable "directory" does not exist if I just run this line
-  # file.remove(paste(directory),diannReport.rds"))
-  #
 
   report <- arrow::read_parquet(paste(directory, "report.parquet", sep = ""))
 
@@ -144,7 +135,7 @@ DiannReport <- function(runs, directory = "../data/DIANN_results/") {
   reportRecoded <- dplyr::mutate(reportFiltered,
     Run = recode(Run, !!!runs),
     Run = factor(Run, levels = unname(runs)),
-    condition = str_remove(Run, " r1| r2| r3"),
+    condition = str_remove(Run, "_r1|_r2|_r3"),
     File.Name = Run,
     peptide_length = nchar(Stripped.Sequence)
   )
@@ -154,8 +145,7 @@ DiannReport <- function(runs, directory = "../data/DIANN_results/") {
     str_detect(Protein.Names, "MOUSE")
   )
 
-  write_rds(diannReport, file = "diannReport.rds")
-  cat("\ndiannReport.rds were created and loaded.")
+  cat("\ndiannReport were loaded.")
 
   return(diannReport)
 }
@@ -174,131 +164,143 @@ theme_update(
 
 
 FilterByScore <- function(data) {
-  
-    result <- data %>%
-    as.data.frame() %>% 
-    dplyr::filter(PG.MaxLFQ.Quality > params$pgScore &
-                    Empirical.Quality > params$eqScore)
 
-  cat("\n\nFilters were applied.\nPG.MaxLFQ.Quality >",params$pgScore,
-      "\nEmpirical.Quality >",params$eqScore)
-  
+  result <- data %>%
+    as.data.frame() %>%
+    dplyr::filter(PG.MaxLFQ.Quality > params$pgScore &
+      Empirical.Quality > params$eqScore)
+
+  cat("\nPG.MaxLFQ.Quality >", params$pgScore,
+    "\nEmpirical.Quality >", params$eqScore)
+
   return(result)
 }
 
 FilterBySample <- function(data) {
-  
-  result <- data %>%
-    as.data.frame() %>% 
-    dplyr::filter(Run != params$sampleToRemove)
-  
-  cat("\nSample removed:", params$sampleToRemove,"\n")
-  
-  return(result)
+  # result <- data %>%
+  #   as.data.frame() %>%
+  #   dplyr::filter(Run != params$sampleToRemove)
+
+  cat("\nSample removed:", params$samplesToRemove)
+
+  cols <- colnames(data)
+
+  return(data[, (!cols %in% params$samplesToRemove)])
 }
 
-FilterByUniqueGenes <- function(diannReport) {
-  
-  result <- diannReport %>% 
+FilterByUniqueGenes <- function(data) {
+
+  result <- data %>%
     diann::diann_matrix(id.header = "Protein.Group",
-                        quantity.header = "Genes.MaxLFQ.Unique",
-                        proteotypic.only = TRUE,
-                        pg.q = 0.01)
+      quantity.header = "Genes.MaxLFQ.Unique",
+      proteotypic.only = TRUE,
+      pg.q = 0.01)
 
   cat("\nFilter by unique genes using Diann_Matrix")
   return(result)
 }
 
 FilterByMissingness <- function(data) {
-  
-   df <- as.data.frame(data)
 
-  MeanOfMissing <- function(df) {
-    return(mean(is.na(df)))
+
+  MeanOfMissing <- function(x) {
+    return(sum(is.na(x)) / length(x))
+    # return(mean(is.na(x)))
   }
+  df <- as.data.frame(data)
+
 
   result <- dplyr::mutate(df, prot_miss = apply(df, 1, MeanOfMissing)) %>%
+
     dplyr::filter(prot_miss <= params$threshold) %>%
     dplyr::select(-prot_miss)
 
-  cat("Missingness threshold <", params$threshold)
+  cat("\nMissingness threshold <=", params$threshold)
+
+  return(as.matrix(result))
+}
+
+CleanDiannReport <- function() {
+
+  diannReport <- DiannReport(labels) # Not sure if the best approach is to get it inside the function or pass as argument
+
+  fileName <- "cleanDiannReport"
+
+  result <- diannReport %>%
+    FilterByScore() %>%
+    FilterByUniqueGenes() %>%
+    FilterBySample() %>%
+    FilterByMissingness()
+  # No console da a entender que o FilterBySample está sendo chamado antes do FilterByScore, mas não é o caso. É só uma anomalia do %>%.
+
+  cat("\n")
+  cat(cleanDiannReport, "were loaded")
 
   return(result)
 }
 
-CleanDiannReport <- function() {
-  
-  diannReport <- DiannReport(labels) #Not sure if the best approach is to get it inside the function or pass as argument
-  
-  fileName = "cleanDiannReport.rds"
-  
-  if (!file.exists(fileName)) {
-    
-    result <- diannReport %>%
-      FilterByScore() %>%
-      FilterBySample() %>%
-      FilterByUniqueGenes() %>% 
-      FilterByMissingness()
-
-    write_rds(result, file = fileName)
-    
-    cat("\n")
-    cat(fileName, "were created and loaded")
-    
-    return(result)
-  }
-  
-  cat("\nFile loaded:", fileName)
-  
-  return(read_rds(file = fileName))
-}
-
-CreateImputationMatrix <- function(override = FALSE,
-                                   imputationMethod = "rf",
-                                   mValue = 1,
-                                   maxitValue = 100,
-                                   seedValue = 500) { 
-
-  filenameImputation <- paste0("imputedMatrix_",imputationMethod,".rds")
+CreateImputationMatrix <- function(
+    override = TRUE,
+    imputationMethod = "rf",
+    mValue = 1,
+    maxitValue = 10,
+    seedValue = 50
+    ) {
+  filenameImputation <- paste0("imputedMatrix_", imputationMethod, ".rds")
   filenameResult <- paste0("result_", filenameImputation)
+
   filesExists <- (file.exists(filenameImputation) | file.exists(filenameResult))
 
   if (!(override) & filesExists) {
-    
-    cat("\nLoad file:",filenameResult)
+    cat("\nLoad file:", filenameResult)
     invisible(read_rds(filenameResult))
   } else {
-
     uniqueGenesCleaned <- CleanDiannReport()
-    
+
     matrixForImputation <- log2(uniqueGenesCleaned + 1) %>%
       as.data.frame() %>%
-      rownames_to_column(var = "protein") #%>% 
-      # janitor::clean_names() #acho que só precisa do clean_names se eu for plotar a matrix de imputação
-    
-    cat("\nCreating the imputed matrix.\nThis is going to take a while.\n")
-    
-    imputedMatrix <- mice::mice(matrixForImputation,
-                                method = imputationMethod,
-                                m = mValue,
-                                maxit = maxitValue,
-                                seed = seedValue,
-                                printFlag = FALSE)
-    
+      rownames_to_column(var = "protein") # %>%
+    # janitor::clean_names() #acho que só precisa do clean_names se eu for plotar a matrix de imputação
+
+    cat("\nCreating the imputed matrix.\n\nThis is going to take a while.\n")
+
+    imputedMatrix <- mice::mice(
+      matrixForImputation,
+      method = imputationMethod,
+      m = mValue,
+      maxit = maxitValue,
+      seed = seedValue,
+      printFlag = FALSE
+    )
+
     result <- mice::complete(imputedMatrix)
-    
-    
-    cat("\nCreate files:\n", filenameImputation,"\n", filenameResult)
+
+    cat("\nCreate files:\n", filenameImputation, "\n", filenameResult)
     write_rds(imputedMatrix, file = filenameImputation)
     write_rds(result, file = filenameResult)
-  
+
     invisible(result)
-    }
+  }
 }
 
-
-cat("\n\nHelper functions were loaded.\n")
+# cat("\n\nHelper functions were loaded.\n")
 ```
+
+
+```{r}
+
+for (c in 1:26) {
+
+  for (i in 1:636) {
+    if (!identical(pedro_result_imputed[i, c], complete_mtx[i, c])) {
+      cat("\n problema em:", i, c)
+    }
+  }
+}
+cat("\ndone")
+```
+
+
 
 # Graph functions ----
 ```{r}
@@ -339,8 +341,8 @@ GenBarGraph <- function(data, xValue, yValue, condition, xLabel, nmax) {
 
 
 SparsityPlot <- function(df) {
-  df %>% 
-    as.data.frame() %>% 
+  df %>%
+    as.data.frame() %>%
     naniar::vis_miss() +
     labs(
       x = NULL,
@@ -420,7 +422,7 @@ GraphPrecursorRT_mzMapDensity <- function() {
   )
 
   cat("\n\nGraph ", quote(precursorRT_and_mzMapDensity), ".png were created.\n", sep = "")
-  
+
   # return(precursorRT_and_mzMapDensity)
 }
 
@@ -432,8 +434,8 @@ GraphPrecursorRT_mzMapDensity()
 # Counting the number of unique peptides and proteins per run
 GraphNumberOfPeptidesAndProteins <- function(nmaxPeptides, nmaxProteins) {
   diannReport <- DiannReport(labels)
-  
-  diannReportByRun <- diannReport %>% 
+
+  diannReportByRun <- diannReport %>%
     dplyr::group_by(Run, condition) %>%
     dplyr::summarise(
       n_peptides = n_distinct(Stripped.Sequence),
@@ -502,7 +504,7 @@ GraphNumberOfPeptidesAndProteins <- function(nmaxPeptides, nmaxProteins) {
     "\nTotal number of unique proteins: ", totalUniqueProteins, "\n",
     sep = ""
   )
-  
+
   # return(peptidesPlot)
 }
 
@@ -523,27 +525,27 @@ GraphSparsityMatrix <- function() {
   #   quantity.header = "Genes.MaxLFQ.Unique",
   #   proteotypic.only = T,
   #   pg.q = .01
-  # ) 
-  
-  uniqueGenes <-  FilterByUniqueGenes(diannReport) #me retorna uma matrix
-  sparsityPlotRaw <- SparsityPlot(uniqueGenes) #converto para df dentro da func plot
-  
+  # )
+
+  uniqueGenes <-  FilterByUniqueGenes(diannReport) # me retorna uma matrix
+  sparsityPlotRaw <- SparsityPlot(uniqueGenes) # converto para df dentro da func plot
+
 
   # Create a sparsity plot with unique genes FILTERED
-  uniqueGenesFiltered <- diannReport %>% 
-                          FilterByScore() %>%
-                          FilterBySample() %>%
-                          FilterByUniqueGenes()
-  
+  uniqueGenesFiltered <- diannReport %>%
+    FilterByScore() %>%
+    FilterBySample() %>%
+    FilterByUniqueGenes()
+
   sparsityPlotFiltered <- SparsityPlot(uniqueGenesFiltered)
 
-  
+
   # Create a sparsity plot with unique genes REDUCED and FILTERED
 
   uniqueGenesCleaned <- CleanDiannReport()
   sparsityPlotCleaned <- SparsityPlot(uniqueGenesCleaned)
-  
-  
+
+
   sparsity_matrix <- (sparsityPlotRaw | sparsityPlotFiltered | sparsityPlotCleaned) +
     plot_annotation(tag_levels = "A") &
     theme(plot.tag = element_text(size = 30, face = "bold"))
@@ -555,63 +557,62 @@ GraphSparsityMatrix <- function() {
     width = 24, height = 20,
     units = "in", dpi = 300
   )
-  
+
   cat("\nGraph ", quote(sparsity_matrix), ".png were created.\n", sep = "")
 
 }
 
 GraphSparsityMatrix()
-
 ```
 
 # Graph: QuanUMS Evaluation ----
 ```{r}
 GraphQuantUMS <- function() {
-  
+
   diannReport <- DiannReport(labels)
-  
-   lowScoresPeptide <- diannReport %>% 
+
+  lowScoresPeptide <- diannReport %>%
     dplyr::filter(PG.MaxLFQ.Quality < params$pgScore &
-                    Empirical.Quality < params$eqScore) %>% #Quero ver o que foi cortado, é diferente da função FilterByScore, onde eu quero ter só o que passou  no filtro
-    dplyr::group_by(Run) %>% 
+      Empirical.Quality < params$eqScore) %>% # Quero ver o que foi cortado, é diferente da função FilterByScore, onde eu quero ter só o que passou  no filtro
+    dplyr::group_by(Run) %>%
     dplyr::summarise(
       n = n_distinct(Stripped.Sequence))
-  
-  quantUMS <- diannReport %>% 
-    ggplot(aes(    x = PG.MaxLFQ.Quality,
-                   y = Empirical.Quality)) +
-    
+
+  quantUMS <- diannReport %>%
+    ggplot(aes(x = PG.MaxLFQ.Quality,
+      y = Empirical.Quality)) +
+
     geom_pointdensity(size = 0.5) +
-    
+
     geom_vline(xintercept = 0.75, linetype = "dashed", color = "black") +
     geom_hline(yintercept = 0.75, linetype = "dashed", color = "black") +
     viridis::scale_color_viridis(option = "plasma") +
-    
-    geom_text(data = lowScoresPeptide, 
-              aes(x = 0.25, y = 0.35, label = n),
-              hjust = -0.1, vjust = 0.5,
-              size = 9, fontface = "bold",
-              color = "red", show.legend = FALSE) +
-    
+
+    geom_text(data = lowScoresPeptide,
+      aes(x = 0.25, y = 0.35, label = n),
+      hjust = -0.1, vjust = 0.5,
+      size = 9, fontface = "bold",
+      color = "red", show.legend = FALSE) +
+
     labs(title = "QuantUMS scores for feature selection",
-         x = "pgQ Score",
-         y = "eQ Score",
-         color = NULL) +
-    
+      x = "pgQ Score",
+      y = "eQ Score",
+      color = NULL) +
+
     facet_wrap(~Run, ncol = 6) +
-    theme(plot.title = element_text(size = 30, 
-                                    face = "bold", hjust = 0.5),
-          strip.background = element_blank(),
-          strip.text = element_text(face = "bold", size = 20),
-          text = element_text(size = 20),
-          axis.title = element_text(size = 30),
-          axis.text.x = element_text(color = "black",
-                                     angle = 90, vjust = 0.5, hjust = 1),
-          legend.position = "none",
-          panel.border = element_rect(color = "black", fill = NA),
-          panel.background = element_rect(fill = "white")
+    theme(plot.title = element_text(size = 30,
+      face = "bold", hjust = 0.5),
+    strip.background = element_blank(),
+    strip.text = element_text(face = "bold", size = 20),
+    text = element_text(size = 20),
+    axis.title = element_text(size = 30),
+    axis.text.x = element_text(color = "black",
+      angle = 90, vjust = 0.5, hjust = 1),
+    legend.position = "none",
+    panel.border = element_rect(color = "black", fill = NA),
+    panel.background = element_rect(fill = "white")
     )
-  
+
   ggsave(
     filename = paste(quote(quantUMS), ".png", sep = ""),
     path = "plots",
@@ -619,9 +620,9 @@ GraphQuantUMS <- function() {
     width = 24, height = 20,
     units = "in", dpi = 300
   )
-  
+
   cat("\nGraph ", quote(quantUMS), ".png were created.\n", sep = "")
-  
+
   # return(quantUMS)
 }
 
@@ -630,53 +631,53 @@ GraphQuantUMS()
 
 # Graph: Cosine Similarity ----
 ```{r}
-GraphCosSimilarity <- function()  {
-  
-  cosineSimilarity <- CreateImputationMatrix(override = FALSE) %>% 
+GraphCosSimilarity <- function() {
+
+  cosineSimilarity <- CreateImputationMatrix(override = FALSE) %>%
     column_to_rownames("protein") %>%
-    as.matrix() %>% 
-    lsa::cosine() %>% 
-    as.data.frame() %>% 
-    rownames_to_column(var = "Sample") %>% 
-    pivot_longer(-Sample, names_to = "Match") %>% #não entendi essa desgraça
-    
+    as.matrix() %>%
+    lsa::cosine() %>%
+    as.data.frame() %>%
+    rownames_to_column(var = "Sample") %>%
+    pivot_longer(-Sample, names_to = "Match") %>% # não entendi essa desgraça
+
     dplyr::mutate(Similarity = "Cosine similarity",
-                  Sample = factor(Sample, levels = unname(labels)),
-                  Match = factor(Match, levels = unname(labels))) %>% 
-    
+      Sample = factor(Sample, levels = unname(labels)),
+      Match = factor(Match, levels = unname(labels))) %>%
+
     ggplot() +
     geom_tile(aes(x = Sample, y = Match, fill = value)) +
     viridis::scale_fill_viridis(option = "E") +
     labs(title = "Similarity matrix",
-         x = NULL,
-         y = NULL,
-         fill = "Cosine similarity") +
+      x = NULL,
+      y = NULL,
+      fill = "Cosine similarity") +
     # theme_minimal() +
     theme(plot.title = element_text(hjust = 0.5, face = "bold"),
-          text = element_text(size = 20),
-          axis.text.x = element_text(angle = 90,
-                                     hjust = 1, vjust = 0.5, color = "black"),
-          axis.text.y = element_text(angle = 0,
-                                     hjust = 1, vjust = 0.5, color = "black"),
-          legend.position = "bottom",
-          legend.title.position = "top",
-          legend.title = element_text(hjust = 0.5),
-          legend.key.width = unit(2.5, "cm"),
-          legend.key.height = unit(0.3, "cm"),
-          panel.border = element_rect(color = "black", fill = NA),
-          panel.background = element_blank())
-  
+      text = element_text(size = 20),
+      axis.text.x = element_text(angle = 90,
+        hjust = 1, vjust = 0.5, color = "black"),
+      axis.text.y = element_text(angle = 0,
+        hjust = 1, vjust = 0.5, color = "black"),
+      legend.position = "bottom",
+      legend.title.position = "top",
+      legend.title = element_text(hjust = 0.5),
+      legend.key.width = unit(2.5, "cm"),
+      legend.key.height = unit(0.3, "cm"),
+      panel.border = element_rect(color = "black", fill = NA),
+      panel.background = element_blank())
+
   ggsave(
     filename = paste(quote(cosineSimilarity), ".png", sep = ""),
     path = "plots",
     plot = cosineSimilarity,
     width = 24, height = 20,
     units = "in", dpi = 300)
-  
+
   cat("\nGraph ", quote(cosineSimilarity), ".png were created.\n", sep = "")
-  
-  return(cosineSimilarity)  
-} 
+
+  return(cosineSimilarity)
+}
 
 GraphCosSimilarity()
 
@@ -686,64 +687,64 @@ GraphCosSimilarity()
 # Graph: Principal Component Analysis (PCA) by K-means [Tá diferente, mas não sei pq :c]
 ```{r}
 
-#TODO:Talvez o problema seja os nomes sem _, um janitor::clean_names() pode resolver..
+# TODO:Talvez o problema seja os nomes sem _, um janitor::clean_names() pode resolver..
 GraphPCA_Kmeans <- function(numberOfClusters = count(colors)) {
-  pcaComplete <- CreateImputationMatrix() %>% 
-    column_to_rownames("protein") %>% 
-    t() %>% 
+  pcaComplete <- CreateImputationMatrix() %>%
+    column_to_rownames("protein") %>%
+    t() %>%
     prcomp()
-  
+
   pcaTwoDimensions <- pcaComplete$x[, 1:2]
   # set.seed(123)
-  
+
   kmeans_clusters <- fviz_nbclust(pcaTwoDimensions,
-                                  FUNcluster = kmeans,
-                                  method = "wss") +
-    
+    FUNcluster = kmeans,
+    method = "wss") +
+
     geom_point(size = 4, color = "steelblue") +
     geom_vline(xintercept = numberOfClusters, linetype = "dashed") +
     theme_minimal() +
     labs(title = "Optimal number of clusters") +
     theme(plot.title = element_text(hjust = 0.5),
-          text = element_text(color = "black", size = 20),
-          title = element_text(color = "black", size = 20, face = "bold", hjust = 0.5),
-          axis.text = element_text(color = "black"),
-          axis.title = element_text(color = "black", face = "bold"),
-          axis.ticks = element_line(color = "black"),
-          panel.border = element_rect(color = "black", fill = NA))
-  
+      text = element_text(color = "black", size = 20),
+      title = element_text(color = "black", size = 20, face = "bold", hjust = 0.5),
+      axis.text = element_text(color = "black"),
+      axis.title = element_text(color = "black", face = "bold"),
+      axis.ticks = element_line(color = "black"),
+      panel.border = element_rect(color = "black", fill = NA))
+
   kMeansPCA <- kmeans(pcaTwoDimensions, centers = numberOfClusters)
-  
+
   pcaPlot <- fviz_pca_ind(pcaComplete,
-                          geom = c("point", "text"),
-                          habillage = kMeansPCA$cluster,
-                          labelsize = 7, pointsize = 3,
-                          palette = colors,
-                          addEllipses = FALSE,
-                          ggtheme = theme_classic(),
-                          repel = TRUE) +
-    
+    geom = c("point", "text"),
+    habillage = kMeansPCA$cluster,
+    labelsize = 7, pointsize = 3,
+    palette = colors,
+    addEllipses = FALSE,
+    ggtheme = theme_classic(),
+    repel = TRUE) +
+
     labs(title = "PCA clustered by k-means") +
     theme_minimal() +
-    
+
     theme(plot.title = element_text(hjust = 0.5),
-          text = element_text(color = "black", size = 20),
-          title = element_text(color = "black", size = 20,
-                               face = "bold", hjust = 0.5),
-          axis.text = element_text(color = "black"),
-          axis.title = element_text(color = "black", face = "bold"),
-          strip.background = element_rect(fill = "grey90"),
-          strip.text = element_text(face = "bold"),
-          legend.title = element_text(face = "bold", hjust = 0.5),
-          legend.title.position = "top",
-          legend.position = "none",
-          panel.border = element_rect(color = "black", fill = NA))
-  
-  
+      text = element_text(color = "black", size = 20),
+      title = element_text(color = "black", size = 20,
+        face = "bold", hjust = 0.5),
+      axis.text = element_text(color = "black"),
+      axis.title = element_text(color = "black", face = "bold"),
+      strip.background = element_rect(fill = "grey90"),
+      strip.text = element_text(face = "bold"),
+      legend.title = element_text(face = "bold", hjust = 0.5),
+      legend.title.position = "top",
+      legend.position = "none",
+      panel.border = element_rect(color = "black", fill = NA))
+
+
   kMeans_PCA <- (kmeans_clusters | pcaPlot) +
     plot_annotation(tag_levels = "A") &
     theme(plot.tag = element_text(size = 30, face = "bold"))
-  
+
   ggsave(
     filename = paste(quote(kMeans_PCA), ".png", sep = ""),
     path = "plots",
@@ -751,46 +752,44 @@ GraphPCA_Kmeans <- function(numberOfClusters = count(colors)) {
     width = 24, height = 10,
     units = "in", dpi = 300
   )
-  
+
   cat("\n\nGraph ", quote(pcaPlot_and_kMeansPCA), ".png were created.\n", sep = "")
-  
+
 }
 
 GraphPCA_Kmeans(numberOfClusters = params$numberOfClusters)
-
 ```
 
 # Graph: Coefficient of Variation [REFACTOR!] ----
 ```{r}
 
 GraphCoefficientOfVariation <- function() {
-  
+
   imputationResult <- CreateImputationMatrix()
-  
+
   conditions <- unique(DiannReport(labels)$condition)
   CVs <- data.frame()
-  
+
   cat("\nCalculating Coefficient of Variation...")
-  
+
   for (condition in conditions) {
-    
-    #TODO: olha a gambiarra kkkkkk
+    # TODO: olha a gambiarra kkkkkk
     CVs <- bind_rows(CVs,
-                     CV_Matrix(imputationResult,
-                               gambiarra = paste0("^", str_replace(condition, "\\+", "\\\\+"), " r[0-9]+"),
-                               condition = condition))
+      CV_Matrix(imputationResult,
+        gambiarra = paste0("^", str_replace(condition, "\\+", "\\\\+"), " r[0-9]+"),
+        condition = condition))
   }
-  
+
   CVs <- CVs %>%
     dplyr::mutate(condition = factor(condition,
-                                     levels = unique(str_remove(unname(labels), " r[0-9]+"))))
-  
-  
+      levels = unique(str_remove(unname(labels), " r[0-9]+"))))
+
+
   CVplot <- CVs %>%
     ggplot(aes(y = condition, x = cv, fill = condition)) +
     geom_violin(linewidth = 0.2) +
     geom_boxplot(width = 0.2, fill = "white",
-                 linewidth = 0.2, outlier.alpha = 0.5) +
+      linewidth = 0.2, outlier.alpha = 0.5) +
     geom_vline(xintercept = 20, linetype = "dashed", color = "black") +
     scale_fill_manual(values = colors) +
     labs(
@@ -807,19 +806,17 @@ GraphCoefficientOfVariation <- function() {
       line = element_blank(),
       strip.background = element_blank(),
       strip.text = element_text(size = 20, face = "bold", color = "black"))
-  
+
   ggsave(
     filename = paste(quote(CVplot), ".png", sep = ""),
     path = "plots",
     plot = CVplot,
     width = 12, height = 10,
     units = "in", dpi = 300)
-  
+
   cat("\n\nGraph ", quote(CVplot), ".png were created.\n", sep = "")
 }
- 
-GraphCoefficientOfVariation() 
-
+GraphCoefficientOfVariation()
 ```
 
 
@@ -828,11 +825,11 @@ GraphCoefficientOfVariation()
 
 # Graph: Bland-Altman [TODO] ----
 ```{r}
-#TODO:
+# TODO:
 ```
 
 # Graph: Distribution of proteins of interest [TODO] ----
 ```{r}
-#TODO:
+# TODO:
 ```
 
