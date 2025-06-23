@@ -234,7 +234,7 @@ CleanDiannReport <- function() {
   # No console da a entender que o FilterBySample está sendo chamado antes do FilterByScore, mas não é o caso. É só uma anomalia do %>%.
 
   cat("\n")
-  cat(cleanDiannReport, "were loaded")
+  cat(fileName, "were loaded")
 
   return(result)
 }
@@ -243,8 +243,8 @@ CreateImputationMatrix <- function(
     override = TRUE,
     imputationMethod = "rf",
     mValue = 1,
-    maxitValue = 10,
-    seedValue = 50
+    maxitValue = 100,
+    seedValue = 500
     ) {
   filenameImputation <- paste0("imputedMatrix_", imputationMethod, ".rds")
   filenameResult <- paste0("result_", filenameImputation)
@@ -263,7 +263,7 @@ CreateImputationMatrix <- function(
     # janitor::clean_names() #acho que só precisa do clean_names se eu for plotar a matrix de imputação
 
     cat("\nCreating the imputed matrix.\n\nThis is going to take a while.\n")
-
+  set.seed(333)
     imputedMatrix <- mice::mice(
       matrixForImputation,
       method = imputationMethod,
