@@ -74,6 +74,36 @@ labels <- c(
   P1_15 = "Ven_jPMOEt_100mg_r3"
 )
 
+# labels <- c(
+#   P2_01 =  "NaCl r1",
+#   P2_02 = "NaCl r2",
+#   P2_03 =  "NaCl r3",
+#   P1_02 = "Venom r1",
+#   P1_03 =  "Venom r2",
+#   P2_04 = "Actn 15 mg r1",
+#   P2_05 =  "Actn 15 mg r2",
+#   P2_06 = "Actn 15 mg r3",
+#   P1_04 = "Actn 30 mg r1",
+#   P1_05 =  "Actn 30 mg r2",
+#   P2_11 = "JPM-OEt 50 mg r1",
+#   P2_12 =  "JPM-OEt 50 mg r2",
+#   P1_10 =  "JPM-OEt 100 mg r1",
+#   P1_11 = "JPM-OEt 100 mg r2",
+#   P1_12 =  "JPM-OEt 100 mg r3",
+#   P2_07 =  "Ven + Actn 15 mg r1",
+#   P2_08 = "Ven + Actn 15 mg r2",
+#   P2_09 =  "Ven + Actn 15 mg r3",
+#   P1_07 = "Ven + Actn 30 mg r1",
+#   P1_08 =  "Ven + Actn 30 mg r2",
+#   P1_09 = "Ven + Actn 30 mg r3",
+#   P2_13 = "Ven + JPM-OEt 50 mg r1",
+#   P2_14 =  "Ven + JPM-OEt 50 mg r2",
+#   P2_15 = "Ven + JPM-OEt 50 mg r3",
+#   P1_13 = "Ven + JPM-OEt 100 mg r1",
+#   P1_14 =  "Ven + JPM-OEt 100 mg r2",
+#   P1_15 = "Ven + JPM-OEt 100 mg r3"
+# )
+
 # Params to filter by
 params <- list(pgScore = 0.75,
   eqScore = 0.75,
@@ -96,14 +126,17 @@ cat("\n\nGlobal variables were loaded.\n")
 ```{r}
 # Return a dataset with the coefficients of variation
 CV_Matrix <- function(data, condition, gambiarra) {
-  # data <- CreateImputationMatrix()
-  # condition <- "Ven + Actn 30 mg"
+  # x <- imputationResult
+  # condition <- "NaCl"
   # gambiarra <- paste0("^",str_replace(condition, "\\+", "\\\\+")," r[0-9]+")
-  #
+  # 
+  # 
+  gambiarra <- condition
+
   selected <- dplyr::select(
     data,
     protein,
-    str_subset(colnames(data), gambiarra)
+    str_subset(colnames(data), condition)
   )
 
   selected_rowwise <- rowwise(selected)
@@ -117,6 +150,11 @@ CV_Matrix <- function(data, condition, gambiarra) {
       ),
     condition = condition
   )
+  to_return <- dplyr::select(mutated, protein, cv, condition)
+  
+  
+  # browser()
+  
   return(dplyr::select(mutated, protein, cv, condition))
 }
 
@@ -240,7 +278,7 @@ CleanDiannReport <- function() {
 }
 
 CreateImputationMatrix <- function(
-    override = TRUE,
+    override = FALSE,
     imputationMethod = "rf",
     mValue = 1,
     maxitValue = 100,
@@ -283,24 +321,8 @@ CreateImputationMatrix <- function(
   }
 }
 
-# cat("\n\nHelper functions were loaded.\n")
+cat("\n\nHelper functions were loaded.\n")
 ```
-
-
-```{r}
-
-for (c in 1:26) {
-
-  for (i in 1:636) {
-    if (!identical(pedro_result_imputed[i, c], complete_mtx[i, c])) {
-      cat("\n problema em:", i, c)
-    }
-  }
-}
-cat("\ndone")
-```
-
-
 
 # Graph functions ----
 ```{r}
@@ -692,12 +714,19 @@ GraphPCA_Kmeans <- function(numberOfClusters = count(colors)) {
   pcaComplete <- CreateImputationMatrix() %>%
     column_to_rownames("protein") %>%
     t() %>%
-    prcomp()
+    prcomp(scale = TRUE)
 
-  pcaTwoDimensions <- pcaComplete$x[, 1:2]
-  # set.seed(123)
+  pcaTwoDimensions <- as.data.frame(pcaComplete$x[, 1:2]) #não precisa ser DF
+  # set.seed(123) 
 
-  kmeans_clusters <- fviz_nbclust(pcaTwoDimensions,
+  # identical(pcaComplete, pca_object)
+  # identical(pcaTwoDimensions, pca_df)
+  # identical(pcaPlot$data, pca_plot$data)
+
+  # numberOfClusters = 4
+
+  
+  kmeans_clusters_p <- fviz_nbclust(pcaTwoDimensions,
     FUNcluster = kmeans,
     method = "wss") +
 
@@ -712,14 +741,15 @@ GraphPCA_Kmeans <- function(numberOfClusters = count(colors)) {
       axis.title = element_text(color = "black", face = "bold"),
       axis.ticks = element_line(color = "black"),
       panel.border = element_rect(color = "black", fill = NA))
-
+  
+  set.seed(123)
   kMeansPCA <- kmeans(pcaTwoDimensions, centers = numberOfClusters)
 
   pcaPlot <- fviz_pca_ind(pcaComplete,
     geom = c("point", "text"),
     habillage = kMeansPCA$cluster,
     labelsize = 7, pointsize = 3,
-    palette = colors,
+    palette = c("tomato", "steelblue", "forestgreen", "firebrick", "black"),#colors,
     addEllipses = FALSE,
     ggtheme = theme_classic(),
     repel = TRUE) +
@@ -741,7 +771,7 @@ GraphPCA_Kmeans <- function(numberOfClusters = count(colors)) {
       panel.border = element_rect(color = "black", fill = NA))
 
 
-  kMeans_PCA <- (kmeans_clusters | pcaPlot) +
+  kMeans_PCA <- (kmeans_clusters_p | pcaPlot) +
     plot_annotation(tag_levels = "A") &
     theme(plot.tag = element_text(size = 30, face = "bold"))
 
@@ -765,6 +795,8 @@ GraphPCA_Kmeans(numberOfClusters = params$numberOfClusters)
 
 GraphCoefficientOfVariation <- function() {
 
+  CreateImputationMatrix(maxitValue = 10, seedValue = 50)
+  
   imputationResult <- CreateImputationMatrix()
 
   conditions <- unique(DiannReport(labels)$condition)
@@ -776,13 +808,14 @@ GraphCoefficientOfVariation <- function() {
     # TODO: olha a gambiarra kkkkkk
     CVs <- bind_rows(CVs,
       CV_Matrix(imputationResult,
-        gambiarra = paste0("^", str_replace(condition, "\\+", "\\\\+"), " r[0-9]+"),
+        gambiarra = "",#paste0("^", str_replace(condition, "\\+", "\\\\+"), " r[0-9]+"),
         condition = condition))
   }
 
-  CVs <- CVs %>%
+
+  CVs %>%
     dplyr::mutate(condition = factor(condition,
-      levels = unique(str_remove(unname(labels), " r[0-9]+"))))
+      levels = unique(str_remove(unname(labels), "_r[0-9]+"))))
 
 
   CVplot <- CVs %>%
