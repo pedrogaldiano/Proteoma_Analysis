@@ -43,66 +43,37 @@ cat("\n\nAll packages were activated.\n")
 # define the order everything will be ploted
 #
 # A amostra precisa terminar com espaço, letra r , número (" r1", " r2", " r637")
-# Sim, é uma gambiarra. E funciona!
-labels <- c(
-  P2_01 = "NaCl_r1",
-  P2_02 = "NaCl_r2",
-  P2_03 = "NaCl_r3",
-  P2_04 = "Actinonin_15mg_r1",
-  P2_05 = "Actinonin_15mg_r2",
-  P2_06 = "Actinonin_15mg_r3",
-  P1_04 = "Actinonin_30mg_r1",
-  P1_05 = "Actinonin_30mg_r2",
-  P2_11 = "JPMOEt_50mg_r1",
-  P2_12 = "JPMOEt_50mg_r2",
-  P1_10 = "JPMOEt_100mg_r1",
-  P1_11 = "JPMOEt_100mg_r2",
-  P1_12 = "JPMOEt_100mg_r3",
-  P1_02 = "Venom_r1",
-  P1_03 = "Venom_r2",
-  P2_07 = "Ven_Actn_15mg_r1",
-  P2_08 = "Ven_Actn_15mg_r2",
-  P2_09 = "Ven_Actn_15mg_r3",
-  P1_07 = "Ven_Actn_30mg_r1",
-  P1_08 = "Ven_Actn_30mg_r2",
-  P1_09 = "Ven_Actn_30mg_r3",
-  P2_13 = "Ven_jPMOEt_50mg_r1",
-  P2_14 = "Ven_jPMOEt_50mg_r2",
-  P2_15 = "Ven_jPMOEt_50mg_r3",
-  P1_13 = "Ven_jPMOEt_100mg_r1",
-  P1_14 = "Ven_jPMOEt_100mg_r2",
-  P1_15 = "Ven_jPMOEt_100mg_r3"
-)
+# Sim, é uma gambiarra.Preciso resolver
 
-# labels <- c(
-#   P2_01 =  "NaCl r1",
-#   P2_02 = "NaCl r2",
-#   P2_03 =  "NaCl r3",
-#   P1_02 = "Venom r1",
-#   P1_03 =  "Venom r2",
-#   P2_04 = "Actn 15 mg r1",
-#   P2_05 =  "Actn 15 mg r2",
-#   P2_06 = "Actn 15 mg r3",
-#   P1_04 = "Actn 30 mg r1",
-#   P1_05 =  "Actn 30 mg r2",
-#   P2_11 = "JPM-OEt 50 mg r1",
-#   P2_12 =  "JPM-OEt 50 mg r2",
-#   P1_10 =  "JPM-OEt 100 mg r1",
-#   P1_11 = "JPM-OEt 100 mg r2",
-#   P1_12 =  "JPM-OEt 100 mg r3",
-#   P2_07 =  "Ven + Actn 15 mg r1",
-#   P2_08 = "Ven + Actn 15 mg r2",
-#   P2_09 =  "Ven + Actn 15 mg r3",
-#   P1_07 = "Ven + Actn 30 mg r1",
-#   P1_08 =  "Ven + Actn 30 mg r2",
-#   P1_09 = "Ven + Actn 30 mg r3",
-#   P2_13 = "Ven + JPM-OEt 50 mg r1",
-#   P2_14 =  "Ven + JPM-OEt 50 mg r2",
-#   P2_15 = "Ven + JPM-OEt 50 mg r3",
-#   P1_13 = "Ven + JPM-OEt 100 mg r1",
-#   P1_14 =  "Ven + JPM-OEt 100 mg r2",
-#   P1_15 = "Ven + JPM-OEt 100 mg r3"
-# )
+labels <- c(
+  P2_01 =  "NaCl r1",
+  P2_02 = "NaCl r2",
+  P2_03 =  "NaCl r3",
+  P1_02 = "Venom r1",
+  P1_03 =  "Venom r2",
+  P2_04 = "Actinonin 15 mg r1",
+  P2_05 =  "Actinonin 15 mg r2",
+  P2_06 = "Actinonin 15 mg r3",
+  P1_04 = "Actinonin 30 mg r1",
+  P1_05 =  "Actinonin 30 mg r2",
+  P2_11 = "JPM-OEt 50 mg r1",
+  P2_12 =  "JPM-OEt 50 mg r2",
+  P1_10 =  "JPM-OEt 100 mg r1",
+  P1_11 = "JPM-OEt 100 mg r2",
+  P1_12 =  "JPM-OEt 100 mg r3",
+  P2_07 =  "Ven + Actn 15 mg r1",
+  P2_08 = "Ven + Actn 15 mg r2",
+  P2_09 =  "Ven + Actn 15 mg r3",
+  P1_07 = "Ven + Actn 30 mg r1",
+  P1_08 =  "Ven + Actn 30 mg r2",
+  P1_09 = "Ven + Actn 30 mg r3",
+  P2_13 = "Ven + JPM-OEt 50 mg r1",
+  P2_14 =  "Ven + JPM-OEt 50 mg r2",
+  P2_15 = "Ven + JPM-OEt 50 mg r3",
+  P1_13 = "Ven + JPM-OEt 100 mg r1",
+  P1_14 =  "Ven + JPM-OEt 100 mg r2",
+  P1_15 = "Ven + JPM-OEt 100 mg r3"
+)
 
 # Params to filter by
 params <- list(pgScore = 0.75,
@@ -117,27 +88,19 @@ colors <- c(
 )
 
 
-
-
 cat("\n\nGlobal variables were loaded.\n")
 ```
 
 # Helper functions ----
 ```{r}
 # Return a dataset with the coefficients of variation
-CV_Matrix <- function(data, condition, gambiarra) {
-  # x <- imputationResult
-  # condition <- "NaCl"
-  # gambiarra <- paste0("^",str_replace(condition, "\\+", "\\\\+")," r[0-9]+")
-  # 
-  # 
-  gambiarra <- condition
+CV_Matrix <- function(data, condition) {
 
   selected <- dplyr::select(
     data,
     protein,
-    str_subset(colnames(data), condition)
-  )
+      str_subset(colnames(data), condition)
+    )
 
   selected_rowwise <- rowwise(selected)
 
@@ -173,7 +136,7 @@ DiannReport <- function(runs, directory = "../data/DIANN_results/") {
   reportRecoded <- dplyr::mutate(reportFiltered,
     Run = recode(Run, !!!runs),
     Run = factor(Run, levels = unname(runs)),
-    condition = str_remove(Run, "_r1|_r2|_r3"),
+    condition = str_remove(Run, " r[0-9]+"),
     File.Name = Run,
     peptide_length = nchar(Stripped.Sequence)
   )
@@ -795,8 +758,6 @@ GraphPCA_Kmeans(numberOfClusters = params$numberOfClusters)
 
 GraphCoefficientOfVariation <- function() {
 
-  CreateImputationMatrix(maxitValue = 10, seedValue = 50)
-  
   imputationResult <- CreateImputationMatrix()
 
   conditions <- unique(DiannReport(labels)$condition)
@@ -805,13 +766,10 @@ GraphCoefficientOfVariation <- function() {
   cat("\nCalculating Coefficient of Variation...")
 
   for (condition in conditions) {
-    # TODO: olha a gambiarra kkkkkk
     CVs <- bind_rows(CVs,
       CV_Matrix(imputationResult,
-        gambiarra = "",#paste0("^", str_replace(condition, "\\+", "\\\\+"), " r[0-9]+"),
         condition = condition))
   }
-
 
   CVs %>%
     dplyr::mutate(condition = factor(condition,
