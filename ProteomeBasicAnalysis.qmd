@@ -1,5 +1,5 @@
 ---
-title: "Preliminary investigation of the carbamylation profile in proteins excreted in 24-hour urine after injection of Bothrops jararaca venom in a murine model"
+title: "Proteoma Basic Analysis"
 author: "Pedro Galdiano de Castro"
 execute:
   echo: false
@@ -11,10 +11,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-## ABSTRACT
-
-
-# Load packages dependencies
+# 1) Load packages dependencies
 ```{r}
 library(diann) # to extract the MaxLFQ matrix from DIANN report
 library(arrow) # to read the report.parquet file
@@ -37,7 +34,7 @@ library(DIAgui) # to extract iBAQ values
 cat("\n\nAll packages were activated.\n")
 ```
 
-# Global variables
+# 2) Global variables
 ```{r}
 # This map should be ordered by the sample-name (code = sample_name), this will
 # define the order everything will be ploted
@@ -76,22 +73,36 @@ labels <- c(
 )
 
 # Params to filter by
-params <- list(pgScore = 0.75,
+params <- list(
+  pgScore = 0.75,
   eqScore = 0.75,
   threshold = 0.3,
-  samplesToRemove = c("NaCl_r1"),
-  numberOfClusters = 4)
-
-colors <- c(
-  "#FED789FF", "#023743FF", "#72874EFF", "#476F84FF", "#A4BED5FF",
-  "#453947FF", "#66C2A5", "#FC8D62", "#FFD92F", "#8DA0CB"
+  samplesToRemove = c("NaCl r1"),
+  setSeed = 333, #random seed
+  
+  #Fix the text in the number of proteins and peptides plot
+  nMaxPeptides = 8200,
+  nMaxProteins = 1200,
+  
+  #Params to create imputation Matrix
+  imputMethod = "rf",
+  imputM = 1,
+  imputMaxit = 10,
+  imputSeed = 50,
+  imputOverride = FALSE,
+  
+  numberOfClusters = 4,
+  
+  #If more or different colors are need just go to "colorbrewer2.org"
+  colors <- c(
+    "#a6cee3","#1f78b4","#b2df8a","#33a02c","#fb9a99",
+    "#e31a1c","#fdbf6f","#ff7f00","#cab2d6","#6a3d9a")
 )
 
-
-cat("\n\nGlobal variables were loaded.\n")
+cat("\n\n1-Global variables were loaded.\n")
 ```
 
-# Helper functions ----
+# 3) Helper functions ----
 ```{r}
 # Return a dataset with the coefficients of variation
 CV_Matrix <- function(data, condition) {
@@ -151,19 +162,6 @@ DiannReport <- function(runs, directory = "../data/DIANN_results/") {
   return(diannReport)
 }
 
-# TODO: I am not sure if this actually changes something...
-# Adjust the general theme for the plots :
-theme_update(
-  text = element_text(color = "black", size = 20),
-  axis.text = element_text(color = "black"),
-  axis.title = element_text(color = "black", face = "bold"),
-  strip.background = element_blank(),
-  strip.text = element_text(face = "bold"),
-  legend.title = element_text(face = "bold", hjust = 0.5),
-  legend.title.position = "top"
-)
-
-
 FilterByScore <- function(data) {
 
   result <- data %>%
@@ -178,18 +176,14 @@ FilterByScore <- function(data) {
 }
 
 FilterBySample <- function(data) {
-  # result <- data %>%
-  #   as.data.frame() %>%
-  #   dplyr::filter(Run != params$sampleToRemove)
-
+  
   cat("\nSample removed:", params$samplesToRemove)
 
   cols <- colnames(data)
-
   return(data[, (!cols %in% params$samplesToRemove)])
 }
 
-FilterByUniqueGenes <- function(data) {
+FilterByDiannMatrix <- function(data) {
 
   result <- data %>%
     diann::diann_matrix(id.header = "Protein.Group",
@@ -205,11 +199,10 @@ FilterByMissingness <- function(data) {
 
 
   MeanOfMissing <- function(x) {
-    return(sum(is.na(x)) / length(x))
-    # return(mean(is.na(x)))
+    return(mean(is.na(x)))
   }
+  
   df <- as.data.frame(data)
-
 
   result <- dplyr::mutate(df, prot_miss = apply(df, 1, MeanOfMissing)) %>%
 
@@ -229,10 +222,11 @@ CleanDiannReport <- function() {
 
   result <- diannReport %>%
     FilterByScore() %>%
-    FilterByUniqueGenes() %>%
+    FilterByDiannMatrix() %>%
     FilterBySample() %>%
     FilterByMissingness()
-  # No console da a entender que o FilterBySample está sendo chamado antes do FilterByScore, mas não é o caso. É só uma anomalia do %>%.
+  # No console da a entender que o FilterBySample está sendo chamado antes do
+  # FilterByScore, mas não é o caso. É só uma anomalia do %>%.
 
   cat("\n")
   cat(fileName, "were loaded")
@@ -240,13 +234,7 @@ CleanDiannReport <- function() {
   return(result)
 }
 
-CreateImputationMatrix <- function(
-    override = FALSE,
-    imputationMethod = "rf",
-    mValue = 1,
-    maxitValue = 100,
-    seedValue = 500
-    ) {
+CreateImputationMatrix <- function() {
   filenameImputation <- paste0("imputedMatrix_", imputationMethod, ".rds")
   filenameResult <- paste0("result_", filenameImputation)
 
@@ -261,18 +249,16 @@ CreateImputationMatrix <- function(
     matrixForImputation <- log2(uniqueGenesCleaned + 1) %>%
       as.data.frame() %>%
       rownames_to_column(var = "protein") # %>%
-    # janitor::clean_names() #acho que só precisa do clean_names se eu for plotar a matrix de imputação
+    # janitor::clean_names() 
+    #acho que só precisa do clean_names se eu for plotar a matrix de imputação
 
     cat("\nCreating the imputed matrix.\n\nThis is going to take a while.\n")
-  set.seed(333)
-    imputedMatrix <- mice::mice(
-      matrixForImputation,
-      method = imputationMethod,
-      m = mValue,
-      maxit = maxitValue,
-      seed = seedValue,
-      printFlag = FALSE
-    )
+  set.seed(params$setSeed)
+  imputedMatrix <- mice::mice(matrixForImputation,
+                              method = params$imputMethod,
+                              m = params$imputM,
+                              maxit = params$imputMaxit,
+                              seed = params$imputSeed)
 
     result <- mice::complete(imputedMatrix)
 
@@ -284,10 +270,10 @@ CreateImputationMatrix <- function(
   }
 }
 
-cat("\n\nHelper functions were loaded.\n")
+cat("\n\n2-Helper functions were loaded.\n")
 ```
 
-# Graph functions ----
+# 4) Graph functions ----
 ```{r}
 GenBarGraph <- function(data, xValue, yValue, condition, xLabel, nmax) {
   ggplot(data, aes(
@@ -300,7 +286,7 @@ GenBarGraph <- function(data, xValue, yValue, condition, xLabel, nmax) {
       position = "dodge",
       show.legend = FALSE
     ) +
-    scale_fill_manual(values = colors) +
+    scale_fill_manual(values = params$colors) +
     geom_text(
       aes(
         label = xLabel,
@@ -342,13 +328,24 @@ SparsityPlot <- function(df) {
       line = element_blank(),
       panel.background = element_blank()
     )
+
+  theme_update(
+    text = element_text(color = "black", size = 20),
+    axis.text = element_text(color = "black"),
+    axis.title = element_text(color = "black", face = "bold"),
+    strip.background = element_blank(),
+    strip.text = element_text(face = "bold"),
+    legend.title = element_text(face = "bold", hjust = 0.5),
+    legend.title.position = "top"
+)  
+  
 }
 
 
-cat("\n\nGraph functions were loaded.\n")
+cat("\n\n3-Graph functions were loaded.\n")
 ```
 
-# Graph: Precursor x RT / Density Map ----
+# 5) Graph: Precursor x RT / Density Map ----
 ```{r}
 # Reconstruction of the ion chromatograms, the precursor quantity is
 #  plotted over the retention time (min) for each sample.
@@ -358,7 +355,7 @@ GraphPrecursorRT_mzMapDensity <- function() {
   precursorRT <- diannReport %>%
     ggplot(aes(x = RT, y = Precursor.Quantity)) +
     geom_line(aes(color = condition), show.legend = FALSE) +
-    scale_color_manual(values = colors) +
+    scale_color_manual(values = params$colors) +
     labs(
       x = "Retention time (min)",
       y = "Precursor quantity",
@@ -406,7 +403,7 @@ GraphPrecursorRT_mzMapDensity <- function() {
     units = "in", dpi = 300
   )
 
-  cat("\n\nGraph ", quote(precursorRT_and_mzMapDensity), ".png were created.\n", sep = "")
+  cat("\n\n4-Graph ", quote(precursorRT_and_mzMapDensity), ".png were created.\n", sep = "")
 
   # return(precursorRT_and_mzMapDensity)
 }
@@ -414,10 +411,10 @@ GraphPrecursorRT_mzMapDensity <- function() {
 GraphPrecursorRT_mzMapDensity()
 ```
 
-# Graph: Peptides | Proteins ----
+# 6) Graph: Peptides | Proteins ----
 ```{r}
 # Counting the number of unique peptides and proteins per run
-GraphNumberOfPeptidesAndProteins <- function(nmaxPeptides, nmaxProteins) {
+GraphNumberOfPeptidesAndProteins <- function() {
   diannReport <- DiannReport(labels)
 
   diannReportByRun <- diannReport %>%
@@ -433,11 +430,11 @@ GraphNumberOfPeptidesAndProteins <- function(nmaxPeptides, nmaxProteins) {
   peptidesPlot <- diannReportByRun %>%
     ggplot(aes(y = Run, x = n_peptides, fill = condition)) +
     geom_bar(stat = "identity", position = "dodge", show.legend = FALSE) +
-    scale_fill_manual(values = colors) +
+    scale_fill_manual(values = params$colors) +
     geom_text(
       aes(
         label = n_peptides,
-        hjust = ifelse(n_peptides > nmaxPeptides, 1.1, -0.15)
+        hjust = ifelse(n_peptides > params$nMaxPeptides, 1.1, -0.15)
       ),
       color = "black", size = 7, nudge_x = -0.5, fontface = "bold"
     ) +
@@ -453,11 +450,11 @@ GraphNumberOfPeptidesAndProteins <- function(nmaxPeptides, nmaxProteins) {
   proteinsPlot <- diannReportByRun %>%
     ggplot(aes(y = Run, x = n_proteins, fill = condition)) +
     geom_bar(stat = "identity", position = "dodge", show.legend = FALSE) +
-    scale_fill_manual(values = colors) +
+    scale_fill_manual(values = params$colors) +
     geom_text(
       aes(
         label = n_proteins,
-        hjust = ifelse(n_proteins > nmaxProteins, 1.1, -0.15)
+        hjust = ifelse(n_proteins > nMaxProteins, 1.1, -0.15)
       ),
       color = "black", size = 7, nudge_x = -0.5, fontface = "bold"
     ) +
@@ -484,7 +481,7 @@ GraphNumberOfPeptidesAndProteins <- function(nmaxPeptides, nmaxProteins) {
     units = "in", dpi = 300
   )
 
-  cat("\nGraph ", quote(number_of_peptides_and_proteins), ".png were created.\n",
+  cat("\n5-Graph ", quote(number_of_peptides_and_proteins), ".png were created.\n",
     "Total number of unique  peptides: ", totalUniquePeptides,
     "\nTotal number of unique proteins: ", totalUniqueProteins, "\n",
     sep = ""
@@ -493,13 +490,12 @@ GraphNumberOfPeptidesAndProteins <- function(nmaxPeptides, nmaxProteins) {
   # return(peptidesPlot)
 }
 
-GraphNumberOfPeptidesAndProteins(nmaxPeptides = 8200, nmaxProteins = 1900)
+GraphNumberOfPeptidesAndProteins()
 ```
 
-# Graph: Sparsity Matrix ----
+# 7) Graph: Sparsity Matrix ----
 ```{r}
 # Genes.MaxLFQ.Unique: matriz de abundância de intensidade normalizada com algoritmo MAX LFQ sendo calculada a partir de peptídeos únicos (peptídeos que dão match apenas com uma proteína)
-
 GraphSparsityMatrix <- function() {
   diannReport <- DiannReport(labels)
 
@@ -512,7 +508,7 @@ GraphSparsityMatrix <- function() {
   #   pg.q = .01
   # )
 
-  uniqueGenes <-  FilterByUniqueGenes(diannReport) # me retorna uma matrix
+  uniqueGenes <-  FilterByDiannMatrix(diannReport) # me retorna uma matrix
   sparsityPlotRaw <- SparsityPlot(uniqueGenes) # converto para df dentro da func plot
 
 
@@ -520,7 +516,7 @@ GraphSparsityMatrix <- function() {
   uniqueGenesFiltered <- diannReport %>%
     FilterByScore() %>%
     FilterBySample() %>%
-    FilterByUniqueGenes()
+    FilterByDiannMatrix()
 
   sparsityPlotFiltered <- SparsityPlot(uniqueGenesFiltered)
 
@@ -543,14 +539,14 @@ GraphSparsityMatrix <- function() {
     units = "in", dpi = 300
   )
 
-  cat("\nGraph ", quote(sparsity_matrix), ".png were created.\n", sep = "")
+  cat("\n6-Graph ", quote(sparsity_matrix), ".png were created.\n", sep = "")
 
 }
 
 GraphSparsityMatrix()
 ```
 
-# Graph: QuanUMS Evaluation ----
+# 8) Graph: QuanUMS Evaluation ----
 ```{r}
 GraphQuantUMS <- function() {
 
@@ -606,7 +602,7 @@ GraphQuantUMS <- function() {
     units = "in", dpi = 300
   )
 
-  cat("\nGraph ", quote(quantUMS), ".png were created.\n", sep = "")
+  cat("\n7-Graph ", quote(quantUMS), ".png were created.\n", sep = "")
 
   # return(quantUMS)
 }
@@ -614,11 +610,11 @@ GraphQuantUMS <- function() {
 GraphQuantUMS()
 ```
 
-# Graph: Cosine Similarity ----
+# 9) Graph: Cosine Similarity ----
 ```{r}
 GraphCosSimilarity <- function() {
 
-  cosineSimilarity <- CreateImputationMatrix(override = FALSE) %>%
+  cosineSimilarity <- CreateImputationMatrix() %>%
     column_to_rownames("protein") %>%
     as.matrix() %>%
     lsa::cosine() %>%
@@ -659,36 +655,24 @@ GraphCosSimilarity <- function() {
     width = 24, height = 20,
     units = "in", dpi = 300)
 
-  cat("\nGraph ", quote(cosineSimilarity), ".png were created.\n", sep = "")
+  cat("\n8-Graph ", quote(cosineSimilarity), ".png were created.\n", sep = "")
 
   return(cosineSimilarity)
 }
 
 GraphCosSimilarity()
-
-# kmeans_clusters | pca_plot) / (cosine_similarity | cv_plot) -->
 ```
 
-# Graph: Principal Component Analysis (PCA) by K-means [Tá diferente, mas não sei pq :c]
+# 10) Graph: Principal Component Analysis (PCA) by K-means [Tá diferente, mas não sei pq :c]
 ```{r}
-
-# TODO:Talvez o problema seja os nomes sem _, um janitor::clean_names() pode resolver..
-GraphPCA_Kmeans <- function(numberOfClusters = count(colors)) {
+GraphPCA_Kmeans <- function() {
   pcaComplete <- CreateImputationMatrix() %>%
     column_to_rownames("protein") %>%
     t() %>%
     prcomp(scale = TRUE)
 
   pcaTwoDimensions <- as.data.frame(pcaComplete$x[, 1:2]) #não precisa ser DF
-  # set.seed(123) 
 
-  # identical(pcaComplete, pca_object)
-  # identical(pcaTwoDimensions, pca_df)
-  # identical(pcaPlot$data, pca_plot$data)
-
-  # numberOfClusters = 4
-
-  
   kmeans_clusters_p <- fviz_nbclust(pcaTwoDimensions,
     FUNcluster = kmeans,
     method = "wss") +
@@ -705,14 +689,14 @@ GraphPCA_Kmeans <- function(numberOfClusters = count(colors)) {
       axis.ticks = element_line(color = "black"),
       panel.border = element_rect(color = "black", fill = NA))
   
-  set.seed(123)
-  kMeansPCA <- kmeans(pcaTwoDimensions, centers = numberOfClusters)
+  set.seed(params$setSeed)
+  kMeansPCA <- kmeans(pcaTwoDimensions, centers = params$numberOfClusters)
 
   pcaPlot <- fviz_pca_ind(pcaComplete,
     geom = c("point", "text"),
     habillage = kMeansPCA$cluster,
     labelsize = 7, pointsize = 3,
-    palette = c("tomato", "steelblue", "forestgreen", "firebrick", "black"),#colors,
+    palette = params$colors,
     addEllipses = FALSE,
     ggtheme = theme_classic(),
     repel = TRUE) +
@@ -746,16 +730,15 @@ GraphPCA_Kmeans <- function(numberOfClusters = count(colors)) {
     units = "in", dpi = 300
   )
 
-  cat("\n\nGraph ", quote(pcaPlot_and_kMeansPCA), ".png were created.\n", sep = "")
+  cat("\n\n9-Graph ", quote(pcaPlot_and_kMeansPCA), ".png were created.\n", sep = "")
 
 }
 
-GraphPCA_Kmeans(numberOfClusters = params$numberOfClusters)
+GraphPCA_Kmeans()
 ```
 
-# Graph: Coefficient of Variation [REFACTOR!] ----
+# 11) Graph: Coefficient of Variation [REFACTOR!] ----
 ```{r}
-
 GraphCoefficientOfVariation <- function() {
 
   imputationResult <- CreateImputationMatrix()
@@ -782,7 +765,7 @@ GraphCoefficientOfVariation <- function() {
     geom_boxplot(width = 0.2, fill = "white",
       linewidth = 0.2, outlier.alpha = 0.5) +
     geom_vline(xintercept = 20, linetype = "dashed", color = "black") +
-    scale_fill_manual(values = colors) +
+    scale_fill_manual(values = params$colors) +
     labs(
       y = NULL,
       x = "Coefficient of variation (%)",
@@ -805,8 +788,9 @@ GraphCoefficientOfVariation <- function() {
     width = 12, height = 10,
     units = "in", dpi = 300)
 
-  cat("\n\nGraph ", quote(CVplot), ".png were created.\n", sep = "")
+  cat("\n\n10-Graph ", quote(CVplot), ".png were created.\n", sep = "")
 }
+
 GraphCoefficientOfVariation()
 ```
 
@@ -814,12 +798,12 @@ GraphCoefficientOfVariation()
 
 
 
-# Graph: Bland-Altman [TODO] ----
+# 12) Graph: Bland-Altman [TODO] ----
 ```{r}
 # TODO:
 ```
 
-# Graph: Distribution of proteins of interest [TODO] ----
+# 13) Graph: Distribution of proteins of interest [TODO] ----
 ```{r}
 # TODO:
 ```
