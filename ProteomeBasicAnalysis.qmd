@@ -766,8 +766,6 @@ GraphCoefficientOfVariation <- function() {
   cat("\nCalculating Coefficient of Variation...")
 
   for (condition in conditions) {
-    
-    
     CVs <- bind_rows(CVs, CV_Matrix(imputationResult, condition = condition))
   }
 
