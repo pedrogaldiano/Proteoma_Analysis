@@ -53,7 +53,7 @@ theme_update(
 ```{r}
 # function to extract the coefficients of variation from the data
 cv_mtx <- function(data, condition) {
-  data %>%
+  x <- data %>%
     as.data.frame() %>%
     dplyr::select(protein, 
                   str_subset(colnames(data), condition)
@@ -61,8 +61,10 @@ cv_mtx <- function(data, condition) {
     rowwise() %>%
     dplyr::mutate(across(where(is.numeric), ~ 2^(.) - 1),
                   cv = sd(c_across(where(is.numeric)), na.rm = TRUE) / mean(c_across(where(is.numeric)), na.rm = TRUE) * 100,
-                  condition = condition) %>% 
-    dplyr::select(protein, cv, condition)
+                  condition = condition) 
+  
+  # browser()
+    dplyr::select(x, protein, cv, condition)
 }
 
 # This function will create a column to store the percentage of missing values for each protein
@@ -87,7 +89,7 @@ remove_missing <- function(x, threshold) {
 We filter the data using Lib.PG.Q.Value ≤ 0.01, Lib.Q.Value ≤ 0.01, and PG.Q.Value ≤ 0.01 for the analysis.
 
 ```{r}
-diann_report <- arrow::read_parquet("report.parquet") %>%
+diann_report <- arrow::read_parquet("../data/DIANN_results/report.parquet") %>%
     dplyr::filter(Lib.PG.Q.Value <= 0.01 & Lib.Q.Value <= 0.01 & PG.Q.Value <= 0.01) %>%
     dplyr::mutate(
       Run = case_when(
@@ -373,8 +375,9 @@ df_for_imputation <- log2(abundance_mtx_reduced + 1) %>%
 cat("Percentage of missing values:", 
     mean(is.na(df_for_imputation)) * 100, "%\n")
 
+set.seed(333)
 imputed_data <- mice::mice(df_for_imputation,
-                    meth = "rf", m = 3, maxit = 100, seed = 500)
+                    meth = "rf", m = 1, maxit = 10, seed = 50)
 
 # write_rds(imputed_data, "Rdata/imputed_data.rds")
 # 
@@ -384,6 +387,8 @@ imputed_data <- mice::mice(df_for_imputation,
 # dev.off()
 
 complete_mtx <- mice::complete(imputed_data, 1)
+
+write_rds(complete_mtx, "alison_complete_mtx.rds")
 ```
 
 # calculate the cosine similarity in the matrix and plot the heatmap
@@ -478,7 +483,7 @@ kmeans_clusters <- fviz_nbclust(pca_df,
       panel.border = element_rect(color = "black", fill = NA)
       )
 
-set.seed(123)
+set.seed(333)
 kmeans_pca <- kmeans(pca_df, centers = 4)
 
 pca_plot <- fviz_pca_ind(pca_object,

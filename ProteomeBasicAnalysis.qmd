@@ -70,13 +70,13 @@ labels <- c(
   P1_08 =  "Ven & Actn 30mg r2",
   P1_09 = "Ven & Actn 30mg r3",
   
-  P2_13 = "Ven & JPM-OEt 50mg r1",
-  P2_14 =  "Ven & JPM-OEt 50mg r2",
-  P2_15 = "Ven & JPM-OEt 50mg r3",
+  P2_13 = "Ven & JPMOEt 50mg r1",
+  P2_14 =  "Ven & JPMOEt 50mg r2",
+  P2_15 = "Ven & JPMOEt 50mg r3",
   
-  P1_13 = "Ven & JPM-OEt 100mg r1",
-  P1_14 =  "Ven & JPM-OEt 100mg r2",
-  P1_15 = "Ven & JPM-OEt 100mg r3"
+  P1_13 = "Ven & JPMOEt 100mg r1",
+  P1_14 =  "Ven & JPMOEt 100mg r2",
+  P1_15 = "Ven & JPMOEt 100mg r3"
 )
 
 # Params to filter by
@@ -135,12 +135,10 @@ CV_Matrix <- function(data, condition) {
   selected <- dplyr::select(
     data,
     protein,
-      str_subset(colnames(data), condition)
-    )
+    str_subset(colnames(data), condition)
+    ) %>% rowwise()
 
-  selected_rowwise <- rowwise(selected)
-
-  mutated <- dplyr::mutate(selected_rowwise,
+  mutated <- dplyr::mutate(selected,
     across(where(is.numeric), ~ 2^(.) - 1),
     cv = 100 *
       (
@@ -149,10 +147,7 @@ CV_Matrix <- function(data, condition) {
       ),
     condition = condition
   )
-  to_return <- dplyr::select(mutated, protein, cv, condition)
-  
-  
-  # browser()
+
   
   return(dplyr::select(mutated, protein, cv, condition))
 }
@@ -260,6 +255,23 @@ CleanDiannReport <- function() {
 }
 
 cat("\n\n3) Helper functions were loaded.\n")
+```
+
+
+```{r}
+
+
+for (i in 1:636) {
+  cat(i)
+
+if (any(CV_NaCl[i,] != p_nacl[i,])) {
+  print(CV_NaCl[i,])
+  print("----")
+  print(p_nacl[i,])
+  break
+  
+  }
+}
 ```
 
 # 4) Graph functions ----
@@ -770,14 +782,15 @@ GraphCoefficientOfVariation <- function() {
   cat("\nCalculating Coefficient of Variation...")
 
   for (condition in conditions) {
-    CVs <- bind_rows(CVs,
-      CV_Matrix(imputationResult,
-        condition = condition))
+    
+    
+    CVs <- bind_rows(CVs, CV_Matrix(imputationResult, condition = condition))
   }
 
   CVs %>%
-    dplyr::mutate(condition = factor(condition,
-      levels = unique(str_remove(unname(labels), "_r[0-9]+"))))
+    dplyr::mutate(condition = factor(
+      condition, levels = unique(str_remove(unname(labels), "_r[0-9]+"))
+    ))
 
 
   CVplot <- CVs %>%
@@ -812,7 +825,7 @@ GraphCoefficientOfVariation <- function() {
   cat("\n\n12) Graph ", quote(CVplot), ".png were created.\n", sep = "")
 }
 
-#GraphCoefficientOfVariation()
+GraphCoefficientOfVariation()
 ```
 
 
