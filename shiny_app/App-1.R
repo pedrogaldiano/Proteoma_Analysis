@@ -45,41 +45,89 @@
 # }
 
 
-s <- mtcars
-
-
 # Install rhandsontable if you don't have it:
 # install.packages("rhandsontable")
 
-library(shiny)
+# library(rhandsontable)
+
 library(rhandsontable)
+library(dplyr)
+
 
 ui <- fluidPage(
-  titlePanel("Editable Table with Run Button"),
-  rHandsontableOutput("table"),
+  titlePanel("Edit Data File"),
+  helpText("Changes to the table will be automatically saved to the source file."),
   
-  actionButton("add_row", "Add Row"),
-  actionButton("run_btn", "Run")
+  # uncomment line below to use action button to commit changes
+  actionButton("saveBtn", "Save"),
+  rHandsontableOutput("myTable")
 )
 
 
 server <- function(input, output, session) {
-  
-  # Initial data frame
-  df <- data.frame(ID = character(40),
-                   SAMPLE = character(40),
-                   stringsAsFactors = FALSE)
-  
 
+    observe({
+    # remove button and isolate to update file automatically
+    # after each table change
+    input$saveBtn
+      
+    myTable = isolate(input$myTable)
+    if (!is.null(myTable)) {
+      
+      df <- hot_to_r(myTable)
+      df <- df[!apply(df == "", 0, all),]
+      
+      print(df)
+    }
+  })
   
-  # Render the editable table
-  myTable <- renderRHandsontable(
-    rhandsontable(df, useTypes = FALSE) %>%
-    hot_context_menu(allowRowEdit = TRUE, allowColEdit = FALSE)
-    )
-  
-  output$table <- myTable
-  
+  output$myTable = renderRHandsontable({
+    if (!is.null(input$myTable)) {
+      DF = hot_to_r(input$myTable)
+    } else {
+      DF = data.frame("ID" = character(10),
+                      "SAMLE" = character(10))
+    }
+    
+    rhandsontable(DF) %>%
+      hot_table(highlightCol = TRUE, highlightRow = TRUE)
+  })
+}
+
+shinyApp(ui, server)
+
+# Erro: `server` must be a function
+
+
+
+
+
+# server <- function(input, output, session) {
+#   
+#   # Initial data frame
+#   df <- data.frame(ID = character(5),
+#                    SAMPLE = character(5),
+#                    stringsAsFactors = FALSE)
+#   
+# 
+#   
+#   # Render the editable table
+#   myTable <- renderRHandsontable(
+#     rhandsontable(df, useTypes = FALSE) %>%
+#     hot_context_menu(allowRowEdit = TRUE, allowColEdit = FALSE)
+#     )
+#   
+#   output$table <- myTable
+#   
+#   
+#   observeEvent(input$run_btn, {
+#     inputDF <- myTable()
+#     
+#     cat(inputDF)
+#     cat(class(inputDF))
+#     
+#     })
+#   
   
   # # When user edits the table
   # 
@@ -95,7 +143,8 @@ server <- function(input, output, session) {
   #     title = "Table Submitted",
   #     "Your table has been processed. Check the console for output."
   #   ))
-  # })
-}
-shinyApp(ui, server)
+#   # })
+# }
+# }
+# shinyApp(ui, server)
 
