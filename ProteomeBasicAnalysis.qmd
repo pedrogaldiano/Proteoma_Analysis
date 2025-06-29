@@ -258,22 +258,6 @@ cat("\n\n3) Helper functions were loaded.\n")
 ```
 
 
-```{r}
-
-
-for (i in 1:636) {
-  cat(i)
-
-if (any(CV_NaCl[i,] != p_nacl[i,])) {
-  print(CV_NaCl[i,])
-  print("----")
-  print(p_nacl[i,])
-  break
-  
-  }
-}
-```
-
 # 4) Graph functions ----
 ```{r}
 GenBarGraph <- function(data, xValue, yValue, condition, xLabel, nmax) {
