@@ -641,16 +641,34 @@ cv_plot <- df_mat_cv %>%
     )
 ```
 
-limma analysis using different filtering criteria
+
+
+
+# limma analysis using different filtering criteria ----
 
 ```{r}
+
+complete_mtx <- read_rds("alison_complete_mtx.rds")
 quantums_limma_mtx <- complete_mtx %>% 
   column_to_rownames("protein") %>% 
   normalizeBetweenArrays(method = "scale")
 
+
+#check idea --> Deu certo :D
+  t <- colnames(quantums_limma_mtx) %>%
+    str_remove_all("_r[0-9]+") %>% 
+    factor(levels = unique(.))
+
+
+
 # Create a design matrix for limma using the colnames(unique_genes)
 design_groups <- str_extract(colnames(quantums_limma_mtx), "NaCl|Actinonin_15mg|Actinonin_30mg|JPMOEt_50mg|JPMOEt_100mg|Venom|Ven_Actn_15mg|Ven_Actn_30mg|Ven_jPMOEt_50mg|Ven_jPMOEt_100mg") %>% 
+  
+  
   factor(levels = c("NaCl", "Actinonin_15mg", "Actinonin_30mg", "JPMOEt_50mg", "JPMOEt_100mg", "Venom", "Ven_Actn_15mg", "Ven_Actn_30mg", "Ven_jPMOEt_50mg", "Ven_jPMOEt_100mg"))
+
+
+
 design <- model.matrix(~ 0 + design_groups)
 colnames(design) <- str_remove(colnames(design), "design_groups")
 
