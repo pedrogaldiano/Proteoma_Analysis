@@ -56,11 +56,11 @@ labels <- c(
   P1_04 = "Actinonin 30mg r1",
   P1_05 =  "Actinonin 30mg r2",
   
-  P2_11 = "JPMOEt 50mg r1",
-  P2_12 =  "JPMOEt 50mg r2",
-  P1_10 =  "JPMOEt 100mg r1",
-  P1_11 = "JPMOEt 100mg r2",
-  P1_12 =  "JPMOEt 100mg r3",
+  P2_11 = "JPM OEt 50mg r1",
+  P2_12 =  "JPM OEt 50mg r2",
+  P1_10 =  "JPM OEt 100mg r1",
+  P1_11 = "JPM OEt 100mg r2",
+  P1_12 =  "JPM OEt 100mg r3",
   
   P2_07 =  "Ven & Actn 15mg r1",
   P2_08 = "Ven & Actn 15mg r2",
@@ -752,7 +752,7 @@ GraphPCA_Kmeans <- function() {
 GraphPCA_Kmeans()
 ```
 
-# 12) Graph: Coefficient of Variation [REFACTOR!] ----
+# 12) Graph: Coefficient of Variation ----
 ```{r}
 
 #TODO:
@@ -814,9 +814,20 @@ GraphCoefficientOfVariation()
 
 
 
+
+
 # 13) Graph: Bland-Altman [TODO] ----
 ```{r}
-# TODO:
+  limmaMTX <- CreateImputationMatrix() %>% 
+  column_to_rownames("protein")
+  normalizeBetweenArrays(method = "scale")
+  
+  #Resultado identico ao do Alison
+  designGroups <- unname(labels) %>%
+    str_remove_all(" r[0-9]+") %>% 
+    factor(levels = unique(.))
+
+
 
 cat("\n\n13) ")
 ```
