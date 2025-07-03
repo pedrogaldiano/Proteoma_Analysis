@@ -643,21 +643,21 @@ cv_plot <- df_mat_cv %>%
 
 
 
-
 # limma analysis using different filtering criteria ----
 
 ```{r}
 
 complete_mtx <- read_rds("alison_complete_mtx.rds")
+
 quantums_limma_mtx <- complete_mtx %>% 
   column_to_rownames("protein") %>% 
   normalizeBetweenArrays(method = "scale")
 
 
 #check idea --> Deu certo :D
-  t <- colnames(quantums_limma_mtx) %>%
-    str_remove_all("_r[0-9]+") %>% 
-    factor(levels = unique(.))
+  # t <- colnames(quantums_limma_mtx) %>%
+  #   str_remove_all("_r[0-9]+") %>% 
+  #   factor(levels = unique(.))
 
 
 
@@ -671,6 +671,38 @@ design_groups <- str_extract(colnames(quantums_limma_mtx), "NaCl|Actinonin_15mg|
 
 design <- model.matrix(~ 0 + design_groups)
 colnames(design) <- str_remove(colnames(design), "design_groups")
+
+
+#   aaaa <- list(
+#     Actinonin_15mg_vs_NaCl = "Actinonin_15mg - NaCl",
+#     Actinonin_30mg_vs_NaCl = "Actinonin_30mg - NaCl",
+#     JPMOEt_50mg_vs_NaCl = "JPMOEt_50mg - NaCl",
+#     JPMOEt_100mg_vs_NaCl = "JPMOEt_100mg - NaCl",
+#     Venom_vs_NaCl = "Venom - NaCl",
+#     Ven_Actn_15mg_vs_NaCl = "Ven_Actn_15mg - NaCl",
+#     Ven_Actn_30mg_vs_NaCl = "Ven_Actn_30mg - NaCl",
+#     Ven_jPMOEt_50mg_vs_NaCl = "Ven_jPMOEt_50mg - NaCl",
+#     Ven_jPMOEt_100mg_vs_NaCl = "Ven_jPMOEt_100mg - NaCl",
+#     Actinonin_15mg_vs_Actinonin_30mg = "Actinonin_15mg - Actinonin_30mg",
+#     JPMOEt_50mg_vs_JPMOEt_100mg = "JPMOEt_50mg - JPMOEt_100mg",
+#     Ven_Actn_15mg_vs_Venom = "Ven_Actn_15mg - Venom",
+#     Ven_Actn_30mg_vs_Venom = "Ven_Actn_30mg - Venom",
+#     Ven_jPMOEt_50mg_vs_Venom = "Ven_jPMOEt_50mg - Venom",
+#     Ven_jPMOEt_100mg_vs_Venom = "Ven_jPMOEt_100mg - Venom"
+#   )
+#   
+#   cm <- do.call(
+#   limma::makeContrasts,
+#   c(aaaa, list(levels = design)) 
+# )
+
+
+
+
+
+
+
+
 
 # Create a contrast matrix to compare the conditions
 contrast_matrix <- limma::makeContrasts(
@@ -691,6 +723,9 @@ contrast_matrix <- limma::makeContrasts(
   Ven_jPMOEt_100mg_vs_Venom = Ven_jPMOEt_100mg - Venom,
   levels = design
 )
+
+
+
 
 # Fit the linear model for the pgQ + eQ filtered matrix using robust regression
 fit_quantums <- limma::lmFit(quantums_limma_mtx,
@@ -718,6 +753,10 @@ results_Actinonin_15mg_vs_NaCl_QuantUMS <- limma::topTable(contrast_fit_quantums
             status = factor(status, levels = c("Decreased", "Not significant", "Increased")),
             condition = "Actn 15mg vs NaCl"
   )
+
+# write_rds(results_Actinonin_15mg_vs_NaCl_QuantUMS, "results_Actinonin_15mg_vs_NaCl_QuantUMS.rds")
+
+
 
 results_Actinonin_30mg_vs_NaCl_QuantUMS <- limma::topTable(contrast_fit_quantums,
                                coef = "Actinonin_30mg_vs_NaCl",
