@@ -47,20 +47,22 @@ labels <- c(
   P2_02 = "NaCl r2",
   P2_03 =  "NaCl r3",
 
-  P1_02 = "Venom r1",
-  P1_03 =  "Venom r2",
-  
-  P2_04 = "Actinonin 15mg r1",
+    P2_04 = "Actinonin 15mg r1",
   P2_05 =  "Actinonin 15mg r2",
   P2_06 = "Actinonin 15mg r3",
   P1_04 = "Actinonin 30mg r1",
   P1_05 =  "Actinonin 30mg r2",
-  
+
   P2_11 = "JPM OEt 50mg r1",
   P2_12 =  "JPM OEt 50mg r2",
   P1_10 =  "JPM OEt 100mg r1",
   P1_11 = "JPM OEt 100mg r2",
   P1_12 =  "JPM OEt 100mg r3",
+  
+  P1_02 = "Venom r1",
+  P1_03 =  "Venom r2",
+  
+  
   
   P2_07 =  "Ven & Actn 15mg r1",
   P2_08 = "Ven & Actn 15mg r2",
@@ -100,6 +102,8 @@ params <- list(
   
   numberOfClusters = 4,
   
+  regexString = " r[0-9]+",
+  
   #If more or different colors are need just go to "colorbrewer2.org"
   colors = c(
     "#a6cee3","#1f78b4","#b2df8a","#33a02c","#fb9a99",
@@ -108,7 +112,7 @@ params <- list(
 )
 
 checkLabels <- function() {
-  conditions = unique(stringr::str_remove_all(labels, " r[0-9]+"))
+  conditions = unique(stringr::str_remove_all(labels, params$regexString))
   
   for (condition in conditions) {
     
@@ -167,7 +171,7 @@ DiannReport <- function(runs, directory = "../data/DIANN_results/") {
   reportRecoded <- dplyr::mutate(reportFiltered,
     Run = recode(Run, !!!runs),
     Run = factor(Run, levels = unname(runs)),
-    condition = str_remove(Run, " r[0-9]+"),
+    condition = str_remove(Run, params$regexString),
     File.Name = Run,
     peptide_length = nchar(Stripped.Sequence)
   )
@@ -814,23 +818,161 @@ GraphCoefficientOfVariation()
 
 
 
+```{r}
+
+quantums_limma_mtx <- read_rds("quantums_limma_mtx.rds")
+
+```
+
+
+
 
 
 # 13) Graph: Bland-Altman [TODO] ----
 ```{r}
+  
+  completeMTX <- CreateImputationMatrix()
+  colnames(completeMTX) <- str_replace_all(colnames(completeMTX), " ", "_")
+  
+  waldo::compare(complete_mtx, completeMTX)
+  
+  sum(limmaMTX) #OK
+  sum(quantums_limma_mtx) #OK
+  
+  waldo::compare(design_groups, designGroups) #OK
+  waldo::compare(design, dg) #OK
+
+  waldo::compare(contrast_matrix, contrastMatrix) #OK
+  
+  waldo::compare(fit_quantums, fitQuantums) #OK
+  waldo::compare(contrast_fit_quantums, contrastFitQuantums) #OK
+
+  
+
   limmaMTX <- CreateImputationMatrix() %>% 
-  column_to_rownames("protein")
+  column_to_rownames("protein") %>% 
   normalizeBetweenArrays(method = "scale")
   
   #Resultado identico ao do Alison
-  designGroups <- unname(labels) %>%
-    str_remove_all(" r[0-9]+") %>% 
+  designGroups <- colnames(limmaMTX) %>% 
+    str_remove_all(params$regexString) %>% 
+    str_replace_all(" ", "_") %>% 
+    str_replace_all("_&", "") %>% 
     factor(levels = unique(.))
 
+  dg <- model.matrix(~ 0 + designGroups)
+  colnames(dg) <- colnames(dg) %>% str_replace("designGroups", "")
+
+  
+  samplesToCompare <- list(
+    Actinonin_15mg_vs_NaCl = "Actinonin_15mg - NaCl",
+    Actinonin_30mg_vs_NaCl = "Actinonin_30mg - NaCl",
+    
+    JPMOEt_50mg_vs_NaCl = "JPM_OEt_50mg - NaCl",
+    JPMOEt_100mg_vs_NaCl = "JPM_OEt_100mg - NaCl",
+    
+    Venom_vs_NaCl = "Venom - NaCl",
+    
+    Ven_Actn_15mg_vs_NaCl = "Ven_Actn_15mg - NaCl",
+    Ven_Actn_30mg_vs_NaCl = "Ven_Actn_30mg - NaCl",
+    
+    Ven_jPMOEt_50mg_vs_NaCl = "Ven_JPMOEt_50mg - NaCl",
+    Ven_jPMOEt_100mg_vs_NaCl = "Ven_JPMOEt_100mg - NaCl",
+    
+    Actinonin_15mg_vs_Actinonin_30mg = "Actinonin_15mg - Actinonin_30mg"
+    ,
+    JPMOEt_50mg_vs_JPMOEt_100mg = "JPM_OEt_50mg - JPM_OEt_100mg",
+    
+    Ven_Actn_15mg_vs_Venom = "Ven_Actn_15mg - Venom",
+    Ven_Actn_30mg_vs_Venom = "Ven_Actn_30mg - Venom",
+    
+    Ven_jPMOEt_50mg_vs_Venom = "Ven_JPMOEt_50mg - Venom",
+    Ven_jPMOEt_100mg_vs_Venom = "Ven_JPMOEt_100mg - Venom"
+  )
+  
+  contrastMatrix <- do.call(
+  limma::makeContrasts,
+  c(samplesToCompare, list(levels = dg))) 
+  
+  fitQuantums <- lmFit(limmaMTX, dg, method = "robust")
+  
+  contrastFitQuantums <- limma::contrasts.fit(fitQuantums, contrastMatrix) %>% 
+    limma::eBayes()
 
 
+  
+  # ---------------------------------- #
+  
+  alison <- read_rds("results_Actinonin_15mg_vs_NaCl_QuantUMS.rds")
+  
+  a <- alison[, !names(alison) %in% "condition"]
+  
+  p <- results_Actinonin_15mg_vs_NaCl_QuantUMS[, !names(results_Actinonin_15mg_vs_NaCl_QuantUMS) %in% "condition"]
+  
+  waldo::compare(a, p) # OK
+  
+  
+  
+  resultQuantUMS <- list()
+  significantHiLo <- list()
+  
+ for (item in names(samplesToCompare)) {
+   
+  limmaResult <- limma::topTable(contrastFitQuantums,
+                               coef = item,
+                               number = Inf,
+                               adjust.method = "BH") %>% 
+  rownames_to_column("proteins") %>% 
+    dplyr::mutate(
+      status = case_when(
+        logFC > 0.58 & adj.P.Val <= 0.05 ~ "Increased",
+        logFC < -0.58 & adj.P.Val <= 0.05 ~ "Decreased",
+        TRUE ~ "Not significant"),
+      status = factor(status, 
+                      levels = c("Decreased", "Not significant", "Increased")),
+      condition = str_replace_all(item, "_", " ")
+    )
+  
+  resultQuantUMS <- resultQuantUMS %>% bind_rows(limmaResult)
+  
+
+  significant <- limmaResult %>% 
+    dplyr::filter(status != "Not significant") 
+  
+  significantHiLo <- significantHiLo %>% dplyr::bind_rows(
+      dplyr::slice_max(significant, n = 10, order_by = logFC),
+      dplyr::slice_min(significant, n = 10, order_by = logFC)
+    )
+ }
+  
+  plot <- significantHiLo %>% 
+    dplyr::group_by(proteins, condition)
+  
+  plot <- signicantProteins %>% 
+    ggplot(aes(x = condition, y = proteins)) +
+
+  
 cat("\n\n13) ")
 ```
+
+peptidesPlot <- diannReportByRun %>%
+    ggplot(aes(y = Run, x = n_peptides, fill = condition)) +
+    geom_bar(stat = "identity", position = "dodge", show.legend = FALSE) +
+    scale_fill_manual(values = params$colors) +
+    geom_text(
+      aes(
+        label = n_peptides,
+        hjust = ifelse(n_peptides > params$nMaxPeptides, 1.1, -0.15)
+      ),
+      color = "black", size = 7, nudge_x = -0.5, fontface = "bold"
+    ) +
+    labs(y = NULL, x = "Number of peptides", fill = NULL) +
+    theme(
+      text = element_text(size = 25),
+      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+      panel.border = element_rect(color = "black", fill = NA),
+      panel.background = element_blank()
+    )
 
 # 14) Graph: Distribution of proteins of interest [TODO] ----
 ```{r}
