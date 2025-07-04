@@ -828,7 +828,7 @@ quantums_limma_mtx <- read_rds("quantums_limma_mtx.rds")
 
 
 
-# 13) Graph: Bland-Altman [TODO] ----
+# 13) Load Limma Contrast Functions ----
 ```{r}
   
 CreateContrastFitQuantUMS <- function() {
@@ -948,14 +948,49 @@ signicantProteinsHiLo <- function() {
   #Do the right things! 
   }
 
+cat("\n\n13) Load Contrast Fit Functions")
+```
+
+
+# 14) Graph: Bland-Altman ----
+```{r}
+
+
 allLimmaResults <- CompareLimmaResults()
+
+# count the number of proteins in each status
+signif_proteins <- allLimmaResults %>%
+  dplyr::filter(status != "Not significant") %>%
+  group_by(status, Comparison) %>%
+  dplyr::summarise(proteins = n())
+
+allLimmaResults %>%
+  dplyr::filter(status != "Not significant") %>%
+  write_tsv("significant_proteins.tsv")
+
+mappingID <- read_tsv("id_mapping.tsv") %>% 
+  rename("proteins" = "From") %>% 
+  dplyr::mutate(`Gene Names` = str_remove(`Gene Names`, " .*"))
+
+genesToHighlight <- c("Il1rap", "Lcn2", "Slc47a1", "Chia", "Mup17", "Mup3",
+                      "Umod", "Mup20", "Xpnpep2",  "Nectin4", "Esam", "Alb",
+                      "Asah1", "Smpd1", "Smpdl3a", "Apoe", "Apoa1", "Apoa2",
+                      "B2m", "Vcam1", "Blvrb", "Orm2", "Orm1", "Mup4", "Obp1a",
+                      "Serpina6", "C8g", "Ngp", "Cd36", "Hba", "Hbb-b1",
+                      "Hbb-b2","Chil3", "Apcs", "Hp", "Mug1", "Serpina1b",
+                      "Serpina3k", "Bcam", "Cdh1", "Cdh11", "Ceacam1", "Cd248",
+                      "Cfi", "Fgg", "Fga", "Fgb", "Kng1", "Lum", "Retnla",
+                      "Cd200", "Cd44", "Cd48", "Cd36", "Cltrn", "Cp", "Cspg4",
+                      "Cst3", "Ctsd", "Ctse", "Ctso", "Dag1", "Dsc1"
+                      )
+
 
 
 
 
 
   
-cat("\n\n13) ")
+```
 ```
 
 peptidesPlot <- diannReportByRun %>%
