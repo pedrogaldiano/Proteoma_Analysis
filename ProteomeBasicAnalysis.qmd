@@ -831,25 +831,9 @@ quantums_limma_mtx <- read_rds("quantums_limma_mtx.rds")
 # 13) Graph: Bland-Altman [TODO] ----
 ```{r}
   
-  completeMTX <- CreateImputationMatrix()
-  colnames(completeMTX) <- str_replace_all(colnames(completeMTX), " ", "_")
-  
-  waldo::compare(complete_mtx, completeMTX)
-  
-  sum(limmaMTX) #OK
-  sum(quantums_limma_mtx) #OK
-  
-  waldo::compare(design_groups, designGroups) #OK
-  waldo::compare(design, dg) #OK
+CreateContrastFitQuantUMS <- function() {
 
-  waldo::compare(contrast_matrix, contrastMatrix) #OK
-  
-  waldo::compare(fit_quantums, fitQuantums) #OK
-  waldo::compare(contrast_fit_quantums, contrastFitQuantums) #OK
-
-  
-
-  limmaMTX <- CreateImputationMatrix() %>% 
+    limmaMTX <- CreateImputationMatrix() %>% 
   column_to_rownames("protein") %>% 
   normalizeBetweenArrays(method = "scale")
   
@@ -863,7 +847,7 @@ quantums_limma_mtx <- read_rds("quantums_limma_mtx.rds")
   dg <- model.matrix(~ 0 + designGroups)
   colnames(dg) <- colnames(dg) %>% str_replace("designGroups", "")
 
-  
+  #TODO: Move to Global variables
   samplesToCompare <- list(
     Actinonin_15mg_vs_NaCl = "Actinonin_15mg - NaCl",
     Actinonin_30mg_vs_NaCl = "Actinonin_30mg - NaCl",
@@ -879,8 +863,7 @@ quantums_limma_mtx <- read_rds("quantums_limma_mtx.rds")
     Ven_jPMOEt_50mg_vs_NaCl = "Ven_JPMOEt_50mg - NaCl",
     Ven_jPMOEt_100mg_vs_NaCl = "Ven_JPMOEt_100mg - NaCl",
     
-    Actinonin_15mg_vs_Actinonin_30mg = "Actinonin_15mg - Actinonin_30mg"
-    ,
+    Actinonin_15mg_vs_Actinonin_30mg = "Actinonin_15mg - Actinonin_30mg",
     JPMOEt_50mg_vs_JPMOEt_100mg = "JPM_OEt_50mg - JPM_OEt_100mg",
     
     Ven_Actn_15mg_vs_Venom = "Ven_Actn_15mg - Venom",
@@ -896,60 +879,80 @@ quantums_limma_mtx <- read_rds("quantums_limma_mtx.rds")
   
   fitQuantums <- lmFit(limmaMTX, dg, method = "robust")
   
-  contrastFitQuantums <- limma::contrasts.fit(fitQuantums, contrastMatrix) %>% 
+  contrastFitQuantUMS <- limma::contrasts.fit(fitQuantums, contrastMatrix) %>% 
     limma::eBayes()
+  
+  invisible(contrastFitQuantUMS)
+}
 
+ApplyLimmaTopTable <- function(contrastFitQuantUMS, sampleToCompare) {
+  
+  limmaResult <- limma::topTable(contrastFitQuantUMS,
+                                  coef = sampleToCompare,
+                                  number = Inf,
+                                  adjust.method = "BH") %>% 
+     rownames_to_column("proteins") %>% 
+     dplyr::mutate(
+       status = case_when(
+         logFC > 0.58 & adj.P.Val <= 0.05 ~ "Increased",
+         logFC < -0.58 & adj.P.Val <= 0.05 ~ "Decreased",
+         TRUE ~ "Not significant"),
+       status = factor(status, 
+                       levels = c("Decreased", "Not significant", "Increased")),
+       condition = str_replace_all(item, "_", " ")
+     )
+  
+  invisible(limmaResult)
+}
 
+CompareLimmaResults <- function() {
+
+  contrastFitQuantUMS <- CreateContrastFitQuantUMS()
   
-  # ---------------------------------- #
-  
-  alison <- read_rds("results_Actinonin_15mg_vs_NaCl_QuantUMS.rds")
-  
-  a <- alison[, !names(alison) %in% "condition"]
-  
-  p <- results_Actinonin_15mg_vs_NaCl_QuantUMS[, !names(results_Actinonin_15mg_vs_NaCl_QuantUMS) %in% "condition"]
-  
-  waldo::compare(a, p) # OK
-  
-  
-  
-  resultQuantUMS <- list()
-  significantHiLo <- list()
+  resultQuantUMS <- list() # Result from samples comparison
+  # significantHiLo <- list() # Top/Bottom 10 protein significant altered
   
  for (item in names(samplesToCompare)) {
+   limmaResult <- ApplyLimmaTopTable(contrastFitQuantUMS, item)
    
-  limmaResult <- limma::topTable(contrastFitQuantums,
-                               coef = item,
-                               number = Inf,
-                               adjust.method = "BH") %>% 
-  rownames_to_column("proteins") %>% 
-    dplyr::mutate(
-      status = case_when(
-        logFC > 0.58 & adj.P.Val <= 0.05 ~ "Increased",
-        logFC < -0.58 & adj.P.Val <= 0.05 ~ "Decreased",
-        TRUE ~ "Not significant"),
-      status = factor(status, 
-                      levels = c("Decreased", "Not significant", "Increased")),
-      condition = str_replace_all(item, "_", " ")
-    )
-  
   resultQuantUMS <- resultQuantUMS %>% bind_rows(limmaResult)
-  
 
-  significant <- limmaResult %>% 
-    dplyr::filter(status != "Not significant") 
-  
-  significantHiLo <- significantHiLo %>% dplyr::bind_rows(
-      dplyr::slice_max(significant, n = 10, order_by = logFC),
-      dplyr::slice_min(significant, n = 10, order_by = logFC)
-    )
  }
+  # significant <- limmaResult %>% 
+  #   dplyr::filter(status != "Not significant") 
+  # 
+  # significantHiLo <- significantHiLo %>% dplyr::bind_rows(
+  #     dplyr::slice_max(significant, n = 10, order_by = logFC),
+  #     dplyr::slice_min(significant, n = 10, order_by = logFC)
+  #   )
   
-  plot <- significantHiLo %>% 
-    dplyr::group_by(proteins, condition)
+  result <- resultQuantUMS %>% 
+    dplyr::mutate(logFC = round(logFC, 2),
+                  AveExpr = round(AveExpr, 2),
+                  B = round(B, 2)) %>% 
+    left_join(
+      diann_report[, c("Protein.Group", "Genes")] %>% 
+        distinct(), by = c("proteins" = "Protein.Group")
+    ) %>%
+    dplyr::rename(Protein = proteins,
+                  Gene = Genes,
+                  Comparison = condition)
   
-  plot <- signicantProteins %>% 
-    ggplot(aes(x = condition, y = proteins)) +
+  write_tsv(result, "allLimmaResultsCombined.tsv")
+  # View(significantHiLo)
+  invisible(result)
+}
+
+#TODO: Later, would be nice to return the significantHiLo
+signicantProteinsHiLo <- function() { 
+  #Do the right things! 
+  }
+
+allLimmaResults <- CompareLimmaResults()
+
+
+
+
 
   
 cat("\n\n13) ")
