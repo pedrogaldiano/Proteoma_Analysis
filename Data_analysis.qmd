@@ -741,8 +741,11 @@ contrast_fit_quantums <- limma::contrasts.fit(fit_quantums,
 # Get the results for each contrast using the QuantUMS filtered data
 
 ```{r}
+
+t <- "Actinonin_15mg_vs_NaCl"
+
 results_Actinonin_15mg_vs_NaCl_QuantUMS <- limma::topTable(contrast_fit_quantums,
-                               coef = "Actinonin_15mg_vs_NaCl",
+                               coef = t,
                                number = Inf,
                                adjust.method = "BH") %>% 
   rownames_to_column("proteins") %>% 
@@ -984,8 +987,8 @@ combined_quantums_limma_results %>%
   dplyr::filter(status != "Not significant") %>%
   write_tsv("significant_proteins.tsv")
 
-id_mapping <- read_tsv("idmapping_2025_05_11.tsv") %>% 
-  rename("proteins" = "From") %>% 
+id_mapping <- read_tsv("id_mapping.tsv") %>% 
+  rename("proteins" = "Entry") %>% 
   dplyr::mutate(`Gene Names` = str_remove(`Gene Names`, " .*"))
 
 annotation_for_protein <- c("Il1rap", "Lcn2", "Slc47a1", "Chia", 
