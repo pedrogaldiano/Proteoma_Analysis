@@ -830,22 +830,6 @@ quantums_limma_mtx <- read_rds("quantums_limma_mtx.rds")
 
 # 13) Load Limma Contrast Functions ----
 ```{r}
-  
-CreateContrastFitQuantUMS <- function() {
-
-    limmaMTX <- CreateImputationMatrix() %>% 
-  column_to_rownames("protein") %>% 
-  normalizeBetweenArrays(method = "scale")
-  
-  #Resultado identico ao do Alison
-  designGroups <- colnames(limmaMTX) %>% 
-    str_remove_all(params$regexString) %>% 
-    str_replace_all(" ", "_") %>% 
-    str_replace_all("_&", "") %>% 
-    factor(levels = unique(.))
-
-  dg <- model.matrix(~ 0 + designGroups)
-  colnames(dg) <- colnames(dg) %>% str_replace("designGroups", "")
 
   #TODO: Move to Global variables
   samplesToCompare <- list(
@@ -871,7 +855,25 @@ CreateContrastFitQuantUMS <- function() {
     
     Ven_jPMOEt_50mg_vs_Venom = "Ven_JPMOEt_50mg - Venom",
     Ven_jPMOEt_100mg_vs_Venom = "Ven_JPMOEt_100mg - Venom"
-  )
+  )  
+
+CreateContrastFitQuantUMS <- function() {
+
+    limmaMTX <- CreateImputationMatrix() %>% 
+  column_to_rownames("protein") %>% 
+  normalizeBetweenArrays(method = "scale")
+  
+  #Resultado identico ao do Alison
+  designGroups <- colnames(limmaMTX) %>% 
+    str_remove_all(params$regexString) %>% 
+    str_replace_all(" ", "_") %>% 
+    str_replace_all("_&", "") %>% 
+    factor(levels = unique(.))
+
+  dg <- model.matrix(~ 0 + designGroups)
+  colnames(dg) <- colnames(dg) %>% str_replace("designGroups", "")
+
+
   
   contrastMatrix <- do.call(
   limma::makeContrasts,
@@ -887,6 +889,7 @@ CreateContrastFitQuantUMS <- function() {
 
 ApplyLimmaTopTable <- function(contrastFitQuantUMS, sampleToCompare) {
   
+
   limmaResult <- limma::topTable(contrastFitQuantUMS,
                                   coef = sampleToCompare,
                                   number = Inf,
@@ -899,7 +902,7 @@ ApplyLimmaTopTable <- function(contrastFitQuantUMS, sampleToCompare) {
          TRUE ~ "Not significant"),
        status = factor(status, 
                        levels = c("Decreased", "Not significant", "Increased")),
-       condition = str_replace_all(item, "_", " ")
+       condition = str_replace_all(sampleToCompare, "_", " ")
      )
   
   invisible(limmaResult)
@@ -948,14 +951,12 @@ signicantProteinsHiLo <- function() {
   #Do the right things! 
   }
 
-cat("\n\n13) Load Contrast Fit Functions")
+cat("\n\n13) Load Limma Contrast Functions")
 ```
 
 
 # 14) Graph: Bland-Altman ----
 ```{r}
-
-
 allLimmaResults <- CompareLimmaResults()
 
 # count the number of proteins in each status
@@ -969,7 +970,7 @@ allLimmaResults %>%
   write_tsv("significant_proteins.tsv")
 
 mappingID <- read_tsv("id_mapping.tsv") %>% 
-  rename("proteins" = "From") %>% 
+  rename("proteins" = "Entry") %>% 
   dplyr::mutate(`Gene Names` = str_remove(`Gene Names`, " .*"))
 
 genesToHighlight <- c("Il1rap", "Lcn2", "Slc47a1", "Chia", "Mup17", "Mup3",
@@ -985,10 +986,62 @@ genesToHighlight <- c("Il1rap", "Lcn2", "Slc47a1", "Chia", "Mup17", "Mup3",
                       )
 
 
+BlandAltmanLimmaPlot <- ggplot(allLimmaResults,
+                  aes(x = AveExpr,
+                      y = logFC,
+                      color = status)
+                  ) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = "gam", se = FALSE, color = "darkblue", linewidth = 1) +
+  guides(color = guide_legend(override.aes = list(size = 5, alpha = 1)),
+         shape = guide_legend(override.aes = list(size = 5, alpha = 1))) +
+  geom_hline(yintercept = c(-0.58, 0.58), linetype = "dashed", color = "black") +
+  scale_color_manual(values = c("Decreased" = "steelblue",
+                                "Not significant" = "grey60",
+                                "Increased" = "firebrick")) +
+  facet_wrap(~Comparison, scales = "free", ncol = 5) +
+    geom_text(data = signif_proteins %>% 
+                dplyr::filter(status == "Decreased"),
+            aes(x = 13.5, y = -3, label = paste0(proteins)),
+            size = 8, fontface = "bold",
+            hjust = 0.5,
+            vjust = -1, 
+            show.legend = FALSE) +
+      geom_text(data = signif_proteins %>% 
+                dplyr::filter(status == "Increased"),
+            aes(x = 13.5, y = 1, label = paste0(proteins)),
+            size = 8, fontface = "bold",
+            hjust = 0.5,
+            vjust = -1, 
+            show.legend = FALSE) +
+  geom_label_repel(data = allLimmaResults %>% 
+                dplyr::filter(status != "Not significant" & Gene %in% genesToHighlight),
+            aes(label = paste0(Gene)),
+            show.legend = FALSE) +
+    labs(title = "Bland-Altman plots of limma analysis",
+       x = "log<sub>2</sub>(Average protein abundance)",
+       y = "log<sub>2</sub>FC") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        text = element_text(size = 20),
+        legend.position = "bottom",
+        legend.title = element_blank(),
+        legend.box = "vertical",
+        strip.text = element_text(size = 15, face = "bold", color = "black"),
+        axis.text = element_text(color = "black"),
+        axis.title = element_markdown(size = 20, face = "bold"),
+        axis.ticks = element_line(color = "black"),
+        panel.border = element_rect(color = "black", 
+                                    fill = NA)
+        )
 
-
-
-
+#TODO: Put the number of the chunk before the figure name ex: "14-BlandAltmanLimmaPlot.png"
+ggsave(paste0(quote(BlandAltmanLimmaPlot), ".png"),
+    path = "plots",
+    plot = BlandAltmanLimmaPlot,
+    width = 25, height = 12,
+    units = "in", dpi = 300,
+    bg = "white")
   
 ```
 ```
