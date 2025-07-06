@@ -89,7 +89,7 @@ remove_missing <- function(x, threshold) {
 We filter the data using Lib.PG.Q.Value ≤ 0.01, Lib.Q.Value ≤ 0.01, and PG.Q.Value ≤ 0.01 for the analysis.
 
 ```{r}
-diann_report <- arrow::read_parquet("../data/DIANN_results/report.parquet") %>%
+diann_report <- arrow::read_parquet("report.parquet") %>%
     dplyr::filter(Lib.PG.Q.Value <= 0.01 & Lib.Q.Value <= 0.01 & PG.Q.Value <= 0.01) %>%
     dplyr::mutate(
       Run = case_when(
