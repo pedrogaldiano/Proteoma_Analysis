@@ -36,11 +36,12 @@ cat("\n\n1) All packages were activated.\n")
 
 # 2) Global variables
 ```{r}
-# This map should be ordered by the sample-name (code = Sample name r1), this will
-# define the order everything will be ploted
-#
-params <- list(
+#You should only need to change this chunk of code, please don't break it.
+
   
+params <- list(
+#This map should be ordered by the sample-name (code = Sample name r1), 
+#this will define the order everything will be ploted
   labels = c(
     P2_01 =  "NaCl r1",
     P2_02 = "NaCl r2",
@@ -78,27 +79,27 @@ params <- list(
     P1_15 = "Ven & JPMOEt 100mg r3"
   ),
   
-  # Params to filter by
-  pgScore = 0.75,
-  eqScore = 0.75,
-  threshold = 0.3,
-  samplesToRemove = c("NaCl r1"),
+  #Params to filter by
+  pgScore = 0.75, #protein score
+  eqScore = 0.75, #empirical score
+  threshold = 0.3, # % of missingness alowed
+  samplesToRemove = c("NaCl r1"), #samples you want to remove
   setSeed = 333, #random seed
   
-  #Fix the text in the number of proteins and peptides plot
+  #Fix the plot in the number of proteins and peptides plot
   nMaxPeptides = 8200,
   nMaxProteins = 1200,
   
-  #Params to create imputation Matrix
-  imputMethod = "rf",
-  imputM = 1,
-  imputMaxit = 10,
-  imputSeed = 50,
-  imputOverride = FALSE,
+  #Params to create imputation Matrix (Diann_Matrix)
+  imputMethod = "rf", #method of imputation
+  imputM = 1, #M
+  imputMaxit = 10, #Maxit
+  imputSeed = 50, #Seed
+  imputOverride = FALSE, #Override imputed matrix
   
-  numberOfClusters = 4,
+  numberOfClusters = 4, #Number of clusters
   
-  regexString = " r[0-9]+",
+  regexString = " r[0-9]+", #Regex to remove replicates and create conditions
   
   #If more or different colors are need just go to "colorbrewer2.org"
   colors = c(
@@ -106,6 +107,8 @@ params <- list(
     "#e31a1c","#fdbf6f","#ff7f00","#cab2d6","#6a3d9a"),
   
   
+  # Which samples you want to compare, should follow the example:
+  # Actinonin_15mg_vs_NaCl = "Actinonin_15mg - NaCl"
   samplesToCompare = list(
     Actinonin_15mg_vs_NaCl = "Actinonin_15mg - NaCl",
     Actinonin_30mg_vs_NaCl = "Actinonin_30mg - NaCl",
@@ -131,6 +134,7 @@ params <- list(
     Ven_jPMOEt_100mg_vs_Venom = "Ven_JPMOEt_100mg - Venom"
   ),
   
+  #Genes you wanto to highlight in th e bland-altman plot
   genesToHighlight_blandAltman = c(
     "Il1rap", "Lcn2", "Slc47a1", "Chia", "Mup17", "Mup3","Umod", "Mup20",
     "Xpnpep2",  "Nectin4", "Esam", "Alb","Asah1", "Smpd1", "Smpdl3a", "Apoe",
@@ -141,7 +145,7 @@ params <- list(
     "Cd44","Cd48", "Cd36", "Cltrn", "Cp", "Cspg4","Cst3", "Ctsd", "Ctse",
     "Ctso","Dag1", "Dsc1"),
   
-  
+  #Genes you wanto to highlight in th e proteins comparison plot
   genesToHighlight_proteinsComparison = c(
     "Il1rap", "Lcn2", "Slc47a1","Mup17", "Mup3", "Mup20",  "Nectin4", "Esam",
     "Alb", "Smpd1","Apoe", "Apoa1", "Apoa2", "Vcam1","Blvrb", "Orm2", "Orm1",
@@ -152,6 +156,8 @@ params <- list(
   
 )
 
+
+#Check if the labels name are valid, do not check for every possible case
 checkLabels <- function() {
   conditions = unique(stringr::str_remove_all(params$labels, params$regexString))
 
@@ -233,6 +239,7 @@ DiannReport <- function() {
   return(diannReport)
 }
 
+#Filter by scores
 FilterByScore <- function(data) {
 
   result <- data %>%
@@ -246,6 +253,7 @@ FilterByScore <- function(data) {
   return(result)
 }
 
+#Filter out samples
 FilterBySample <- function(data) {
   
   cat("\nSample removed:", params$samplesToRemove)
@@ -254,6 +262,7 @@ FilterBySample <- function(data) {
   return(data[, (!cols %in% params$samplesToRemove)])
 }
 
+#Create the Diann Matrix
 FilterByDiannMatrix <- function(data) {
 
   result <- data %>%
@@ -266,6 +275,7 @@ FilterByDiannMatrix <- function(data) {
   return(result)
 }
 
+#Filter by threshold
 FilterByMissingness <- function(data) {
 
 
@@ -285,9 +295,11 @@ FilterByMissingness <- function(data) {
   return(as.matrix(result))
 }
 
+
+#Apply every filter to the diann report
 CleanDiannReport <- function() {
 
-  diannReport <- DiannReport() # Not sure if the best approach is to get it inside the function or pass as argument
+  diannReport <- DiannReport()
 
   fileName <- "cleanDiannReport"
 
@@ -296,9 +308,9 @@ CleanDiannReport <- function() {
     FilterByDiannMatrix() %>%
     FilterBySample() %>%
     FilterByMissingness()
-  # No console da a entender que o FilterBySample está sendo chamado antes do
-  # FilterByScore, mas não é o caso. É só uma anomalia do %>%.
-
+  #In the console, looks like FilterBySample is called before FilterByScore
+  #That's not the case. This is just a anomaly of %>% 
+  
   cat(paste0("\n",fileName, "were created."))
 
   return(result)
@@ -307,9 +319,10 @@ CleanDiannReport <- function() {
 cat("\n\n3) Helper functions were loaded.\n")
 ```
 
-
 # 4) Graph functions ----
 ```{r}
+
+#Generic way of creating a bar graph
 GenBarGraph <- function(data, xValue, yValue, condition, xLabel, nmax) {
   ggplot(data, aes(
     y = yValue,
@@ -346,6 +359,7 @@ GenBarGraph <- function(data, xValue, yValue, condition, xLabel, nmax) {
 }
 
 
+#Generic way of creating a sparsity plot
 SparsityPlot <- function(df) {
   df %>%
     as.data.frame() %>%
@@ -365,6 +379,8 @@ SparsityPlot <- function(df) {
     )
 }
 
+
+#Theme update
   theme_update(
     text = element_text(color = "black", size = 20),
     axis.text = element_text(color = "black"),
@@ -382,8 +398,8 @@ cat("\n\n4) Graph functions were loaded.\n")
 
 # 5) Graph: Precursor x RT / Density Map ----
 ```{r}
-# Reconstruction of the ion chromatograms, the precursor quantity is
-#  plotted over the retention time (min) for each sample.
+#Reconstruction of the ion chromatograms, the precursor quantity is
+#plotted over the retention time (min) for each sample.
 GraphPrecursorRT_mzMapDensity <- function() {
   diannReport <- DiannReport()
 
@@ -529,12 +545,13 @@ GraphNumberOfPeptidesAndProteins()
 
 # 7) Graph: Sparsity Matrix ----
 ```{r}
-# Genes.MaxLFQ.Unique: matriz de abundância de intensidade normalizada com algoritmo MAX LFQ sendo calculada a partir de peptídeos únicos (peptídeos que dão match apenas com uma proteína)
+
+# Sparsity matrix of unique proteins
 GraphSparsityMatrix <- function() {
   diannReport <- DiannReport()
 
-  uniqueGenes <-  FilterByDiannMatrix(diannReport) # me retorna uma matrix
-  sparsityPlotRaw <- SparsityPlot(uniqueGenes) # converto para df dentro da func plot
+  uniqueGenes <-  FilterByDiannMatrix(diannReport)
+  sparsityPlotRaw <- SparsityPlot(uniqueGenes)
 
   # Create a sparsity plot with unique genes FILTERED
   uniqueGenesFiltered <- diannReport %>%
@@ -571,6 +588,7 @@ GraphSparsityMatrix()
 
 # 8) Graph: QuanUMS Evaluation ----
 ```{r}
+#Shows the QuantUMS filter applied and how many peptides were removed
 GraphQuantUMS <- function() {
 
   diannReport <- DiannReport()
@@ -633,6 +651,9 @@ GraphQuantUMS()
 
 # 9) Create Imputation Matrix ----
 ```{r}
+#TODO: Update the imputation method with Alison changes.
+
+# Impute values to NA places using mice package
 CreateImputationMatrix <- function() {
   
   filenameImputation <- paste0("imputedMatrix_", params$imputMethod, ".rds")
@@ -651,7 +672,7 @@ CreateImputationMatrix <- function() {
     
     matrixForImputation <- log2(uniqueGenesCleaned + 1) %>%
       as.data.frame() %>%
-      rownames_to_column(var = "protein") # %>%
+      rownames_to_column(var = "protein")
     
     cat("\nCreating the imputed matrix.\n\nThis is going to take a while.\n")
     set.seed(params$setSeed)
@@ -675,9 +696,10 @@ CreateImputationMatrix()
 cat("\n9) Imputation matrix were loaded.")
 ```
 
-
 # 10) Graph: Cosine Similarity ----
 ```{r}
+
+#Compares graphically the difference between samples using cosine similarity
 GraphCosSimilarity <- function() {
 
   cosineSimilarity <- CreateImputationMatrix() %>%
@@ -729,13 +751,14 @@ GraphCosSimilarity()
 
 # 11) Graph: Principal Component Analysis (PCA) by K-means 
 ```{r}
+#Show the optimal number of cluster by PCA and K-means
 GraphPCA_Kmeans <- function() {
   pcaComplete <- CreateImputationMatrix() %>%
     column_to_rownames("protein") %>%
     t() %>%
     prcomp(scale = TRUE)
 
-  pcaTwoDimensions <- as.data.frame(pcaComplete$x[, 1:2]) #não precisa ser DF
+  pcaTwoDimensions <- as.data.frame(pcaComplete$x[, 1:2])
 
   kmeans_clusters_p <- fviz_nbclust(pcaTwoDimensions,
     FUNcluster = kmeans,
@@ -804,7 +827,7 @@ GraphPCA_Kmeans()
 # 12) Graph: Coefficient of Variation ----
 ```{r}
 
-#TODO:
+# Coefficient of Variation Graph
 GraphCoefficientOfVariation <- function() {
 
   imputationResult <- CreateImputationMatrix()
@@ -859,14 +882,9 @@ GraphCoefficientOfVariation <- function() {
 GraphCoefficientOfVariation()
 ```
 
-
-
-
-
-
-
 # 13) Load Limma Contrast Functions ----
 ```{r}
+
 CreateContrastFitQuantUMS <- function() {
   
     limmaMTX <- CreateImputationMatrix() %>% 
@@ -958,7 +976,7 @@ CompareLimmaResults <- function() {
   invisible(result)
 }
 
-#TODO: Later, would be nice to return the significantHiLo
+#TODO: Later, would be nice to plot the significantHiLo
 signicantProteinsHiLo <- function() { 
   #Do the right things! 
   }
@@ -966,9 +984,10 @@ signicantProteinsHiLo <- function() {
 cat("\n\n13) Load Limma Contrast Functions")
 ```
 
-
 # 14) Graph: Bland-Altman ----
 ```{r}
+
+#Create the graph of Bland-Altman
 GraphBlandAltman <- function() {
   
   allLimmaResults <- CompareLimmaResults()
@@ -1036,7 +1055,6 @@ GraphBlandAltman <- function() {
                                       fill = NA)
     )
   
-  #TODO: Put the number of the chunk before the figure name ex: "14-BlandAltmanLimmaPlot.png"
   ggsave(paste0("14-", quote(blandAltmanLimmaPlot), ".png"),
          path = "plots",
          plot = blandAltmanLimmaPlot,
@@ -1050,9 +1068,10 @@ GraphBlandAltman <- function() {
 GraphBlandAltman()
 ```
 
-
 # 15) Graph:Boxplot of Log2FC
 ```{r}
+
+#Create the Box Plot by Log2FC
 GraphBoxPlotLog2FC <- function() {
   
   allLimmaResults <- CompareLimmaResults()
@@ -1090,10 +1109,10 @@ GraphBoxPlotLog2FC <- function() {
 GraphBoxPlotLog2FC()
 ```
 
-
-
 # 16) Graph: Distribution of proteins of interest ----
 ```{r}
+
+#Abundance comparison of different proteins in different groups
 GraphProteinsComparison <- function() {
   
   imputedMatrix <- CreateImputationMatrix()
