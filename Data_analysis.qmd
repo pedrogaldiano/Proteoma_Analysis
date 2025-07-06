@@ -1076,6 +1076,10 @@ boxplot_logFC <- combined_quantums_limma_results %>%
 # plot the distribution of urinary antigen proteins
 
 ```{r}
+
+colnames(complete_mtx)
+
+
 urinary_antigens_plot <- complete_mtx %>% 
   left_join(id_mapping, by = join_by("protein" == "proteins")) %>%
   dplyr::select(1:27,31) %>%
