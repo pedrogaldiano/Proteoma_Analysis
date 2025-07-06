@@ -1,6 +1,6 @@
 ---
 title: "Proteoma Basic Analysis"
-author: "Pedro Galdiano de Castro"
+author: "Alison Felipe Alencar Chaves e Pedro Galdiano de Castro"
 execute:
   echo: false
   warning: false
@@ -131,17 +131,24 @@ params <- list(
     Ven_jPMOEt_100mg_vs_Venom = "Ven_JPMOEt_100mg - Venom"
   ),
   
-  genesToHighlight = c("Il1rap", "Lcn2", "Slc47a1", "Chia", "Mup17", "Mup3",
-                        "Umod", "Mup20", "Xpnpep2",  "Nectin4", "Esam", "Alb",
-                        "Asah1", "Smpd1", "Smpdl3a", "Apoe", "Apoa1", "Apoa2",
-                        "B2m", "Vcam1", "Blvrb", "Orm2", "Orm1", "Mup4", "Obp1a",
-                        "Serpina6", "C8g", "Ngp", "Cd36", "Hba", "Hbb-b1",
-                        "Hbb-b2","Chil3", "Apcs", "Hp", "Mug1", "Serpina1b",
-                        "Serpina3k", "Bcam", "Cdh1", "Cdh11", "Ceacam1", "Cd248",
-                        "Cfi", "Fgg", "Fga", "Fgb", "Kng1", "Lum", "Retnla",
-                        "Cd200", "Cd44", "Cd48", "Cd36", "Cltrn", "Cp", "Cspg4",
-                        "Cst3", "Ctsd", "Ctse", "Ctso", "Dag1", "Dsc1"
-  )
+  genesToHighlight_blandAltman = c(
+    "Il1rap", "Lcn2", "Slc47a1", "Chia", "Mup17", "Mup3","Umod", "Mup20",
+    "Xpnpep2",  "Nectin4", "Esam", "Alb","Asah1", "Smpd1", "Smpdl3a", "Apoe",
+    "Apoa1", "Apoa2","B2m", "Vcam1", "Blvrb", "Orm2", "Orm1", "Mup4", "Obp1a",
+    "Serpina6", "C8g", "Ngp", "Cd36", "Hba", "Hbb-b1","Hbb-b2","Chil3", "Apcs",
+    "Hp", "Mug1", "Serpina1b","Serpina3k", "Bcam", "Cdh1", "Cdh11", "Ceacam1",
+    "Cd248","Cfi", "Fgg", "Fga", "Fgb", "Kng1", "Lum", "Retnla","Cd200",
+    "Cd44","Cd48", "Cd36", "Cltrn", "Cp", "Cspg4","Cst3", "Ctsd", "Ctse",
+    "Ctso","Dag1", "Dsc1"),
+  
+  
+  genesToHighlight_proteinsComparison = c(
+    "Il1rap", "Lcn2", "Slc47a1","Mup17", "Mup3", "Mup20",  "Nectin4", "Esam",
+    "Alb", "Smpd1","Apoe", "Apoa1", "Apoa2", "Vcam1","Blvrb", "Orm2", "Orm1",
+    "Mup4", "Serpina6","C8g", "Cd36", "Hba", "Hbb-b1", "Hbb-b2","Chil3",
+    "Apcs", "Hp","Mug1", "Serpina1b", "Serpina3k","Bcam", "Cdh1", "Cfi",
+    "Fgg", "Fga", "Fgb", "Kng1", "Lum","Cd36", "Cp", "Cspg4", "Cst3", "Ctsd",
+    "Ctse", "Ctso", "Dag1")
   
 )
 
@@ -1009,7 +1016,7 @@ GraphBlandAltman <- function() {
               vjust = -1, 
               show.legend = FALSE) +
     geom_label_repel(data = allLimmaResults %>% 
-                       dplyr::filter(status != "Not significant" & Gene %in% params$genesToHighlight),
+                       dplyr::filter(status != "Not significant" & Gene %in% params$genesToHighlight_blandAltman),
                      aes(label = paste0(Gene)),
                      show.legend = FALSE) +
     labs(title = "Bland-Altman plots of limma analysis",
@@ -1072,7 +1079,7 @@ GraphBoxPlotLog2FC <- function() {
     filename = paste0("15-", quote(log2FC_BoxPlot), ".png"),
     path = "plots",
     plot = log2FC_BoxPlot, 
-    width = 25, height = 12,
+    width = 12, height = 12,
     units = "in" ,dpi = 300,
     bg = "white"
   )
@@ -1085,10 +1092,56 @@ GraphBoxPlotLog2FC()
 
 
 
-# 15) Graph: Distribution of proteins of interest [TODO] ----
+# 16) Graph: Distribution of proteins of interest ----
 ```{r}
-# TODO:
+GraphProteinsComparison <- function() {
+  
+  imputedMatrix <- CreateImputationMatrix()
+  
+  mappingID <- read_tsv("id_mapping.tsv") %>% 
+    dplyr::mutate(`Gene Names` = str_remove(`Gene Names`, " .*"))
+  
+  proteinsComparisonPlot <- imputedMatrix %>% 
+    left_join(mappingID, by = join_by("protein" == "Entry")) %>%
+    dplyr::select(!c("Reviewed", "Entry Name", "Protein names", "Organism", "Length")) %>%
+    dplyr::filter(`Gene Names` %in% params$genesToHighlight_proteinsComparison) %>%
+    
+    pivot_longer(cols = -c(protein, `Gene Names`),
+                 names_to = "sample",
+                 values_to = "abundance") %>%
+    
+    dplyr::mutate(condition = str_remove(sample, params$regexString),
+                  condition = factor(condition, levels = unique(condition))) %>%
+    ggplot(aes(x = condition, y = abundance, fill = condition)) +
+    geom_boxplot(outlier.alpha = 0.4, linewidth = 0.25) +
+    geom_jitter(aes(color = condition), alpha = 0.7, size = 0.5) +
+    labs(x = NULL,
+         y = "log<sub>2</sub>(Abundance)") +
+    facet_wrap(~`Gene Names`, ncol = 5, scales = "free_y") +
+    scale_fill_manual(values = params$colors) +
+    theme_minimal() +
+    theme(text = element_text(size = 20),
+          legend.position = "none",
+          strip.text = element_text(size = 20, face = "bold", color = "black"),
+          axis.text = element_text(color = "black"),
+          axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+          axis.title = element_markdown(size = 20, face = "bold"),
+          axis.ticks = element_line(color = "black"),
+          panel.border = element_rect(color = "black", fill=NA)
+    )
+  
+  ggsave(
+    filename = paste0("16-", quote(proteinsComparisonPlot), ".png"),
+    path = "plots",
+    plot = proteinsComparisonPlot, 
+    width = 25, height = 30,
+    units = "in" ,dpi = 300,
+    bg = "white"
+  )
+  
+  cat(paste0("\n\n16) Graph 16-", quote(proteinsComparisonPlot), ".png were created.\n"))
+}
 
-cat("\n\n14) ")
+GraphProteinsComparison()
 ```
 
