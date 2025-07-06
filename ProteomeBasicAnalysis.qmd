@@ -42,47 +42,46 @@ cat("\n\n1) All packages were activated.\n")
 # A amostra precisa terminar com espaço, letra r , número (" r1", " r2", " r637")
 # Sim, é uma gambiarra.Preciso resolver
 
-labels <- c(
-  P2_01 =  "NaCl r1",
-  P2_02 = "NaCl r2",
-  P2_03 =  "NaCl r3",
-
-    P2_04 = "Actinonin 15mg r1",
-  P2_05 =  "Actinonin 15mg r2",
-  P2_06 = "Actinonin 15mg r3",
-  P1_04 = "Actinonin 30mg r1",
-  P1_05 =  "Actinonin 30mg r2",
-
-  P2_11 = "JPM OEt 50mg r1",
-  P2_12 =  "JPM OEt 50mg r2",
-  P1_10 =  "JPM OEt 100mg r1",
-  P1_11 = "JPM OEt 100mg r2",
-  P1_12 =  "JPM OEt 100mg r3",
-  
-  P1_02 = "Venom r1",
-  P1_03 =  "Venom r2",
-  
-  
-  
-  P2_07 =  "Ven & Actn 15mg r1",
-  P2_08 = "Ven & Actn 15mg r2",
-  P2_09 =  "Ven & Actn 15mg r3",
-  
-  P1_07 = "Ven & Actn 30mg r1",
-  P1_08 =  "Ven & Actn 30mg r2",
-  P1_09 = "Ven & Actn 30mg r3",
-  
-  P2_13 = "Ven & JPMOEt 50mg r1",
-  P2_14 =  "Ven & JPMOEt 50mg r2",
-  P2_15 = "Ven & JPMOEt 50mg r3",
-  
-  P1_13 = "Ven & JPMOEt 100mg r1",
-  P1_14 =  "Ven & JPMOEt 100mg r2",
-  P1_15 = "Ven & JPMOEt 100mg r3"
-)
-
-# Params to filter by
 params <- list(
+  
+  labels = c(
+    P2_01 =  "NaCl r1",
+    P2_02 = "NaCl r2",
+    P2_03 =  "NaCl r3",
+    
+    P2_04 = "Actinonin 15mg r1",
+    P2_05 =  "Actinonin 15mg r2",
+    P2_06 = "Actinonin 15mg r3",
+    P1_04 = "Actinonin 30mg r1",
+    P1_05 =  "Actinonin 30mg r2",
+    
+    P2_11 = "JPM OEt 50mg r1",
+    P2_12 =  "JPM OEt 50mg r2",
+    P1_10 =  "JPM OEt 100mg r1",
+    P1_11 = "JPM OEt 100mg r2",
+    P1_12 =  "JPM OEt 100mg r3",
+    
+    P1_02 = "Venom r1",
+    P1_03 =  "Venom r2",
+    
+    P2_07 =  "Ven & Actn 15mg r1",
+    P2_08 = "Ven & Actn 15mg r2",
+    P2_09 =  "Ven & Actn 15mg r3",
+    
+    P1_07 = "Ven & Actn 30mg r1",
+    P1_08 =  "Ven & Actn 30mg r2",
+    P1_09 = "Ven & Actn 30mg r3",
+    
+    P2_13 = "Ven & JPMOEt 50mg r1",
+    P2_14 =  "Ven & JPMOEt 50mg r2",
+    P2_15 = "Ven & JPMOEt 50mg r3",
+    
+    P1_13 = "Ven & JPMOEt 100mg r1",
+    P1_14 =  "Ven & JPMOEt 100mg r2",
+    P1_15 = "Ven & JPMOEt 100mg r3"
+  ),
+  
+  # Params to filter by
   pgScore = 0.75,
   eqScore = 0.75,
   threshold = 0.3,
@@ -107,12 +106,50 @@ params <- list(
   #If more or different colors are need just go to "colorbrewer2.org"
   colors = c(
     "#a6cee3","#1f78b4","#b2df8a","#33a02c","#fb9a99",
-    "#e31a1c","#fdbf6f","#ff7f00","#cab2d6","#6a3d9a")
-
+    "#e31a1c","#fdbf6f","#ff7f00","#cab2d6","#6a3d9a"),
+  
+  
+  samplesToCompare = list(
+    Actinonin_15mg_vs_NaCl = "Actinonin_15mg - NaCl",
+    Actinonin_30mg_vs_NaCl = "Actinonin_30mg - NaCl",
+    
+    JPMOEt_50mg_vs_NaCl = "JPM_OEt_50mg - NaCl",
+    JPMOEt_100mg_vs_NaCl = "JPM_OEt_100mg - NaCl",
+    
+    Venom_vs_NaCl = "Venom - NaCl",
+    
+    Ven_Actn_15mg_vs_NaCl = "Ven_Actn_15mg - NaCl",
+    Ven_Actn_30mg_vs_NaCl = "Ven_Actn_30mg - NaCl",
+    
+    Ven_jPMOEt_50mg_vs_NaCl = "Ven_JPMOEt_50mg - NaCl",
+    Ven_jPMOEt_100mg_vs_NaCl = "Ven_JPMOEt_100mg - NaCl",
+    
+    Actinonin_15mg_vs_Actinonin_30mg = "Actinonin_15mg - Actinonin_30mg",
+    JPMOEt_50mg_vs_JPMOEt_100mg = "JPM_OEt_50mg - JPM_OEt_100mg",
+    
+    Ven_Actn_15mg_vs_Venom = "Ven_Actn_15mg - Venom",
+    Ven_Actn_30mg_vs_Venom = "Ven_Actn_30mg - Venom",
+    
+    Ven_jPMOEt_50mg_vs_Venom = "Ven_JPMOEt_50mg - Venom",
+    Ven_jPMOEt_100mg_vs_Venom = "Ven_JPMOEt_100mg - Venom"
+  ),
+  
+  genesToHighlight = c("Il1rap", "Lcn2", "Slc47a1", "Chia", "Mup17", "Mup3",
+                        "Umod", "Mup20", "Xpnpep2",  "Nectin4", "Esam", "Alb",
+                        "Asah1", "Smpd1", "Smpdl3a", "Apoe", "Apoa1", "Apoa2",
+                        "B2m", "Vcam1", "Blvrb", "Orm2", "Orm1", "Mup4", "Obp1a",
+                        "Serpina6", "C8g", "Ngp", "Cd36", "Hba", "Hbb-b1",
+                        "Hbb-b2","Chil3", "Apcs", "Hp", "Mug1", "Serpina1b",
+                        "Serpina3k", "Bcam", "Cdh1", "Cdh11", "Ceacam1", "Cd248",
+                        "Cfi", "Fgg", "Fga", "Fgb", "Kng1", "Lum", "Retnla",
+                        "Cd200", "Cd44", "Cd48", "Cd36", "Cltrn", "Cp", "Cspg4",
+                        "Cst3", "Ctsd", "Ctse", "Ctso", "Dag1", "Dsc1"
+  )
+  
 )
 
 checkLabels <- function() {
-  conditions = unique(stringr::str_remove_all(labels, params$regexString))
+  conditions = unique(stringr::str_remove_all(params$labels, params$regexString))
   
   for (condition in conditions) {
     
@@ -240,7 +277,7 @@ FilterByMissingness <- function(data) {
 
 CleanDiannReport <- function() {
 
-  diannReport <- DiannReport(labels) # Not sure if the best approach is to get it inside the function or pass as argument
+  diannReport <- DiannReport(params$labels) # Not sure if the best approach is to get it inside the function or pass as argument
 
   fileName <- "cleanDiannReport"
 
@@ -339,7 +376,7 @@ cat("\n\n4) Graph functions were loaded.\n")
 # Reconstruction of the ion chromatograms, the precursor quantity is
 #  plotted over the retention time (min) for each sample.
 GraphPrecursorRT_mzMapDensity <- function() {
-  diannReport <- DiannReport(labels)
+  diannReport <- DiannReport(params$labels)
 
   precursorRT <- diannReport %>%
     ggplot(aes(x = RT, y = Precursor.Quantity)) +
@@ -404,7 +441,7 @@ GraphPrecursorRT_mzMapDensity()
 ```{r}
 # Counting the number of unique peptides and proteins per run
 GraphNumberOfPeptidesAndProteins <- function() {
-  diannReport <- DiannReport(labels)
+  diannReport <- DiannReport(params$labels)
 
   diannReportByRun <- diannReport %>%
     dplyr::group_by(Run, condition) %>%
@@ -486,7 +523,7 @@ GraphNumberOfPeptidesAndProteins()
 ```{r}
 # Genes.MaxLFQ.Unique: matriz de abundância de intensidade normalizada com algoritmo MAX LFQ sendo calculada a partir de peptídeos únicos (peptídeos que dão match apenas com uma proteína)
 GraphSparsityMatrix <- function() {
-  diannReport <- DiannReport(labels)
+  diannReport <- DiannReport(params$labels)
 
   uniqueGenes <-  FilterByDiannMatrix(diannReport) # me retorna uma matrix
   sparsityPlotRaw <- SparsityPlot(uniqueGenes) # converto para df dentro da func plot
@@ -528,7 +565,7 @@ GraphSparsityMatrix()
 ```{r}
 GraphQuantUMS <- function() {
 
-  diannReport <- DiannReport(labels)
+  diannReport <- DiannReport(params$labels)
 
   lowScoresPeptide <- diannReport %>%
     dplyr::filter(PG.MaxLFQ.Quality < params$pgScore &
@@ -644,8 +681,8 @@ GraphCosSimilarity <- function() {
     pivot_longer(-Sample, names_to = "Match") %>% # não entendi essa desgraça
 
     dplyr::mutate(Similarity = "Cosine similarity",
-      Sample = factor(Sample, levels = unname(labels)),
-      Match = factor(Match, levels = unname(labels))) %>%
+      Sample = factor(Sample, levels = unname(params$labels)),
+      Match = factor(Match, levels = unname(params$labels))) %>%
 
     ggplot() +
     geom_tile(aes(x = Sample, y = Match, fill = value)) +
@@ -764,7 +801,7 @@ GraphCoefficientOfVariation <- function() {
 
   imputationResult <- CreateImputationMatrix()
 
-  conditions <- unique(DiannReport(labels)$condition)
+  conditions <- unique(DiannReport(params$labels)$condition)
   CVs <- data.frame()
 
   cat("\nCalculating Coefficient of Variation...")
@@ -775,7 +812,7 @@ GraphCoefficientOfVariation <- function() {
 
   CVs %>%
     dplyr::mutate(condition = factor(
-      condition, levels = unique(str_remove(unname(labels), "_r[0-9]+"))
+      condition, levels = unique(str_remove(unname(params$labels), "_r[0-9]+"))
     ))
 
 
@@ -818,44 +855,13 @@ GraphCoefficientOfVariation()
 
 
 
-```{r}
-
-quantums_limma_mtx <- read_rds("quantums_limma_mtx.rds")
-
-```
-
-
-
 
 
 # 13) Load Limma Contrast Functions ----
 ```{r}
 
   #TODO: Move to Global variables
-  samplesToCompare <- list(
-    Actinonin_15mg_vs_NaCl = "Actinonin_15mg - NaCl",
-    Actinonin_30mg_vs_NaCl = "Actinonin_30mg - NaCl",
-    
-    JPMOEt_50mg_vs_NaCl = "JPM_OEt_50mg - NaCl",
-    JPMOEt_100mg_vs_NaCl = "JPM_OEt_100mg - NaCl",
-    
-    Venom_vs_NaCl = "Venom - NaCl",
-    
-    Ven_Actn_15mg_vs_NaCl = "Ven_Actn_15mg - NaCl",
-    Ven_Actn_30mg_vs_NaCl = "Ven_Actn_30mg - NaCl",
-    
-    Ven_jPMOEt_50mg_vs_NaCl = "Ven_JPMOEt_50mg - NaCl",
-    Ven_jPMOEt_100mg_vs_NaCl = "Ven_JPMOEt_100mg - NaCl",
-    
-    Actinonin_15mg_vs_Actinonin_30mg = "Actinonin_15mg - Actinonin_30mg",
-    JPMOEt_50mg_vs_JPMOEt_100mg = "JPM_OEt_50mg - JPM_OEt_100mg",
-    
-    Ven_Actn_15mg_vs_Venom = "Ven_Actn_15mg - Venom",
-    Ven_Actn_30mg_vs_Venom = "Ven_Actn_30mg - Venom",
-    
-    Ven_jPMOEt_50mg_vs_Venom = "Ven_JPMOEt_50mg - Venom",
-    Ven_jPMOEt_100mg_vs_Venom = "Ven_JPMOEt_100mg - Venom"
-  )  
+
 
 CreateContrastFitQuantUMS <- function() {
 
@@ -877,7 +883,7 @@ CreateContrastFitQuantUMS <- function() {
   
   contrastMatrix <- do.call(
   limma::makeContrasts,
-  c(samplesToCompare, list(levels = dg))) 
+  c(params$samplesToCompare, list(levels = dg))) 
   
   fitQuantums <- lmFit(limmaMTX, dg, method = "robust")
   
@@ -915,7 +921,7 @@ CompareLimmaResults <- function() {
   resultQuantUMS <- list() # Result from samples comparison
   # significantHiLo <- list() # Top/Bottom 10 protein significant altered
   
- for (item in names(samplesToCompare)) {
+ for (item in names(params$samplesToCompare)) {
    limmaResult <- ApplyLimmaTopTable(contrastFitQuantUMS, item)
    
   resultQuantUMS <- resultQuantUMS %>% bind_rows(limmaResult)
@@ -973,19 +979,6 @@ mappingID <- read_tsv("id_mapping.tsv") %>%
   rename("proteins" = "Entry") %>% 
   dplyr::mutate(`Gene Names` = str_remove(`Gene Names`, " .*"))
 
-genesToHighlight <- c("Il1rap", "Lcn2", "Slc47a1", "Chia", "Mup17", "Mup3",
-                      "Umod", "Mup20", "Xpnpep2",  "Nectin4", "Esam", "Alb",
-                      "Asah1", "Smpd1", "Smpdl3a", "Apoe", "Apoa1", "Apoa2",
-                      "B2m", "Vcam1", "Blvrb", "Orm2", "Orm1", "Mup4", "Obp1a",
-                      "Serpina6", "C8g", "Ngp", "Cd36", "Hba", "Hbb-b1",
-                      "Hbb-b2","Chil3", "Apcs", "Hp", "Mug1", "Serpina1b",
-                      "Serpina3k", "Bcam", "Cdh1", "Cdh11", "Ceacam1", "Cd248",
-                      "Cfi", "Fgg", "Fga", "Fgb", "Kng1", "Lum", "Retnla",
-                      "Cd200", "Cd44", "Cd48", "Cd36", "Cltrn", "Cp", "Cspg4",
-                      "Cst3", "Ctsd", "Ctse", "Ctso", "Dag1", "Dsc1"
-                      )
-
-
 BlandAltmanLimmaPlot <- ggplot(allLimmaResults,
                   aes(x = AveExpr,
                       y = logFC,
@@ -1015,7 +1008,7 @@ BlandAltmanLimmaPlot <- ggplot(allLimmaResults,
             vjust = -1, 
             show.legend = FALSE) +
   geom_label_repel(data = allLimmaResults %>% 
-                dplyr::filter(status != "Not significant" & Gene %in% genesToHighlight),
+                dplyr::filter(status != "Not significant" & Gene %in% params$genesToHighlight),
             aes(label = paste0(Gene)),
             show.legend = FALSE) +
     labs(title = "Bland-Altman plots of limma analysis",
@@ -1036,7 +1029,7 @@ BlandAltmanLimmaPlot <- ggplot(allLimmaResults,
         )
 
 #TODO: Put the number of the chunk before the figure name ex: "14-BlandAltmanLimmaPlot.png"
-ggsave(paste0(quote(BlandAltmanLimmaPlot), ".png"),
+ggsave(paste0("14-", quote(BlandAltmanLimmaPlot), ".png"),
     path = "plots",
     plot = BlandAltmanLimmaPlot,
     width = 25, height = 12,
