@@ -36,12 +36,9 @@ cat("\n\n1) All packages were activated.\n")
 
 # 2) Global variables
 ```{r}
-# This map should be ordered by the sample-name (code = sample_name), this will
+# This map should be ordered by the sample-name (code = Sample name r1), this will
 # define the order everything will be ploted
 #
-# A amostra precisa terminar com espaço, letra r , número (" r1", " r2", " r637")
-# Sim, é uma gambiarra.Preciso resolver
-
 params <- list(
   
   labels = c(
@@ -150,15 +147,19 @@ params <- list(
 
 checkLabels <- function() {
   conditions = unique(stringr::str_remove_all(params$labels, params$regexString))
-  
+
   for (condition in conditions) {
-    
     occurrences = sum(stringr::str_detect(conditions, condition))
     
     if (occurrences > 1) {
-      cat("\nO nome dessa condição está contido em outra condição:", 
+      cat("\nThis name should be unique and not a part of another name:", 
           condition,
-          "\nPor favor, renomeie.")
+          "\nPlease, rename.")
+      break
+    } else if (str_detect(condition, "\\+|\\-|\\.|\\%|\\(|\\)|\\[|\\]|\\~")) {
+            cat("\nThose symbols cannot be used (+,-,.,%,(,),[,],~):",
+          condition,
+          "\nPlease, rename.")
       break
     }
   }
@@ -194,9 +195,9 @@ CV_Matrix <- function(data, condition) {
 }
 
 # Generate the diannReport.rds from report.parquet file
-DiannReport <- function(runs, directory = "../data/DIANN_results/") {
+DiannReport <- function() {
 
-  report <- arrow::read_parquet(paste(directory, "report.parquet", sep = ""))
+  report <- arrow::read_parquet("report.parquet")
 
   reportFiltered <- dplyr::filter(
     report,
@@ -204,10 +205,12 @@ DiannReport <- function(runs, directory = "../data/DIANN_results/") {
       Lib.Q.Value <= 0.01 &
       PG.Q.Value <= 0.01
   )
+  
+  params$labels
 
   reportRecoded <- dplyr::mutate(reportFiltered,
-    Run = recode(Run, !!!runs),
-    Run = factor(Run, levels = unname(runs)),
+    Run = recode(Run, !!!params$labels),
+    Run = factor(Run, levels = unname(params$labels)),
     condition = str_remove(Run, params$regexString),
     File.Name = Run,
     peptide_length = nchar(Stripped.Sequence)
@@ -277,7 +280,7 @@ FilterByMissingness <- function(data) {
 
 CleanDiannReport <- function() {
 
-  diannReport <- DiannReport(params$labels) # Not sure if the best approach is to get it inside the function or pass as argument
+  diannReport <- DiannReport() # Not sure if the best approach is to get it inside the function or pass as argument
 
   fileName <- "cleanDiannReport"
 
@@ -376,7 +379,7 @@ cat("\n\n4) Graph functions were loaded.\n")
 # Reconstruction of the ion chromatograms, the precursor quantity is
 #  plotted over the retention time (min) for each sample.
 GraphPrecursorRT_mzMapDensity <- function() {
-  diannReport <- DiannReport(params$labels)
+  diannReport <- DiannReport()
 
   precursorRT <- diannReport %>%
     ggplot(aes(x = RT, y = Precursor.Quantity)) +
@@ -422,14 +425,14 @@ GraphPrecursorRT_mzMapDensity <- function() {
     theme(plot.tag = element_text(size = 30, face = "bold"))
 
   ggsave(
-    filename = paste0(quote(precursorRT_and_mzMapDensity), ".png"),
+    filename = paste0("5-", quote(precursorRT_and_mzMapDensity), ".png"),
     path = "plots",
     plot = precursorRT_and_mzMapDensity,
     width = 24, height = 20,
     units = "in", dpi = 300
   )
 
-  cat("\n\n5) Graph ", quote(precursorRT_and_mzMapDensity), ".png were created.\n", sep = "")
+  cat("\n\n5) Graph ", quote(precursorRT_and_mzMapDensity), ".png were created.\n", DiannReport())
 
   # return(precursorRT_and_mzMapDensity)
 }
@@ -441,7 +444,7 @@ GraphPrecursorRT_mzMapDensity()
 ```{r}
 # Counting the number of unique peptides and proteins per run
 GraphNumberOfPeptidesAndProteins <- function() {
-  diannReport <- DiannReport(params$labels)
+  diannReport <- DiannReport()
 
   diannReportByRun <- diannReport %>%
     dplyr::group_by(Run, condition) %>%
@@ -500,7 +503,7 @@ GraphNumberOfPeptidesAndProteins <- function() {
 
   # Save file
   ggsave(
-    filename = paste(quote(number_of_peptides_and_proteins), ".png", sep = ""),
+    filename = paste0("6- ", quote(number_of_peptides_and_proteins), ".png"),
     path = "plots",
     plot = number_of_peptides_and_proteins,
     width = 24, height = 20,
@@ -510,7 +513,7 @@ GraphNumberOfPeptidesAndProteins <- function() {
   cat("\n6) Graph ", quote(number_of_peptides_and_proteins), ".png were created.\n",
     "Total number of unique  peptides: ", totalUniquePeptides,
     "\nTotal number of unique proteins: ", totalUniqueProteins, "\n",
-    sep = ""
+    DiannReport()
   )
 
   # return(peptidesPlot)
@@ -523,7 +526,7 @@ GraphNumberOfPeptidesAndProteins()
 ```{r}
 # Genes.MaxLFQ.Unique: matriz de abundância de intensidade normalizada com algoritmo MAX LFQ sendo calculada a partir de peptídeos únicos (peptídeos que dão match apenas com uma proteína)
 GraphSparsityMatrix <- function() {
-  diannReport <- DiannReport(params$labels)
+  diannReport <- DiannReport()
 
   uniqueGenes <-  FilterByDiannMatrix(diannReport) # me retorna uma matrix
   sparsityPlotRaw <- SparsityPlot(uniqueGenes) # converto para df dentro da func plot
@@ -547,14 +550,14 @@ GraphSparsityMatrix <- function() {
     theme(plot.tag = element_text(size = 30, face = "bold"))
 
   ggsave(
-    filename = paste0(quote(sparsity_matrix), ".png"),
+    filename = paste0("7-", quote(sparsity_matrix), ".png"),
     path = "plots",
     plot = sparsity_matrix,
     width = 24, height = 20,
     units = "in", dpi = 300
   )
 
-  cat("\n\n7) Graph ", quote(sparsity_matrix), ".png were created.\n", sep = "")
+  cat("\n\n7) Graph ", quote(sparsity_matrix), ".png were created.\n", DiannReport())
 
 }
 
@@ -565,7 +568,7 @@ GraphSparsityMatrix()
 ```{r}
 GraphQuantUMS <- function() {
 
-  diannReport <- DiannReport(params$labels)
+  diannReport <- DiannReport()
 
   lowScoresPeptide <- diannReport %>%
     dplyr::filter(PG.MaxLFQ.Quality < params$pgScore &
@@ -610,14 +613,14 @@ GraphQuantUMS <- function() {
     )
 
   ggsave(
-    filename = paste(quote(quantUMS), ".png", sep = ""),
+    filename = paste0("8-", quote(quantUMS), ".png"),
     path = "plots",
     plot = quantUMS,
     width = 24, height = 20,
     units = "in", dpi = 300
   )
 
-  cat("\n8) Graph ", quote(quantUMS), ".png were created.\n", sep = "")
+  cat("\n8) Graph ", quote(quantUMS), ".png were created.\n", DiannReport())
 }
 
 GraphQuantUMS()
@@ -707,13 +710,13 @@ GraphCosSimilarity <- function() {
       panel.background = element_blank())
 
   ggsave(
-    filename = paste(quote(cosineSimilarity), ".png", sep = ""),
+    filename = paste0("10-", quote(cosineSimilarity), ".png"),
     path = "plots",
     plot = cosineSimilarity,
     width = 24, height = 20,
     units = "in", dpi = 300)
 
-  cat("\n10) Graph ", quote(cosineSimilarity), ".png were created.\n", sep = "")
+  cat("\n10) Graph ", quote(cosineSimilarity), ".png were created.\n", DiannReport())
 }
 
 GraphCosSimilarity()
@@ -779,14 +782,14 @@ GraphPCA_Kmeans <- function() {
     theme(plot.tag = element_text(size = 30, face = "bold"))
 
   ggsave(
-    filename = paste(quote(kMeans_PCA), ".png", sep = ""),
+    filename = paste0("11-", quote(kMeans_PCA), ".png"),
     path = "plots",
     plot = kMeans_PCA,
     width = 24, height = 10,
     units = "in", dpi = 300
   )
 
-  cat("\n\n11) Graph ", quote(pcaPlot_and_kMeansPCA), ".png were created.\n", sep = "")
+  cat("\n\n11) Graph ", quote(pcaPlot_and_kMeansPCA), ".png were created.\n", DiannReport())
 
 }
 
@@ -801,7 +804,7 @@ GraphCoefficientOfVariation <- function() {
 
   imputationResult <- CreateImputationMatrix()
 
-  conditions <- unique(DiannReport(params$labels)$condition)
+  conditions <- unique(DiannReport()$condition)
   CVs <- data.frame()
 
   cat("\nCalculating Coefficient of Variation...")
@@ -839,13 +842,13 @@ GraphCoefficientOfVariation <- function() {
       strip.text = element_text(size = 20, face = "bold", color = "black"))
 
   ggsave(
-    filename = paste(quote(CVplot), ".png", sep = ""),
+    filename = paste0("12-", quote(CVplot), ".png"),
     path = "plots",
     plot = CVplot,
     width = 12, height = 10,
     units = "in", dpi = 300)
 
-  cat("\n\n12) Graph ", quote(CVplot), ".png were created.\n", sep = "")
+  cat("\n\n12) Graph ", quote(CVplot), ".png were created.\n", DiannReport())
 }
 
 GraphCoefficientOfVariation()
@@ -859,12 +862,8 @@ GraphCoefficientOfVariation()
 
 # 13) Load Limma Contrast Functions ----
 ```{r}
-
-  #TODO: Move to Global variables
-
-
 CreateContrastFitQuantUMS <- function() {
-
+  
     limmaMTX <- CreateImputationMatrix() %>% 
   column_to_rownames("protein") %>% 
   normalizeBetweenArrays(method = "scale")
@@ -879,8 +878,6 @@ CreateContrastFitQuantUMS <- function() {
   dg <- model.matrix(~ 0 + designGroups)
   colnames(dg) <- colnames(dg) %>% str_replace("designGroups", "")
 
-
-  
   contrastMatrix <- do.call(
   limma::makeContrasts,
   c(params$samplesToCompare, list(levels = dg))) 
@@ -890,6 +887,7 @@ CreateContrastFitQuantUMS <- function() {
   contrastFitQuantUMS <- limma::contrasts.fit(fitQuantums, contrastMatrix) %>% 
     limma::eBayes()
   
+  cat("\n\Limma Contrast Fit QuantUMS done\n")
   invisible(contrastFitQuantUMS)
 }
 
@@ -917,6 +915,7 @@ ApplyLimmaTopTable <- function(contrastFitQuantUMS, sampleToCompare) {
 CompareLimmaResults <- function() {
 
   contrastFitQuantUMS <- CreateContrastFitQuantUMS()
+  diannReport <- DiannReport()
   
   resultQuantUMS <- list() # Result from samples comparison
   # significantHiLo <- list() # Top/Bottom 10 protein significant altered
@@ -940,13 +939,15 @@ CompareLimmaResults <- function() {
                   AveExpr = round(AveExpr, 2),
                   B = round(B, 2)) %>% 
     left_join(
-      diann_report[, c("Protein.Group", "Genes")] %>% 
+      diannReport[, c("Protein.Group", "Genes")] %>% 
         distinct(), by = c("proteins" = "Protein.Group")
     ) %>%
     dplyr::rename(Protein = proteins,
                   Gene = Genes,
                   Comparison = condition)
   
+  
+  cat("\n\Comparisons between groups done.\n")
   write_tsv(result, "allLimmaResultsCombined.tsv")
   # View(significantHiLo)
   invisible(result)
@@ -1039,24 +1040,24 @@ ggsave(paste0("14-", quote(BlandAltmanLimmaPlot), ".png"),
 ```
 ```
 
-peptidesPlot <- diannReportByRun %>%
-    ggplot(aes(y = Run, x = n_peptides, fill = condition)) +
-    geom_bar(stat = "identity", position = "dodge", show.legend = FALSE) +
-    scale_fill_manual(values = params$colors) +
-    geom_text(
-      aes(
-        label = n_peptides,
-        hjust = ifelse(n_peptides > params$nMaxPeptides, 1.1, -0.15)
-      ),
-      color = "black", size = 7, nudge_x = -0.5, fontface = "bold"
-    ) +
-    labs(y = NULL, x = "Number of peptides", fill = NULL) +
-    theme(
-      text = element_text(size = 25),
-      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
-      panel.border = element_rect(color = "black", fill = NA),
-      panel.background = element_blank()
-    )
+<!-- peptidesPlot <- diannReportByRun %>% -->
+<!--     ggplot(aes(y = Run, x = n_peptides, fill = condition)) + -->
+<!--     geom_bar(stat = "identity", position = "dodge", show.legend = FALSE) + -->
+<!--     scale_fill_manual(values = params$colors) + -->
+<!--     geom_text( -->
+<!--       aes( -->
+<!--         label = n_peptides, -->
+<!--         hjust = ifelse(n_peptides > params$nMaxPeptides, 1.1, -0.15) -->
+<!--       ), -->
+<!--       color = "black", size = 7, nudge_x = -0.5, fontface = "bold" -->
+<!--     ) + -->
+<!--     labs(y = NULL, x = "Number of peptides", fill = NULL) + -->
+<!--     theme( -->
+<!--       text = element_text(size = 25), -->
+<!--       axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1), -->
+<!--       panel.border = element_rect(color = "black", fill = NA), -->
+<!--       panel.background = element_blank() -->
+<!--     ) -->
 
 # 14) Graph: Distribution of proteins of interest [TODO] ----
 ```{r}
