@@ -292,8 +292,7 @@ CleanDiannReport <- function() {
   # No console da a entender que o FilterBySample está sendo chamado antes do
   # FilterByScore, mas não é o caso. É só uma anomalia do %>%.
 
-  cat("\n")
-  cat(fileName, "were loaded")
+  cat(paste0("\n",fileName, "were created."))
 
   return(result)
 }
@@ -432,7 +431,7 @@ GraphPrecursorRT_mzMapDensity <- function() {
     units = "in", dpi = 300
   )
 
-  cat("\n\n5) Graph ", quote(precursorRT_and_mzMapDensity), ".png were created.\n", DiannReport())
+  cat(paste0("\n\n5) Graph ", quote(precursorRT_and_mzMapDensity), ".png were created.\n"))
 
   # return(precursorRT_and_mzMapDensity)
 }
@@ -510,10 +509,9 @@ GraphNumberOfPeptidesAndProteins <- function() {
     units = "in", dpi = 300
   )
 
-  cat("\n6) Graph ", quote(number_of_peptides_and_proteins), ".png were created.\n",
+  cat(paste0("\n6) Graph 6-", quote(number_of_peptides_and_proteins), ".png were created.\n",
     "Total number of unique  peptides: ", totalUniquePeptides,
-    "\nTotal number of unique proteins: ", totalUniqueProteins, "\n",
-    DiannReport()
+    "\nTotal number of unique proteins: ", totalUniqueProteins, "\n")
   )
 
   # return(peptidesPlot)
@@ -557,7 +555,7 @@ GraphSparsityMatrix <- function() {
     units = "in", dpi = 300
   )
 
-  cat("\n\n7) Graph ", quote(sparsity_matrix), ".png were created.\n", DiannReport())
+  cat(paste0("\n\n7) Graph 7-", quote(sparsity_matrix), ".png were created.\n"))
 
 }
 
@@ -620,7 +618,7 @@ GraphQuantUMS <- function() {
     units = "in", dpi = 300
   )
 
-  cat("\n8) Graph ", quote(quantUMS), ".png were created.\n", DiannReport())
+  cat(paste0("\n8) Graph 8-", quote(quantUMS), ".png were created.\n"))
 }
 
 GraphQuantUMS()
@@ -716,7 +714,7 @@ GraphCosSimilarity <- function() {
     width = 24, height = 20,
     units = "in", dpi = 300)
 
-  cat("\n10) Graph ", quote(cosineSimilarity), ".png were created.\n", DiannReport())
+  cat(paste0("\n10) Graph 10-", quote(cosineSimilarity), ".png were created.\n"))
 }
 
 GraphCosSimilarity()
@@ -789,7 +787,7 @@ GraphPCA_Kmeans <- function() {
     units = "in", dpi = 300
   )
 
-  cat("\n\n11) Graph ", quote(pcaPlot_and_kMeansPCA), ".png were created.\n", DiannReport())
+  cat("\n\n11) Graph ", quote(pcaPlot_and_kMeansPCA), ".png were created.\n")
 
 }
 
@@ -848,7 +846,7 @@ GraphCoefficientOfVariation <- function() {
     width = 12, height = 10,
     units = "in", dpi = 300)
 
-  cat("\n\n12) Graph ", quote(CVplot), ".png were created.\n", DiannReport())
+  cat(paste0("\n\n12) Graph 12-", quote(CVplot), ".png were created.\n"))
 }
 
 GraphCoefficientOfVariation()
@@ -887,7 +885,7 @@ CreateContrastFitQuantUMS <- function() {
   contrastFitQuantUMS <- limma::contrasts.fit(fitQuantums, contrastMatrix) %>% 
     limma::eBayes()
   
-  cat("\n\Limma Contrast Fit QuantUMS done\n")
+  cat("\n\nLimma Contrast Fit QuantUMS done\n")
   invisible(contrastFitQuantUMS)
 }
 
@@ -947,7 +945,7 @@ CompareLimmaResults <- function() {
                   Comparison = condition)
   
   
-  cat("\n\Comparisons between groups done.\n")
+  cat("\n\nComparisons between groups done.\n")
   write_tsv(result, "allLimmaResultsCombined.tsv")
   # View(significantHiLo)
   invisible(result)
@@ -964,102 +962,130 @@ cat("\n\n13) Load Limma Contrast Functions")
 
 # 14) Graph: Bland-Altman ----
 ```{r}
-allLimmaResults <- CompareLimmaResults()
-
-# count the number of proteins in each status
-signif_proteins <- allLimmaResults %>%
-  dplyr::filter(status != "Not significant") %>%
-  group_by(status, Comparison) %>%
-  dplyr::summarise(proteins = n())
-
-allLimmaResults %>%
-  dplyr::filter(status != "Not significant") %>%
-  write_tsv("significant_proteins.tsv")
-
-mappingID <- read_tsv("id_mapping.tsv") %>% 
-  rename("proteins" = "Entry") %>% 
-  dplyr::mutate(`Gene Names` = str_remove(`Gene Names`, " .*"))
-
-BlandAltmanLimmaPlot <- ggplot(allLimmaResults,
-                  aes(x = AveExpr,
-                      y = logFC,
-                      color = status)
-                  ) +
-  geom_point(alpha = 0.3) +
-  geom_smooth(method = "gam", se = FALSE, color = "darkblue", linewidth = 1) +
-  guides(color = guide_legend(override.aes = list(size = 5, alpha = 1)),
-         shape = guide_legend(override.aes = list(size = 5, alpha = 1))) +
-  geom_hline(yintercept = c(-0.58, 0.58), linetype = "dashed", color = "black") +
-  scale_color_manual(values = c("Decreased" = "steelblue",
-                                "Not significant" = "grey60",
-                                "Increased" = "firebrick")) +
-  facet_wrap(~Comparison, scales = "free", ncol = 5) +
+GraphBlandAltman <- function() {
+  
+  allLimmaResults <- CompareLimmaResults()
+  
+  # count the number of proteins in each status
+  signif_proteins <- allLimmaResults %>%
+    dplyr::filter(status != "Not significant") %>%
+    group_by(status, Comparison) %>%
+    dplyr::summarise(proteins = n())
+  
+  allLimmaResults %>%
+    dplyr::filter(status != "Not significant") %>%
+    write_tsv("significant_proteins.tsv")
+  
+  mappingID <- read_tsv("id_mapping.tsv") %>% 
+    rename("proteins" = "Entry") %>% 
+    dplyr::mutate(`Gene Names` = str_remove(`Gene Names`, " .*"))
+  
+  blandAltmanLimmaPlot <- ggplot(allLimmaResults,
+                                 aes(x = AveExpr,
+                                     y = logFC,
+                                     color = status)
+  ) +
+    geom_point(alpha = 0.3) +
+    geom_smooth(method = "gam", se = FALSE, color = "darkblue", linewidth = 1) +
+    guides(color = guide_legend(override.aes = list(size = 5, alpha = 1)),
+           shape = guide_legend(override.aes = list(size = 5, alpha = 1))) +
+    geom_hline(yintercept = c(-0.58, 0.58), linetype = "dashed", color = "black") +
+    scale_color_manual(values = c("Decreased" = "steelblue",
+                                  "Not significant" = "grey60",
+                                  "Increased" = "firebrick")) +
+    facet_wrap(~Comparison, scales = "free", ncol = 5) +
     geom_text(data = signif_proteins %>% 
                 dplyr::filter(status == "Decreased"),
-            aes(x = 13.5, y = -3, label = paste0(proteins)),
-            size = 8, fontface = "bold",
-            hjust = 0.5,
-            vjust = -1, 
-            show.legend = FALSE) +
-      geom_text(data = signif_proteins %>% 
+              aes(x = 13.5, y = -3, label = paste0(proteins)),
+              size = 8, fontface = "bold",
+              hjust = 0.5,
+              vjust = -1, 
+              show.legend = FALSE) +
+    geom_text(data = signif_proteins %>% 
                 dplyr::filter(status == "Increased"),
-            aes(x = 13.5, y = 1, label = paste0(proteins)),
-            size = 8, fontface = "bold",
-            hjust = 0.5,
-            vjust = -1, 
-            show.legend = FALSE) +
-  geom_label_repel(data = allLimmaResults %>% 
-                dplyr::filter(status != "Not significant" & Gene %in% params$genesToHighlight),
-            aes(label = paste0(Gene)),
-            show.legend = FALSE) +
+              aes(x = 13.5, y = 1, label = paste0(proteins)),
+              size = 8, fontface = "bold",
+              hjust = 0.5,
+              vjust = -1, 
+              show.legend = FALSE) +
+    geom_label_repel(data = allLimmaResults %>% 
+                       dplyr::filter(status != "Not significant" & Gene %in% params$genesToHighlight),
+                     aes(label = paste0(Gene)),
+                     show.legend = FALSE) +
     labs(title = "Bland-Altman plots of limma analysis",
-       x = "log<sub>2</sub>(Average protein abundance)",
-       y = "log<sub>2</sub>FC") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
-        text = element_text(size = 20),
-        legend.position = "bottom",
-        legend.title = element_blank(),
-        legend.box = "vertical",
-        strip.text = element_text(size = 15, face = "bold", color = "black"),
-        axis.text = element_text(color = "black"),
-        axis.title = element_markdown(size = 20, face = "bold"),
-        axis.ticks = element_line(color = "black"),
-        panel.border = element_rect(color = "black", 
-                                    fill = NA)
-        )
-
-#TODO: Put the number of the chunk before the figure name ex: "14-BlandAltmanLimmaPlot.png"
-ggsave(paste0("14-", quote(BlandAltmanLimmaPlot), ".png"),
-    path = "plots",
-    plot = BlandAltmanLimmaPlot,
-    width = 25, height = 12,
-    units = "in", dpi = 300,
-    bg = "white")
+         x = "log<sub>2</sub>(Average protein abundance)",
+         y = "log<sub>2</sub>FC") +
+    theme_minimal() +
+    theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+          text = element_text(size = 20),
+          legend.position = "bottom",
+          legend.title = element_blank(),
+          legend.box = "vertical",
+          strip.text = element_text(size = 15, face = "bold", color = "black"),
+          axis.text = element_text(color = "black"),
+          axis.title = element_markdown(size = 20, face = "bold"),
+          axis.ticks = element_line(color = "black"),
+          panel.border = element_rect(color = "black", 
+                                      fill = NA)
+    )
   
-```
+  #TODO: Put the number of the chunk before the figure name ex: "14-BlandAltmanLimmaPlot.png"
+  ggsave(paste0("14-", quote(blandAltmanLimmaPlot), ".png"),
+         path = "plots",
+         plot = blandAltmanLimmaPlot,
+         width = 25, height = 12,
+         units = "in", dpi = 300,
+         bg = "white")
+  
+  cat(paste0("\n\n14) Graph 14-", quote(blandAltmanLimmaPlot), ".png were created.\n"))
+}
+
+GraphBlandAltman()
 ```
 
-<!-- peptidesPlot <- diannReportByRun %>% -->
-<!--     ggplot(aes(y = Run, x = n_peptides, fill = condition)) + -->
-<!--     geom_bar(stat = "identity", position = "dodge", show.legend = FALSE) + -->
-<!--     scale_fill_manual(values = params$colors) + -->
-<!--     geom_text( -->
-<!--       aes( -->
-<!--         label = n_peptides, -->
-<!--         hjust = ifelse(n_peptides > params$nMaxPeptides, 1.1, -0.15) -->
-<!--       ), -->
-<!--       color = "black", size = 7, nudge_x = -0.5, fontface = "bold" -->
-<!--     ) + -->
-<!--     labs(y = NULL, x = "Number of peptides", fill = NULL) + -->
-<!--     theme( -->
-<!--       text = element_text(size = 25), -->
-<!--       axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1), -->
-<!--       panel.border = element_rect(color = "black", fill = NA), -->
-<!--       panel.background = element_blank() -->
-<!--     ) -->
 
-# 14) Graph: Distribution of proteins of interest [TODO] ----
+# 15) Graph:Boxplot of Log2FC
+```{r}
+GraphBoxPlotLog2FC <- function() {
+  
+  allLimmaResults <- CompareLimmaResults()
+  
+  log2FC_BoxPlot <- allLimmaResults %>%
+    ggplot(aes(y = Comparison,
+               x = logFC,
+               fill = Comparison)) +
+    geom_boxplot(outlier.alpha = 0.4, linewidth = 0.25, fill = "#476F84FF") +
+    geom_vline(xintercept = c(0), linetype = "dashed", color = "red") +
+    labs(y = NULL,
+         x = "log<sub>2</sub>FC") +
+    theme_minimal() +
+    theme(text = element_text(size = 20),
+          legend.position = "none",
+          strip.text = element_text(size = 20, face = "bold", color = "black"),
+          axis.text = element_text(color = "black"),
+          axis.title = element_markdown(size = 20, face = "bold"),
+          axis.ticks = element_line(color = "black"),
+          panel.border = element_rect(color = "black", fill=NA)
+    )
+  
+  ggsave(
+    filename = paste0("15-", quote(log2FC_BoxPlot), ".png"),
+    path = "plots",
+    plot = log2FC_BoxPlot, 
+    width = 25, height = 12,
+    units = "in" ,dpi = 300,
+    bg = "white"
+  )
+  
+  cat(paste0("\n\n15) Graph 15-", quote(log2FC_BoxPlot), ".png were created.\n"))
+}
+
+GraphBoxPlotLog2FC()
+```
+
+
+
+# 15) Graph: Distribution of proteins of interest [TODO] ----
 ```{r}
 # TODO:
 
