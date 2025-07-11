@@ -1,4 +1,0 @@
-linters: linters_with_defaults(
-    styles = c("camelCase"), regexes = character(0)
-) # see vignette("lintr")
-encoding: "UTF-8"
