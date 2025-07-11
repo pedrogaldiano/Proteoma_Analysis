@@ -89,7 +89,7 @@ params <- list(
   pgScore = 0.75, #protein score
   eqScore = 0.75, #empirical score
   threshold = 0.3, # % of missingness alowed
-  samplesToRemove = c("NaCl r1"), #samples you want to remove
+  samplesToRemove = c(""), #samples you want to remove
   setSeed = 333, #random seed
   
   #Fix the plot in the number of proteins and peptides plot
