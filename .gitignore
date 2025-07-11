@@ -54,3 +54,4 @@ rsconnect/
 *.png
 *.rds
 *.tsv
+*.parquet
