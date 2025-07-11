@@ -79,6 +79,12 @@ params <- list(
     P1_15 = "Ven & JPMOEt 100mg r3"
   ),
   
+  #report.parquet directory
+  directoryReport = "/report.parquet",
+  
+  #id_mapping.tsv diretory
+  directoryIDmapping = "/id_mapping.tsv",
+  
   #Params to filter by
   pgScore = 0.75, #protein score
   eqScore = 0.75, #empirical score
@@ -210,7 +216,7 @@ CV_Matrix <- function(data, condition) {
 # Generate the diannReport.rds from report.parquet file
 DiannReport <- function() {
 
-  report <- arrow::read_parquet("report.parquet")
+  report <- arrow::read_parquet(params$directoryReport)
 
   reportFiltered <- dplyr::filter(
     report,
@@ -1002,7 +1008,7 @@ GraphBlandAltman <- function() {
     dplyr::filter(status != "Not significant") %>%
     write_tsv("significant_proteins.tsv")
   
-  mappingID <- read_tsv("id_mapping.tsv") %>% 
+  mappingID <- read_tsv(params$directoryIDmapping) %>% 
     rename("proteins" = "Entry") %>% 
     dplyr::mutate(`Gene Names` = str_remove(`Gene Names`, " .*"))
   
