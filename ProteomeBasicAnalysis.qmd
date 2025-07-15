@@ -80,16 +80,16 @@ params <- list(
   ),
   
   #report.parquet directory
-  directoryReport = "/report.parquet",
+  directoryReport = "./report.parquet",
   
   #id_mapping.tsv diretory
-  directoryIDmapping = "/id_mapping.tsv",
+  directoryIDmapping = "./id_mapping.tsv",
   
   #Params to filter by
   pgScore = 0.75, #protein score
   eqScore = 0.75, #empirical score
   threshold = 0.3, # % of missingness alowed
-  samplesToRemove = c(""), #samples you want to remove
+  samplesToRemove = c("NaCl r1"), #samples you want to remove
   setSeed = 333, #random seed
   
   #Fix the plot in the number of proteins and peptides plot
@@ -272,7 +272,7 @@ FilterBySample <- function(data) {
 FilterByDiannMatrix <- function(data) {
 
   result <- data %>%
-    diann::diann_matrix(id.header = "Protein.Group",
+    diann::diann_matrix(id.header = "Genes",
       quantity.header = "Genes.MaxLFQ.Unique",
       proteotypic.only = TRUE,
       pg.q = 0.01)
@@ -1123,15 +1123,10 @@ GraphProteinsComparison <- function() {
   
   imputedMatrix <- CreateImputationMatrix()
   
-  mappingID <- read_tsv("id_mapping.tsv") %>% 
-    dplyr::mutate(`Gene Names` = str_remove(`Gene Names`, " .*"))
-  
   proteinsComparisonPlot <- imputedMatrix %>% 
-    left_join(mappingID, by = join_by("protein" == "Entry")) %>%
-    dplyr::select(!c("Reviewed", "Entry Name", "Protein names", "Organism", "Length")) %>%
-    dplyr::filter(`Gene Names` %in% params$genesToHighlight_proteinsComparison) %>%
+    dplyr::filter(protein %in% params$genesToHighlight_proteinsComparison) %>%
     
-    pivot_longer(cols = -c(protein, `Gene Names`),
+    pivot_longer(cols = -c(protein),
                  names_to = "sample",
                  values_to = "abundance") %>%
     
@@ -1142,7 +1137,7 @@ GraphProteinsComparison <- function() {
     geom_jitter(aes(color = condition), alpha = 0.7, size = 0.5) +
     labs(x = NULL,
          y = "log<sub>2</sub>(Abundance)") +
-    facet_wrap(~`Gene Names`, ncol = 5, scales = "free_y") +
+    facet_wrap(~protein, ncol = 5, scales = "free_y") +
     scale_fill_manual(values = params$colors) +
     theme_minimal() +
     theme(text = element_text(size = 20),
