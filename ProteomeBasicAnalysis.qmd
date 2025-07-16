@@ -80,10 +80,10 @@ params <- list(
   ),
   
   #report.parquet directory
-  directoryReport = "/report.parquet",
+  directoryReport = "./report.parquet",
   
   #id_mapping.tsv diretory
-  directoryIDmapping = "/id_mapping.tsv",
+  directoryIDmapping = "./id_mapping.tsv",
   
   #Params to filter by
   pgScore = 0.75, #protein score
