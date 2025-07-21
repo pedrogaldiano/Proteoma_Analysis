@@ -312,7 +312,8 @@ mfuzz_clutering <- function(protein_matrix, group_labels, num_clusters = 6) {
 
   rownames(group_means) <- rownames(protein_matrix)
   colnames(group_means) <- unique_groups
-
+  
+  browser()
   # Step 2: Create ExpressionSet
   eset <- new("ExpressionSet", exprs = as.matrix(group_means))
 
@@ -769,7 +770,7 @@ quantums_mtx_sparsity_reduced_plot <- abundance_mtx_reduced %>%
   )
 ```
 
-# xxxxxx Imputation using random forest
+# Imputation using random forest
 
 ```{r}
 df_for_imputation <- log2(quantums_mtx + 1)
@@ -1107,14 +1108,14 @@ cv_results <- compute_cv_mtx(2^imputed_matrix, group_labels) |>
   )
 ```
 
-clustering analysis of the proteins
+# xxxxxx clustering analysis of the proteins ----
 
 ```{r}
 # Run clustering
 mfuzz_results <- mfuzz_clutering(imputed_matrix, group_labels, num_clusters = 6)
 
 # Get cluster assignments
-cluster_assignments <- results$clusters$cluster
+cluster_assignments <- mfuzz_results$clusters$cluster
 print(cluster_assignments)
 
 # plot the membership heatmap
