@@ -769,10 +769,10 @@ quantums_mtx_sparsity_reduced_plot <- abundance_mtx_reduced %>%
   )
 ```
 
-# Imputation using random forest
+# xxxxxx Imputation using random forest
 
 ```{r}
-df_for_imputation <- log2(quantums_mtx[, -1] + 1)
+df_for_imputation <- log2(quantums_mtx + 1)
 
 cat(
   "Percentage of missing values:",
