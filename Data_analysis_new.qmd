@@ -312,8 +312,7 @@ mfuzz_clutering <- function(protein_matrix, group_labels, num_clusters = 6) {
 
   rownames(group_means) <- rownames(protein_matrix)
   colnames(group_means) <- unique_groups
-  
-  browser()
+
   # Step 2: Create ExpressionSet
   eset <- new("ExpressionSet", exprs = as.matrix(group_means))
 
@@ -773,7 +772,7 @@ quantums_mtx_sparsity_reduced_plot <- abundance_mtx_reduced %>%
 # Imputation using random forest
 
 ```{r}
-df_for_imputation <- log2(quantums_mtx + 1)
+df_for_imputation <- log2(quantums_mtx[, -1] + 1)
 
 cat(
   "Percentage of missing values:",
@@ -794,8 +793,8 @@ imputed_data <- impute_stepWise_proteomics(
   verbose = TRUE
 )
 
-view(imputed_matrix)
-view(df_for_imputation)
+# view(imputed_matrix)
+# view(df_for_imputation)
 
 # results:
 imputed_matrix <- imputed_data$imputed_data
@@ -1108,18 +1107,18 @@ cv_results <- compute_cv_mtx(2^imputed_matrix, group_labels) |>
   )
 ```
 
-# xxxxxx clustering analysis of the proteins ----
+clustering analysis of the proteins
 
 ```{r}
 # Run clustering
-mfuzz_results <- mfuzz_clutering(imputed_matrix, group_labels, num_clusters = 6)
-
-# Get cluster assignments
-cluster_assignments <- mfuzz_results$clusters$cluster
-print(cluster_assignments)
-
-# plot the membership heatmap
-plot_membership_heatmap(mfuzz_results, top_n = 100)
+# mfuzz_results <- mfuzz_clutering(imputed_matrix, group_labels, num_clusters = 6)
+# 
+# # Get cluster assignments
+# cluster_assignments <- results$clusters$cluster
+# print(cluster_assignments)
+# 
+# # plot the membership heatmap
+# plot_membership_heatmap(mfuzz_results, top_n = 100)
 ```
 
 # plot the coefficient of variation for each protein across conditions
@@ -1170,8 +1169,7 @@ cv_plot <- cv_results %>%
 limma analysis using different filtering criteria
 
 ```{r}
-quantums_limma_mtx <- complete_mtx %>%
-  column_to_rownames("protein") %>%
+quantums_limma_mtx <- imputed_matrix %>%
   normalizeBetweenArrays(method = "scale")
 
 # Create a design matrix for limma using the colnames(unique_genes)
@@ -1577,8 +1575,8 @@ combined_quantums_limma_results %>%
   dplyr::filter(status != "Not significant") %>%
   write_tsv("significant_proteins.tsv")
 
-id_mapping <- read_tsv("idmapping_2025_05_11.tsv") %>%
-  rename("proteins" = "From") %>%
+id_mapping <- read_tsv("id_mapping.tsv") %>%
+  rename("proteins" = "Entry") %>%
   dplyr::mutate(`Gene Names` = str_remove(`Gene Names`, " .*"))
 
 annotation_for_protein <- c(
@@ -1739,11 +1737,11 @@ boxplot_logFC <- combined_quantums_limma_results %>%
 # plot the distribution of urinary antigen proteins
 
 ```{r}
-urinary_antigens_plot <- complete_mtx %>%
-  left_join(id_mapping, by = join_by("protein" == "proteins")) %>%
-  dplyr::select(1:27, 31) %>%
+urinary_antigens_plot <- imputed_matrix %>%
+  as.data.frame() %>% 
+  rownames_to_column("protein") %>% 
   dplyr::filter(
-    `Gene Names` %in%
+    protein %in%
       c(
         "Il1rap",
         "Lcn2",
@@ -1794,7 +1792,7 @@ urinary_antigens_plot <- complete_mtx %>%
       )
   ) %>%
   pivot_longer(
-    cols = -c(protein, `Gene Names`),
+    cols = -c(protein),
     names_to = "sample",
     values_to = "abundance"
   ) %>%
@@ -1827,7 +1825,7 @@ urinary_antigens_plot <- complete_mtx %>%
   geom_boxplot(outlier.alpha = 0.4, linewidth = 0.25) +
   geom_jitter(aes(color = condition), alpha = 0.7, size = 0.5) +
   labs(x = NULL, y = "log<sub>2</sub>(Abundance)") +
-  facet_wrap(~`Gene Names`, ncol = 5, scales = "free_y") +
+  facet_wrap(~protein, ncol = 5, scales = "free_y") +
   scale_fill_manual(
     values = c(
       "#FED789FF",
