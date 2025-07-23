@@ -50,8 +50,8 @@ rsconnect/
 
 
 #Manually set to ignore
-/plots
-/Backups
+/old_plots_for_reference
+/backups
 *.png
 *.rds
 *.tsv
