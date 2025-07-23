@@ -1,0 +1,1 @@
+# Check if the user has the necessary packages installed
