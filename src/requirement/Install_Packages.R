@@ -12,5 +12,5 @@ Install_Packages <- function(pkgs) {
     install.packages(notInstalled)
   }
   
-  #TODO: What if they are avaiable only in github ou biocmanager?
+  #TODO: What if they are available only in github ou biocmanager?
 }
