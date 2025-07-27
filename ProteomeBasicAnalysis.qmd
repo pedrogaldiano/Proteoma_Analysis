@@ -89,7 +89,7 @@ params <- list(
   pgScore = 0.75, #protein score
   eqScore = 0.75, #empirical score
   threshold = 0.3, # % of missingness alowed
-  samplesToRemove = c(""), #samples you want to remove
+  samplesToRemove = c("NaCl r2"), #samples you want to remove
   setSeed = 333, #random seed
   
   #Fix the plot in the number of proteins and peptides plot
@@ -434,7 +434,7 @@ StepWiseImputation <- function(
 
     group_indices <- which(group_vector == group)
     group_data <- result_matrix[, group_indices, drop = FALSE]
-
+    
     if (any(is.na(group_data))) {
       for (protein in 1:nrow(group_data)) {
         protein_data <- group_data[protein, ]
@@ -446,8 +446,10 @@ StepWiseImputation <- function(
             # All missing - use threshold value (shouldn't happen after step 1)
             protein_data[] <- abundance_threshold
           } else if (length(non_na_values) == 1) {
+            #Do nothing, remove all proteins with NA later
+            
             # Only one value - use it
-            protein_data[is.na(protein_data)] <- non_na_values[1]
+            # protein_data[is.na(protein_data)] <- non_na_values[1]
           } else {
             # Multiple values available
             protein_median <- median(non_na_values)
@@ -492,10 +494,10 @@ StepWiseImputation <- function(
       }
     }
   }
-
+  
   # Return results
   return(list(
-    imputed_data = result_matrix,
+    imputed_data = na.omit(result_matrix),
     missing_protein_log = missing_protein_log,
     parameters = list(
       shift_value = shift_value,
@@ -900,11 +902,13 @@ CreateImputationMatrix_StepWise <- function() {
     
     uniqueGenes <- DiannReport() %>%
       FilterByScore() %>%
-      FilterByDiannMatrix()
+      FilterByDiannMatrix() %>% 
+      FilterBySample()
     
     matrixForImputation <- log2(uniqueGenes + 1)
     groupLabels <- str_remove(colnames(matrixForImputation), params$regexString)
     
+    #TODO:
     imputedData <- StepWiseImputation(
       protein_matrix = matrixForImputation,
       group_vector = groupLabels,
