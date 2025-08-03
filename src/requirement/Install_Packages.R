@@ -14,3 +14,8 @@ Install_Packages <- function(pkgs) {
   
   #TODO: What if they are available only in github ou biocmanager?
 }
+
+
+Load_Packages <- function(pkgs) {
+  #TODO: Do I need to load them if I do this: deplyr::filter
+}
