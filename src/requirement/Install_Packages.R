@@ -1,5 +1,5 @@
 #############
-# Check and install the necessary package ----
+# Check and install the necessary packages ----
 #############
 
 Install_Packages <- function(pkgs) {
