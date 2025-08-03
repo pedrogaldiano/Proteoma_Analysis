@@ -1,0 +1,83 @@
+---
+title: "Run_Analysis"
+format: html
+---
+
+
+```{r}
+# Load all functions
+source("./src/Source_Everything.R")
+
+
+# List of needed packages
+packages <- c(
+  "diann",           # to extract the MaxLFQ matrix from DIANN report
+  "arrow",           # to read the report.parquet file
+  "here",            # to avoid the need for use the path while loading the data
+  "tidyverse",       # to do the data wrangling, plots, etc...
+  "janitor",         # to clean the column names
+  "ggpointdensity",  # to reconstruct the m/z density map
+  "naniar",          # for sparsity analysis
+  "factoextra",      # to plot the PCA
+  "patchwork",       # to combine plots
+  "lsa",             # to calculate the cosine similarity
+  "ggvenn",          # to plot the Venn diagram
+  "paletteer",       # to use the nice color palette
+  "ggtext",          # to provide Markdown and HTML formatting in ggplot2
+  "ggrepel",         # to avoid the overlapping of the labels in the plots
+  "kableExtra",      # to format the tables
+  "limma",           # to calculate the differential abundance
+  "DIAgui"           # (no comment provided)
+)
+
+Install_Packages(packages)
+```
+
+
+
+```{r}
+  samples <- c(
+    P2_01 =  "NaCl_REP_1",
+    P2_02 = "NaCl_REP_2",
+    P2_03 =  "NaCl_REP_3",
+    
+    P2_04 = "Actinonin_15mg_REP_1",
+    P2_05 =  "Actinonin_15mg_REP_2",
+    P2_06 = "Actinonin_15mg_REP_3",
+    P1_04 = "Actinonin_30mg_REP_1",
+    P1_05 =  "Actinonin_30mg_REP_2",
+    
+    P2_11 = "JPM_OEt_50mg_REP_1",
+    P2_12 =  "JPM_OEt_50mg_REP_2",
+    P1_10 =  "JPM_OEt_100mg_REP_1",
+    P1_11 = "JPM_OEt_100mg_REP_2",
+    P1_12 =  "JPM_OEt_100mg_REP_3",
+    
+    P1_02 = "Venom_REP_1",
+    P1_03 =  "Venom_REP_2",
+    
+    P2_07 =  "Ven_e_Actn_15mg_REP_1",
+    P2_08 = "Ven_e_Actn_15mg_REP_2",
+    P2_09 =  "Ven_e_Actn_15mg_REP_3",
+    
+    P1_07 = "Ven_e_Actn_30mg_REP_1",
+    P1_08 =  "Ven_e_Actn_30mg_REP_2",
+    P1_09 = "Ven_e_Actn_30mg_REP_3",
+    
+    P2_13 = "Ven_e_JPMOEt_50mg_REP_1",
+    P2_14 =  "Ven_e_JPMOEt_50mg_REP_2",
+    P2_15 = "Ven_e_JPMOEt_50mg_REP_3",
+    
+    P1_13 = "Ven_e_JPMOEt_100mg_REP_1",
+    P1_14 =  "Ven_e_JPMOEt_100mg_REP_2",
+    P1_15 = "Ven_e_JPMOEt_100mg_REP_3"
+  )
+  
+  # organism = "MOUSE"
+  # parquetDIR <- "./data/input/report.parquet"
+  # rdsDIR <- "./data/temp_files/diannReport.rds"
+  
+  dr <- Generate_DiannReport(samples, organism = "MOUSE")
+
+```
+  

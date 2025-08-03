@@ -164,7 +164,7 @@ params <- list(
 
 
 #Check if the labels name are valid, do not check for every possible case
-checkLabels <- function() {
+checkLabels <- function() { # OK
   conditions = unique(stringr::str_remove_all(params$labels, params$regexString))
 
   for (condition in conditions) {
