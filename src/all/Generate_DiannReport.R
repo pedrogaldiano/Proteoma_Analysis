@@ -29,7 +29,7 @@ Generate_DiannReport <- function(
     report <- dplyr::filter(report, stringr::str_detect(Protein.Names, organism))
   }
   
-  report <- dplyr::mutate(
+  report <- dplyr::mutate_all(
     report,
     Run = dplyr::recode(Run, !!!samples),
     Run = factor(Run, levels = unname(samples)),
@@ -39,4 +39,3 @@ Generate_DiannReport <- function(
   saveRDS(report, rdsDIR)
   return(report)
 }
-
