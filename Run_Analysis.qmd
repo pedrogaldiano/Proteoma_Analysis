@@ -130,7 +130,7 @@ Install_Packages(packages)
 
   dr <- Generate_DiannReport(samples, organism = "MOUSE")
   
-  precursorRT <- Generate_Graph_PrecursorRT(dr, colors)
+  precursorRT <- Generate_Graph_PrecursorRT(dr, labels_names, colors)
   
   ggplot2::ggsave(
     filename = paste0("Precursor_x_RT", ".png"),
@@ -140,7 +140,7 @@ Install_Packages(packages)
     units = "mm", dpi = 300
   )
 
-  ionCloud <- Generate_IonCloud(dr)
+  ionCloud <- Generate_IonCloud(dr, labels_names)
   
     ggplot2::ggsave(
     filename = paste0("ionCloud", ".png"),
@@ -149,5 +149,7 @@ Install_Packages(packages)
     width = 210, height = 297, # A4
     units = "mm", dpi = 300
   )
+    
+  
 ```
 

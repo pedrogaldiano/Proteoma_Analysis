@@ -5,10 +5,8 @@
 # the scan range (m/z) for each sample.
 #############
 
-Generate_IonCloud <- function(dr, cols = 3, rows = NULL ) {
-  dr <- Generate_DiannReport(samples)
-   cols = 3
-  
+Generate_IonCloud <- function(dr, labels, cols = 3, rows = NULL ) {
+
   ionCloud <- ggplot2::ggplot(dr, ggplot2::aes(x = RT, y = Precursor.Mz)) +
     ggpointdensity::geom_pointdensity(size = 0.1) +
     viridis::scale_color_viridis(option = "H") +
@@ -19,7 +17,7 @@ Generate_IonCloud <- function(dr, cols = 3, rows = NULL ) {
       color = NULL
     ) +
     ggplot2::facet_wrap(~Run,
-                        labeller = ggplot2::as_labeller(labels_names),
+                        labeller = ggplot2::as_labeller(labels),
                         scales = "free",
                         ncol = cols) +
     ggplot2::theme(

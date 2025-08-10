@@ -3,14 +3,7 @@
 # plotted over the retention time (min) for each sample.
 
 
-Generate_Graph_PrecursorRT <- function(dr, colors, cols = 3, rows = NULL) {
- # dr <- Generate_DiannReport(samples)
- #  cols = 3
- #  rows = NULL
- #  colors = c(
- #    "#a6cee3","#1f78b4","#b2df8a","#33a02c","#fb9a99",
- #    "#e31a1c","#fdbf6f","#ff7f00","#cab2d6","#6a3d9a")
- 
+Generate_Graph_PrecursorRT <- function(dr, labels, colors, cols = 3, rows = NULL) {
  precursorRT <- ggplot2::ggplot(dr, ggplot2::aes(x = RT, y = Precursor.Quantity)) +
    ggplot2::geom_line(ggplot2::aes(color = condition), show.legend = FALSE) +
    ggplot2::scale_color_manual(values = colors) +
@@ -20,7 +13,7 @@ Generate_Graph_PrecursorRT <- function(dr, colors, cols = 3, rows = NULL) {
      color = colors
    ) +
    ggplot2::facet_wrap(~Run,
-                       labeller = ggplot2::as_labeller(labels_names),
+                       labeller = ggplot2::as_labeller(labels),
                        ncol = cols,
                        nrow = rows,
                        scales = "free") +
