@@ -73,11 +73,81 @@ Install_Packages(packages)
     P1_15 = "Ven_e_JPMOEt_100mg_REP_3"
   )
   
+  Check_SampleName(samples)
   # organism = "MOUSE"
   # parquetDIR <- "./data/input/report.parquet"
   # rdsDIR <- "./data/temp_files/diannReport.rds"
-  
-  dr <- Generate_DiannReport(samples, organism = "MOUSE")
 
-```
+  labels_names <- c(
+   "NaCl_REP_1" = "NaCl r1",
+   "NaCl_REP_2" = "NaCl r2",
+   "NaCl_REP_3" = "NaCl r3",
+   
+   "Actinonin_15mg_REP_1" = "Actinonin 15mg r1",
+   "Actinonin_15mg_REP_2" = "Actinonin 15mg r2",
+   "Actinonin_15mg_REP_3" = "Actinonin 15mg r3",
+   
+   "Actinonin_30mg_REP_1" = "Actinonin 30mg r1",
+   "Actinonin_30mg_REP_2" = "Actinonin 30mg r2",
+   
+   "JPM_OEt_50mg_REP_1" = "JPMOEt 50mg r1",
+   "JPM_OEt_50mg_REP_2" = "JPMOEt 50mg r2",
+   
+   "JPM_OEt_100mg_REP_1" = "JPMOEt 100mg r1",
+   "JPM_OEt_100mg_REP_2" = "JPMOEt 100mg r2",
+   "JPM_OEt_100mg_REP_3" = "JPMOEt 100mg r3",
+   
+   "Venom_REP_1" = "Venom r1",
+   "Venom_REP_2" = "Venom r2",
+   
+   "Ven_e_Actn_15mg_REP_1" = "Venom + Actinonin 15mg r1",
+   "Ven_e_Actn_15mg_REP_2" = "Venom + Actinonin 15mg r2",
+   "Ven_e_Actn_15mg_REP_3" = "Venom + Actinonin 15mg r3",
+   
+   "Ven_e_Actn_30mg_REP_1" = "Venom + Actinonin 30mg r1",
+   "Ven_e_Actn_30mg_REP_2" = "Venom + Actinonin 30mg r2",
+   "Ven_e_Actn_30mg_REP_3" = "Venom + Actinonin 30mg r3",
+   
+   "Ven_e_JPMOEt_50mg_REP_1" = "Venom + JPMOEt 50mg r1",
+   "Ven_e_JPMOEt_50mg_REP_2" = "Venom + JPMOEt 50mg r2",
+   "Ven_e_JPMOEt_50mg_REP_3" = "Venom + JPMOEt 50mg r3",
+   
+   "Ven_e_JPMOEt_100mg_REP_1" = "Venom + JPMOEt 100mg r1",
+   "Ven_e_JPMOEt_100mg_REP_2" = "Venom + JPMOEt 100mg r2",
+   "Ven_e_JPMOEt_100mg_REP_3" = "Venom + JPMOEt 100mg r3"
+  )
   
+  
+  colors = c(
+    "#a6cee3","#1f78b4","#b2df8a","#33a02c","#fb9a99",
+    "#e31a1c","#fdbf6f","#ff7f00","#cab2d6","#6a3d9a")
+```
+
+
+```{r}
+
+  Check_SampleName(samples)
+
+  dr <- Generate_DiannReport(samples, organism = "MOUSE")
+  
+  precursorRT <- Generate_Graph_PrecursorRT(dr, colors)
+  
+  ggplot2::ggsave(
+    filename = paste0("Precursor_x_RT", ".png"),
+    path = "./data/output/",
+    plot = precursorRT,
+    width = 210, height = 297, # A4
+    units = "mm", dpi = 300
+  )
+
+  ionCloud <- Generate_IonCloud(dr)
+  
+    ggplot2::ggsave(
+    filename = paste0("ionCloud", ".png"),
+    path = "./data/output/",
+    plot = ionCloud,
+    width = 210, height = 297, # A4
+    units = "mm", dpi = 300
+  )
+```
+
