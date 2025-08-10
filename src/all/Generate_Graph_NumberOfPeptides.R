@@ -4,6 +4,7 @@
 # Counting the number of unique peptides per run
 #############
 
+
 Generate_Graph_NumberOfPeptides <- function(dr, labels, colors) {
   totalUniquePeptides <- dplyr::n_distinct(dr$Stripped.Sequence)
   

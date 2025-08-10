@@ -126,30 +126,48 @@ Install_Packages(packages)
 
 ```{r}
 
-  Check_SampleName(samples)
+Check_SampleName(samples)
 
-  dr <- Generate_DiannReport(samples, organism = "MOUSE")
-  
-  precursorRT <- Generate_Graph_PrecursorRT(dr, labels_names, colors)
-  
-  ggplot2::ggsave(
-    filename = paste0("Precursor_x_RT", ".png"),
-    path = "./data/output/",
-    plot = precursorRT,
-    width = 210, height = 297, # A4
-    units = "mm", dpi = 300
-  )
+dr <- Generate_DiannReport(samples, organism = "MOUSE")
 
-  ionCloud <- Generate_IonCloud(dr, labels_names)
-  
-    ggplot2::ggsave(
-    filename = paste0("ionCloud", ".png"),
-    path = "./data/output/",
-    plot = ionCloud,
-    width = 210, height = 297, # A4
-    units = "mm", dpi = 300
-  )
-    
-  
+precursorRT <- Generate_Graph_PrecursorRT(dr, labels_names, colors)
+
+ggplot2::ggsave(
+  filename = paste0("Precursor_x_RT", ".png"),
+  path = "./data/output/",
+  plot = precursorRT,
+  width = 210, height = 297, # A4
+  units = "mm", dpi = 300
+)
+
+ionCloud <- Generate_IonCloud(dr, labels_names)
+
+ggplot2::ggsave(
+  filename = paste0("ionCloud", ".png"),
+  path = "./data/output/",
+  plot = ionCloud,
+  width = 210, height = 297, # A4
+  units = "mm", dpi = 300
+)
+
+nPeptides <- Generate_NumberOfPeptides(dr, labels_names, colors)
+
+ggplot2::ggsave(
+  filename = paste0("number_peptides", ".png"),
+  path = "./data/output/",
+  plot = nPeptides,
+  width = 210, height = 297, # A4
+  units = "mm", dpi = 300
+)
+
+nProteins <- Generate_NumberOfProteins(dr, labels_names, colors)
+
+ggplot2::ggsave(
+  filename = paste0("number_proteins", ".png"),
+  path = "./data/output/",
+  plot = nProteins,
+  width = 210, height = 297, # A4
+  units = "mm", dpi = 300
+)
 ```
 
