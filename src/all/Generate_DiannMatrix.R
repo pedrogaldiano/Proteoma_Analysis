@@ -7,9 +7,6 @@
 
 Generate_DiannMatrix <- function(dr, header = "Genes") {
   
-  dr <- Generate_DiannReport(samples, "mouse")
-  header <- "Genes"
-  
   if (header == "Protein") {
     
     result <- diann::diann_matrix(
@@ -36,7 +33,6 @@ Generate_DiannMatrix <- function(dr, header = "Genes") {
   }
   
 }
-
 
 
 FilterByDiannMatrix <- function(data) {

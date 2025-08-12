@@ -7,8 +7,10 @@ format: html
 ```{r}
 # Load all functions
 source("./src/Source_Everything.R")
+```
 
 
+```{r}
 # List of needed packages
 packages <- c(
   "diann",           # to extract the MaxLFQ matrix from DIANN report
@@ -78,7 +80,7 @@ Install_Packages(packages)
   # parquetDIR <- "./data/input/report.parquet"
   # rdsDIR <- "./data/temp_files/diannReport.rds"
 
-  labels_names <- c(
+  prettyNames <- c(
    "NaCl_REP_1" = "NaCl r1",
    "NaCl_REP_2" = "NaCl r2",
    "NaCl_REP_3" = "NaCl r3",
@@ -128,9 +130,9 @@ Install_Packages(packages)
 
 Check_SampleName(samples)
 
-dr <- Generate_DiannReport(samples, organism = "MOUSE")
+diannReport <- Generate_DiannReport(samples, organism = "MOUSE")
 
-precursorRT <- Generate_Graph_PrecursorRT(dr, labels_names, colors)
+precursorRT <- Generate_Graph_PrecursorRT(diannReport, prettyNames, colors)
 
 ggplot2::ggsave(
   filename = paste0("Precursor_x_RT", ".png"),
@@ -140,7 +142,7 @@ ggplot2::ggsave(
   units = "mm", dpi = 300
 )
 
-ionCloud <- Generate_IonCloud(dr, labels_names)
+ionCloud <- Generate_IonCloud(diannReport, prettyNames)
 
 ggplot2::ggsave(
   filename = paste0("ionCloud", ".png"),
@@ -150,7 +152,7 @@ ggplot2::ggsave(
   units = "mm", dpi = 300
 )
 
-nPeptides <- Generate_Graph_NumberOfPeptides(dr, labels_names, colors)
+nPeptides <- Generate_Graph_NumberOfPeptides(diannReport, prettyNames, colors)
 
 ggplot2::ggsave(
   filename = paste0("number_peptides", ".png"),
@@ -160,7 +162,7 @@ ggplot2::ggsave(
   units = "mm", dpi = 300
 )
 
-nProteins <- Generate_Graph_NumberOfProteins(dr, labels_names, colors)
+nProteins <- Generate_Graph_NumberOfProteins(diannReport, prettyNames, colors)
 
 ggplot2::ggsave(
   filename = paste0("number_proteins", ".png"),
@@ -169,5 +171,9 @@ ggplot2::ggsave(
   width = 210, height = 297, # A4
   units = "mm", dpi = 300
 )
+
+
+diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
+
 ```
 
