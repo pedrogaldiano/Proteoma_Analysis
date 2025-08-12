@@ -150,7 +150,7 @@ ggplot2::ggsave(
   units = "mm", dpi = 300
 )
 
-nPeptides <- Generate_NumberOfPeptides(dr, labels_names, colors)
+nPeptides <- Generate_Graph_NumberOfPeptides(dr, labels_names, colors)
 
 ggplot2::ggsave(
   filename = paste0("number_peptides", ".png"),
@@ -160,7 +160,7 @@ ggplot2::ggsave(
   units = "mm", dpi = 300
 )
 
-nProteins <- Generate_NumberOfProteins(dr, labels_names, colors)
+nProteins <- Generate_Graph_NumberOfProteins(dr, labels_names, colors)
 
 ggplot2::ggsave(
   filename = paste0("number_proteins", ".png"),
