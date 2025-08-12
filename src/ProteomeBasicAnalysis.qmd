@@ -12,6 +12,7 @@ editor_options:
 ---
 
 # 1) Load packages dependencies
+
 ```{r}
 library(diann) # to extract the MaxLFQ matrix from DIANN report
 library(arrow) # to read the report.parquet file
@@ -35,6 +36,7 @@ cat("\n\n1) All packages were activated.\n")
 ```
 
 # 2) Global variables
+
 ```{r}
 #You should only need to change this chunk of code, please don't break it.
 
@@ -189,6 +191,7 @@ checkLabels()
 ```
 
 # 3) Helper functions ----
+
 ```{r}
 # Return a dataset with the coefficients of variation
 CV_Matrix <- function(data, condition) {
@@ -510,6 +513,7 @@ cat("\n\n3) Helper functions were loaded.\n")
 ```
 
 # 4) Graph functions ----
+
 ```{r}
 
 #Generic way of creating a bar graph
@@ -587,6 +591,7 @@ cat("\n\n4) Graph functions were loaded.\n")
 ```
 
 # 5) Graph: Precursor x RT / Density Map ----
+
 ```{r}
 #Reconstruction of the ion chromatograms, the precursor quantity is
 #plotted over the retention time (min) for each sample.
@@ -652,7 +657,8 @@ GraphPrecursorRT_mzMapDensity <- function() {
 GraphPrecursorRT_mzMapDensity()
 ```
 
-# 6) Graph: Peptides | Proteins ----
+# 6) Graph: Peptides \| Proteins ----
+
 ```{r}
 # Counting the number of unique peptides and proteins per run
 GraphNumberOfPeptidesAndProteins <- function() {
@@ -734,6 +740,7 @@ GraphNumberOfPeptidesAndProteins()
 ```
 
 # 7) Graph: Sparsity Matrix ----
+
 ```{r}
 
 # Sparsity matrix of unique proteins
@@ -777,6 +784,7 @@ GraphSparsityMatrix()
 ```
 
 # 8) Graph: QuanUMS Evaluation ----
+
 ```{r}
 #Shows the QuantUMS filter applied and how many peptides were removed
 GraphQuantUMS <- function() {
@@ -840,6 +848,7 @@ GraphQuantUMS()
 ```
 
 # 9) Create Imputation Matrix ----
+
 ```{r}
 # Impute values to NA places using MICE package
 CreateImputationMatrix_MICE <- function() {
@@ -926,6 +935,7 @@ cat("\n9) Imputation matrix were loaded.")
 ```
 
 # 10) Graph: Cosine Similarity ----
+
 ```{r}
 
 #Compares graphically the difference between samples using cosine similarity
@@ -977,7 +987,8 @@ GraphCosSimilarity <- function() {
 GraphCosSimilarity()
 ```
 
-# 11) Graph: Principal Component Analysis (PCA) by K-means 
+# 11) Graph: Principal Component Analysis (PCA) by K-means
+
 ```{r}
 #Show the optimal number of cluster by PCA and K-means
 GraphPCA_Kmeans <- function() {
@@ -1054,6 +1065,7 @@ GraphPCA_Kmeans()
 ```
 
 # 12) Graph: Coefficient of Variation ----
+
 ```{r}
 # Coefficient of Variation Graph
 GraphCoefficientOfVariation <- function() {
@@ -1111,6 +1123,7 @@ GraphCoefficientOfVariation()
 ```
 
 # 13) Load Limma Contrast Functions ----
+
 ```{r}
 
 CreateContrastFitQuantUMS <- function() {
@@ -1207,6 +1220,7 @@ cat("\n\n13) Load Limma Contrast Functions")
 ```
 
 # 14) Graph: Bland-Altman ----
+
 ```{r}
 #Create the graph of Bland-Altman
 GraphBlandAltman <- function() {
@@ -1286,6 +1300,7 @@ GraphBlandAltman()
 ```
 
 # 15) Graph:Boxplot of Log2FC
+
 ```{r}
 #Create the Box Plot by Log2FC
 GraphBoxPlotLog2FC <- function() {
@@ -1326,6 +1341,7 @@ GraphBoxPlotLog2FC()
 ```
 
 # 16) Graph: Distribution of proteins of interest ----
+
 ```{r}
 #Abundance comparison of different proteins in different groups
 GraphProteinsComparison <- function() {
@@ -1375,4 +1391,3 @@ GraphProteinsComparison <- function() {
 
 GraphProteinsComparison()
 ```
-

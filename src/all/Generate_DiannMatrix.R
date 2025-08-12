@@ -33,16 +33,3 @@ Generate_DiannMatrix <- function(dr, header = "Genes") {
   }
   
 }
-
-
-FilterByDiannMatrix <- function(data) {
-  
-  result <- data %>%
-    diann::diann_matrix(id.header = "Genes",
-                        quantity.header = "Genes.MaxLFQ.Unique",
-                        proteotypic.only = TRUE,
-                        pg.q = 0.01)
-  
-  cat("\n\nFilter by unique genes using Diann_Matrix")
-  return(result)
-}
