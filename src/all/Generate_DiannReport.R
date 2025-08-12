@@ -29,11 +29,13 @@ Generate_DiannReport <- function(
     report <- dplyr::filter(report, stringr::str_detect(Protein.Names, organism))
   }
   
-  report <- dplyr::mutate_all(
+  report <- dplyr::mutate(
     report,
     Run = dplyr::recode(Run, !!!samples),
     Run = factor(Run, levels = unname(samples)),
-    condition = stringr::str_remove(Run, "_REP_.")
+    condition = stringr::str_remove(Run, "_REP_."),
+    File.Name = Run,
+    peptide_length = nchar(Stripped.Sequence)
     )
   
   saveRDS(report, rdsDIR)

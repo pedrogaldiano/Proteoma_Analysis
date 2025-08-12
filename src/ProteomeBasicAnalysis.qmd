@@ -80,7 +80,7 @@ params <- list(
   ),
   
   #report.parquet directory
-  directoryReport = "./report.parquet",
+  directoryReport = "C:/Users/pgc/Documents/ic_urina/Proteoma_Analysis/data/input/report.parquet",
   
   #id_mapping.tsv diretory
   directoryIDmapping = "./id_mapping.tsv",
