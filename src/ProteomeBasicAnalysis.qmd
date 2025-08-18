@@ -590,7 +590,7 @@ SparsityPlot <- function(df) {
 cat("\n\n4) Graph functions were loaded.\n")
 ```
 
-# 5) Graph: Precursor x RT / Density Map ----
+#OK 5) Graph: Precursor x RT / Density Map ----
 
 ```{r}
 #Reconstruction of the ion chromatograms, the precursor quantity is
@@ -657,7 +657,7 @@ GraphPrecursorRT_mzMapDensity <- function() {
 GraphPrecursorRT_mzMapDensity()
 ```
 
-# 6) Graph: Peptides \| Proteins ----
+#OK 6) Graph: Peptides \| Proteins ----
 
 ```{r}
 # Counting the number of unique peptides and proteins per run
@@ -739,7 +739,7 @@ GraphNumberOfPeptidesAndProteins <- function() {
 GraphNumberOfPeptidesAndProteins()
 ```
 
-# 7) Graph: Sparsity Matrix ----
+#OK 7) Graph: Sparsity Matrix ----
 
 ```{r}
 
