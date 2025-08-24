@@ -200,9 +200,21 @@ ggplot2::ggsave(
   filename = paste0("cosineSimilarity", ".png"),
   path = "./data/output/",
   plot = cosineSimilarity,
-  width = 210, height = 297, # A4
-  units = "mm", dpi = 300)
+  width = 24, height = 10, #TODO:: Fix size in other ggsave()
+  units = "in", dpi = 300)
+  
 
+kMeansPCA <- Generate_Graph_PCA_and_Kmeans(imputedMatrix,
+                                           numberOfClusters = 8,
+                                           clusterColors = colors,
+                                           labels = prettyNames)
+
+ggplot2::ggsave(
+  filename = paste0("kMeans_PCA", ".png"),
+  path = "./data/output/",
+  plot = kMeansPCA,
+  width = 24, height = 10,
+  units = "in", dpi = 300)
 ```
 
 
