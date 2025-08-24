@@ -450,7 +450,10 @@ StepWiseImputation <- function(
             protein_data[] <- abundance_threshold
           } else if (length(non_na_values) == 1) {
             # Only one value - use it
-            protein_data[is.na(protein_data)] <- non_na_values[1]
+            #protein_data[is.na(protein_data)] <- non_na_values[1]
+            
+            # Does nothing because it means there is 
+            # only one protein abundance in the group
           } else {
             # Multiple values available
             protein_median <- median(non_na_values)
@@ -498,7 +501,7 @@ StepWiseImputation <- function(
 
   # Return results
   return(list(
-    imputed_data = result_matrix,
+    imputed_data = na.omit(result_matrix),
     missing_protein_log = missing_protein_log,
     parameters = list(
       shift_value = shift_value,
@@ -847,7 +850,7 @@ GraphQuantUMS <- function() {
 GraphQuantUMS()
 ```
 
-# 9) Create Imputation Matrix ----
+# 9) OK Create Imputation Matrix ----
 
 ```{r}
 # Impute values to NA places using MICE package
@@ -975,8 +978,8 @@ GraphCosSimilarity <- function() {
       panel.background = element_blank())
 
   ggsave(
-    filename = paste0("10-", quote(cosineSimilarity), ".png"),
-    path = "plots",
+    filename = paste0("fduisfhisufi", ".png"),
+    # path = "plots",
     plot = cosineSimilarity,
     width = 24, height = 20,
     units = "in", dpi = 300)

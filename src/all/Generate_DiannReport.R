@@ -6,7 +6,7 @@
 #############
 
 Generate_DiannReport <- function(
-    samples,
+    samples, #TODO: Change this variable name to avoid global interference when loading the global variable sample
     organism = "",
     parquetDIR = "./data/input/report.parquet",
     rdsDIR = "./data/temp_files/diannReport.rds"
