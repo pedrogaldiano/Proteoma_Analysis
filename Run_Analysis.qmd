@@ -171,8 +171,10 @@ ggplot2::ggsave(
   width = 210, height = 297, # A4
   units = "mm", dpi = 300
 )
+```
 
-
+```{r}
+diannReport <- Generate_DiannReport(samples, organism = "MOUSE")
 diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
 sparsityMatrix <- Generate_SparsityMatrix(diannMatrix, prettyNames)
 
@@ -183,8 +185,26 @@ ggplot2::ggsave(
   width = 210, height = 297, # A4
   units = "mm", dpi = 300
 )
-
-
-imputedMatrix <- Create_ImputationMatrix_StepWise(diannMatrix)
 ```
+
+```{r}
+diannReport <- Generate_DiannReport(samples, organism = "MOUSE")
+diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
+imputedMatrix <- Create_ImputationMatrix_StepWise(diannMatrix)
+
+cosineSimilarity <- Generate_Graph_CosineSimilarity(imputedMatrix,
+                                                    samples,
+                                                    prettyNames)
+
+ggplot2::ggsave(
+  filename = paste0("cosineSimilarity", ".png"),
+  path = "./data/output/",
+  plot = cosineSimilarity,
+  width = 210, height = 297, # A4
+  units = "mm", dpi = 300)
+
+```
+
+
+
 
