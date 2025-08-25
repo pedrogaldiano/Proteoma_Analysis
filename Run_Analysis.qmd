@@ -84,39 +84,49 @@ Install_Packages(packages)
    "NaCl_REP_1" = "NaCl r1",
    "NaCl_REP_2" = "NaCl r2",
    "NaCl_REP_3" = "NaCl r3",
+   "NaCl" = "NaCl",
    
    "Actinonin_15mg_REP_1" = "Actinonin 15mg r1",
    "Actinonin_15mg_REP_2" = "Actinonin 15mg r2",
    "Actinonin_15mg_REP_3" = "Actinonin 15mg r3",
+   "Actinonin_15mg" = "Actinonin 15mg",
    
    "Actinonin_30mg_REP_1" = "Actinonin 30mg r1",
    "Actinonin_30mg_REP_2" = "Actinonin 30mg r2",
+   "Actinonin_30mg" = "Actinonin 30mg",
    
    "JPM_OEt_50mg_REP_1" = "JPMOEt 50mg r1",
    "JPM_OEt_50mg_REP_2" = "JPMOEt 50mg r2",
+   "JPM_OEt_50mg" = "JPMOEt 50mg",
    
    "JPM_OEt_100mg_REP_1" = "JPMOEt 100mg r1",
    "JPM_OEt_100mg_REP_2" = "JPMOEt 100mg r2",
    "JPM_OEt_100mg_REP_3" = "JPMOEt 100mg r3",
+   "JPM_OEt_100mg" = "JPMOEt 100mg",
    
    "Venom_REP_1" = "Venom r1",
    "Venom_REP_2" = "Venom r2",
+   "Venom" = "Venom",
    
    "Ven_e_Actn_15mg_REP_1" = "Venom + Actinonin 15mg r1",
    "Ven_e_Actn_15mg_REP_2" = "Venom + Actinonin 15mg r2",
    "Ven_e_Actn_15mg_REP_3" = "Venom + Actinonin 15mg r3",
+   "Ven_e_Actn_15mg" = "Venom + Actinonin 15mg",
    
    "Ven_e_Actn_30mg_REP_1" = "Venom + Actinonin 30mg r1",
    "Ven_e_Actn_30mg_REP_2" = "Venom + Actinonin 30mg r2",
    "Ven_e_Actn_30mg_REP_3" = "Venom + Actinonin 30mg r3",
+   "Ven_e_Actn_30mg" = "Venom + Actinonin 30mg",
    
    "Ven_e_JPMOEt_50mg_REP_1" = "Venom + JPMOEt 50mg r1",
    "Ven_e_JPMOEt_50mg_REP_2" = "Venom + JPMOEt 50mg r2",
    "Ven_e_JPMOEt_50mg_REP_3" = "Venom + JPMOEt 50mg r3",
+   "Ven_e_JPMOEt_50mg" = "Venom + JPMOEt 50mg",
    
    "Ven_e_JPMOEt_100mg_REP_1" = "Venom + JPMOEt 100mg r1",
    "Ven_e_JPMOEt_100mg_REP_2" = "Venom + JPMOEt 100mg r2",
-   "Ven_e_JPMOEt_100mg_REP_3" = "Venom + JPMOEt 100mg r3"
+   "Ven_e_JPMOEt_100mg_REP_3" = "Venom + JPMOEt 100mg r3",
+   "Ven_e_JPMOEt_100mg" = "Venom + JPMOEt 100mg"
   )
   
   
@@ -214,6 +224,23 @@ ggplot2::ggsave(
   path = "./data/output/",
   plot = kMeansPCA,
   width = 24, height = 10,
+  units = "in", dpi = 300)
+
+
+
+CVs <- Generate_Graph_Coef_Variation(
+  imputedMatrix,
+  conditions = unique(diannReport$condition),
+  labelsName = prettyNames,
+  colorList = colors
+)
+
+
+ggplot2::ggsave(
+  filename = paste0("Coef_Variation", ".png"),
+  path = "./data/output/",
+  plot = CVs,
+  width = 10, height = 10,
   units = "in", dpi = 300)
 ```
 
