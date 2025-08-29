@@ -243,7 +243,3 @@ ggplot2::ggsave(
   width = 10, height = 10,
   units = "in", dpi = 300)
 ```
-
-
-
-
