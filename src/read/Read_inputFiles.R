@@ -1,3 +1,0 @@
-x <- function() {
-  cat("lasanha")
-}
