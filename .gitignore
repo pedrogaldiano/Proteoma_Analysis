@@ -57,3 +57,4 @@ rsconnect/
 *.tsv
 *.parquet
 *.lintr
+*.RDataTmp*
