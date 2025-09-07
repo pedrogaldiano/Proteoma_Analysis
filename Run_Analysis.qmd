@@ -130,6 +130,32 @@ Install_Packages(packages)
   )
   
   
+  samplesToCompare = list(
+    Actinonin_15mg_vs_NaCl = "Actinonin_15mg - NaCl",
+    Actinonin_30mg_vs_NaCl = "Actinonin_30mg - NaCl",
+    
+    JPMOEt_50mg_vs_NaCl = "JPM_OEt_50mg - NaCl",
+    JPMOEt_100mg_vs_NaCl = "JPM_OEt_100mg - NaCl",
+    
+    Venom_vs_NaCl = "Venom - NaCl",
+    
+    Ven_Actn_15mg_vs_NaCl = "Ven_e_Actn_15mg - NaCl",
+    Ven_Actn_30mg_vs_NaCl = "Ven_e_Actn_30mg - NaCl",
+    
+    Ven_jPMOEt_50mg_vs_NaCl = "Ven_e_JPMOEt_50mg - NaCl",
+    Ven_jPMOEt_100mg_vs_NaCl = "Ven_e_JPMOEt_100mg - NaCl",
+    
+    Actinonin_15mg_vs_Actinonin_30mg = "Actinonin_15mg - Actinonin_30mg",
+    JPMOEt_50mg_vs_JPMOEt_100mg = "JPM_OEt_50mg - JPM_OEt_100mg",
+    
+    Ven_Actn_15mg_vs_Venom = "Ven_e_Actn_15mg - Venom",
+    Ven_Actn_30mg_vs_Venom = "Ven_e_Actn_30mg - Venom",
+    
+    Ven_jPMOEt_50mg_vs_Venom = "Ven_e_JPMOEt_50mg - Venom",
+    Ven_jPMOEt_100mg_vs_Venom = "Ven_e_JPMOEt_100mg - Venom"
+  )
+  
+  
   colors = c(
     "#a6cee3","#1f78b4","#b2df8a","#33a02c","#fb9a99",
     "#e31a1c","#fdbf6f","#ff7f00","#cab2d6","#6a3d9a")
