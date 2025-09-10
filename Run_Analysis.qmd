@@ -160,6 +160,17 @@ Install_Packages(packages)
   colors = c(
     "#a6cee3","#1f78b4","#b2df8a","#33a02c","#fb9a99",
     "#e31a1c","#fdbf6f","#ff7f00","#cab2d6","#6a3d9a")
+  
+  
+  genesToHighLight_BlandAltman <- c(
+    "Il1rap", "Lcn2", "Slc47a1", "Chia", "Mup17", "Mup3","Umod", "Mup20",
+    "Xpnpep2",  "Nectin4", "Esam", "Alb","Asah1", "Smpd1", "Smpdl3a", "Apoe",
+    "Apoa1", "Apoa2","B2m", "Vcam1", "Blvrb", "Orm2", "Orm1", "Mup4", "Obp1a",
+    "Serpina6", "C8g", "Ngp", "Cd36", "Hba", "Hbb-b1","Hbb-b2","Chil3", "Apcs",
+    "Hp", "Mug1", "Serpina1b","Serpina3k", "Bcam", "Cdh1", "Cdh11", "Ceacam1",
+    "Cd248","Cfi", "Fgg", "Fga", "Fgb", "Kng1", "Lum", "Retnla","Cd200",
+    "Cd44","Cd48", "Cd36", "Cltrn", "Cp", "Cspg4","Cst3", "Ctsd", "Ctse",
+    "Ctso","Dag1", "Dsc1")
 ```
 
 
@@ -281,12 +292,31 @@ limmaContrasts <- Create_ContrastFitQuantUMS(imputedMatrix, samplesToCompare)
 
 limmaResult <- CompareLimmaResults(limmaContrasts, samplesToCompare)
 
+# #Save limma result in a .tsv file
+# write.table(limmaResult,
+#             file = "./data/output/allLimmaResultsCombined.tsv",
+#             quote = FALSE,
+#             sep = '\t',
+#             col.names = NA)
+
+
+number_significantProteins <- Count_SignificantProteins(limmaResult)
+
 #Save limma result in a .tsv file
-write.table(limmaResult,
-            file = "./data/output/allLimmaResultsCombined.tsv",
+write.table(number_significantProteins,
+            file = "./data/output/number_significantProteins.tsv",
             quote = FALSE,
             sep = '\t',
             col.names = NA)
+
+blandAltmanPlot <- Generate_Graph_BlandAltman(limmaResult, genesToHighLight_BlandAltman)
+
+ggplot2::ggsave(paste0("Bland_Altman", ".png"),
+                path = "./data/output/",
+                plot = blandAltmanPlot,
+                width = 25, height = 12,
+                units = "in", dpi = 300,
+                bg = "white")
 
 ```
 
