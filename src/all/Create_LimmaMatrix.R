@@ -6,9 +6,9 @@
 
 Create_ContrastFitQuantUMS <- function(imtx, comparisonList, method = "robust" ) {
 
-  if (!method %in% c("robust", "lm"))
+  if (!method %in% c("robust", "ls"))
   {
-    cat("method should recieve 'lm' or 'robust'.")
+    cat("method should recieve 'ls' or 'robust'.")
     break
   }
   
