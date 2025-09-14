@@ -5,8 +5,17 @@
 
 Generate_SparsityMatrix <- function(dm, labels) {
   
+  dm <- diannMatrix
+  labels <- prettyNames
+  
   df <- as.data.frame(dm)
-  labels <- setNames(names(labels), labels)
+  intersection <- dplyr::intersect(names(labels), colnames(df))
+  
+  
+  
+  
+  labels <- setNames(intersection, labels)
+  
   df <- dplyr::rename(df, labels)
   
   sparsityPlot <- naniar::vis_miss(df) +
