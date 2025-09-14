@@ -8,6 +8,10 @@
 # TODO:: This should be broken down in 2 or 3 functions
 Generate_Graph_PCA_and_Kmeans <- function(imtx, numberOfClusters, clusterColors, labels, seed = 123) {
   
+  
+  #Filter to use only labels that exist in the matrix
+  labels <- labels[colnames(imtx)]
+  
   df <- as.data.frame(imtx)
   labels <- setNames(names(labels), labels)
   imtx <- dplyr::rename(df, labels)
@@ -63,7 +67,7 @@ Generate_Graph_PCA_and_Kmeans <- function(imtx, numberOfClusters, clusterColors,
                    legend.position = "none",
                    panel.border = ggplot2::element_rect(color = "black", fill = NA))
   
-  kMeans_PCA <- kmeansPlot + pcaPlot +
+  kMeans_PCA <- patchwork::wrap_plots(kmeansPlot, pcaPlot, ncol = 2) +
     patchwork::plot_annotation(tag_levels = "A") &
     ggplot2::theme(plot.tag = ggplot2::element_text(size = 30, face = "bold"))
   
