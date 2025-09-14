@@ -6,7 +6,7 @@
 
 CV_Matrix <- function(data, condition) {
   
-  cat(condition)
+  cat(condition, "\n")
   data <- data |> as.data.frame() |> 
     tibble::rownames_to_column(var = "protein")
   
