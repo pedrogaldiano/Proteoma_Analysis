@@ -37,7 +37,7 @@ Install_Packages(packages)
 ```
 
 
-# Load samples name and relations
+# Load samples names and relations
 ```{r}
   samples <- c(
     P2_01 =  "NaCl_REP_1",
@@ -76,7 +76,6 @@ Install_Packages(packages)
     P1_15 = "Ven_e_JPMOEt_100mg_REP_3"
   )
   
-  Check_SampleName(samples)
   # organism = "MOUSE"
   # parquetDIR <- "./data/input/report.parquet"
   # rdsDIR <- "./data/temp_files/diannReport.rds"
@@ -293,11 +292,11 @@ limmaContrasts <- Create_ContrastFitQuantUMS(imputedMatrix, samplesToCompare)
 limmaResult <- CompareLimmaResults(limmaContrasts, samplesToCompare)
 
 # #Save limma result in a .tsv file
-# write.table(limmaResult,
-#             file = "./data/output/allLimmaResultsCombined.tsv",
-#             quote = FALSE,
-#             sep = '\t',
-#             col.names = NA)
+write.table(limmaResult,
+            file = "./data/output/allLimmaResultsCombined.tsv",
+            quote = FALSE,
+            sep = '\t',
+            col.names = NA)
 
 
 number_significantProteins <- Count_SignificantProteins(limmaResult)
@@ -318,5 +317,24 @@ ggplot2::ggsave(paste0("Bland_Altman", ".png"),
                 units = "in", dpi = 300,
                 bg = "white")
 
+
+
+
+genesToCompare <- c("Il1rap", "Lcn2", "Mup17", "Mup3","Umod", "Mup20")
+
+
+proteinComparisonPlot <- Compare_ProteinsAbundance(imputedMatrix,
+                                                   genes = genesToCompare,
+                                                   colorList = colors,
+                                                   labels = prettyNames,
+                                                   n_columns = 10)
+
+
+ggplot2::ggsave(paste0("Proteins_Comparison", ".png"),
+                path = "./data/output/",
+                plot = proteinComparisonPlot,
+                width = 25, height = 12,
+                units = "in", dpi = 300,
+                bg = "white")
 ```
 
