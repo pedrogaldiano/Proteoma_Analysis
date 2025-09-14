@@ -225,6 +225,7 @@ diannReport <- Generate_DiannReport(samples, organism = "MOUSE")
 diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
 sparsityMatrix <- Generate_SparsityMatrix(diannMatrix, prettyNames)
 
+# TODO: Need to fix
 ggplot2::ggsave(
   filename = paste0("sparsityMatrix", ".png"),
   path = "./data/output/",
@@ -251,6 +252,8 @@ ggplot2::ggsave(
   units = "in", dpi = 300)
   
 
+
+# TODO: Need to fix
 kMeansPCA <- Generate_Graph_PCA_and_Kmeans(imputedMatrix,
                                            numberOfClusters = 8,
                                            clusterColors = colors,
