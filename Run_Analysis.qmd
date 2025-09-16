@@ -269,33 +269,58 @@ rm(sparsityMatrix)
 
 # Data Imputation
 ```{r}
-imputedMatrix_StepWise <- Create_ImputationMatrix_StepWise(diannMatrix)
+
+filteredMatrix <- 
+
+
+imputedMatrix_StepWise <- Create_ImputationMatrix_StepWise(diannMatrix,
+                                                           override = FALSE)
 
 imputedMatrix_MICE_RF <- Create_ImputarionMatrix_MICE(diannMatrix,
-                                                      methodValue = "rf")
+                                                      methodValue = "rf",
+                                                      override = FALSE)
 
 imputedMatrix_MICE_PMM <- Create_ImputarionMatrix_MICE(diannMatrix,
-                                                      methodValue = "pmm")
+                                                      methodValue = "pmm",
+                                                      override = FALSE)
 ```
 
 
 # Cosine Similarity
 ```{r}
-cosineSimilarity <- Generate_Graph_CosineSimilarity(
-  imputedMatrix,
+cosineSimilarity_StepWise <- Generate_Graph_CosineSimilarity(
+  imputedMatrix_StepWise,
   samples,
   prettyNames
 )
 
+cosineSimilarity_MICE_RF <- Generate_Graph_CosineSimilarity(
+  imputedMatrix_MICE_RF,
+  samples,
+  prettyNames
+)
+
+cosineSimilarity_MICE_PMM <- Generate_Graph_CosineSimilarity(
+  imputedMatrix_MICE_PMM,
+  samples,
+  prettyNames
+)
+
+combinePlots <- patchwork::wrap_plots(cosineSimilarity_StepWise, cosineSimilarity_MICE_RF,cosineSimilarity_MICE_PMM,  ncol = 3) +
+  patchwork::plot_annotation(tag_levels = "A") &
+  ggplot2::theme(plot.tag = ggplot2::element_text(size = 30, face = "bold"))
+
+
+
 ggplot2::ggsave(
-  filename = paste0("cosineSimilarity", ".png"),
+  filename = paste0("combinePlots", ".png"),
   path = "./data/output/",
-  plot = cosineSimilarity,
-  width = 12, height = 12,
+  plot = combinePlots,
+  width = 40, height = 12,
   units = "in", dpi = 300
 )
 
-rm(cosineSimilarity)
+rm(cosineSimilarity_StepWise, cosineSimilarity_MICE_RF, cosineSimilarity_MICE_PMM)
 ```
 
 
