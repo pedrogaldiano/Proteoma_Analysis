@@ -19,7 +19,7 @@ Create_ImputarionMatrix_MICE <- function(dm,
     cat("\nMethodValue is not valid.\nPlease select 'rf' or 'pmm'.")
   }
   
-  fileName <- paste0(path, "result_imputation_MICE.rds")
+  fileName <- paste0(path, "result_imputation_MICE_", methodValue, ".rds")
   fileExist <- file.exists(fileName)
   
   if (!(override) & fileExist) {
@@ -44,6 +44,11 @@ Create_ImputarionMatrix_MICE <- function(dm,
                                 seed = seed)
     
     result <- mice::complete(imputedMatrix)
+    
+    
+    result <- result |>
+      tibble::column_to_rownames(var = "protein") |>
+      as.matrix()
     
     saveRDS(result, file = fileName)
     
