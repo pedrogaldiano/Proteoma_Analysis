@@ -177,7 +177,7 @@ StepWiseImputation <- function(
             protein_data[] <- abundance_threshold
           } else if (length(non_na_values) == 1) {
             # Only one value - use it
-            # protein_data[is.na(protein_data)] <- non_na_values[1]
+            protein_data[is.na(protein_data)] <- non_na_values[1]
             
             # Does nothing because it means there is 
             # only one protein abundance in the group
