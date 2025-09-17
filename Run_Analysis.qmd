@@ -270,17 +270,19 @@ rm(sparsityMatrix)
 # Data Imputation
 ```{r}
 
-filteredMatrix <- 
+Delete_TempFiles()
+
+filteredMatrix <- FilterMissingness(diannMatrix, threshold = 0.30)
 
 
-imputedMatrix_StepWise <- Create_ImputationMatrix_StepWise(diannMatrix,
+imputedMatrix_StepWise <- Create_ImputationMatrix_StepWise(filteredMatrix,
                                                            override = FALSE)
 
-imputedMatrix_MICE_RF <- Create_ImputarionMatrix_MICE(diannMatrix,
+imputedMatrix_MICE_RF <- Create_ImputarionMatrix_MICE(filteredMatrix,
                                                       methodValue = "rf",
                                                       override = FALSE)
 
-imputedMatrix_MICE_PMM <- Create_ImputarionMatrix_MICE(diannMatrix,
+imputedMatrix_MICE_PMM <- Create_ImputarionMatrix_MICE(filteredMatrix,
                                                       methodValue = "pmm",
                                                       override = FALSE)
 ```
@@ -309,7 +311,6 @@ cosineSimilarity_MICE_PMM <- Generate_Graph_CosineSimilarity(
 combinePlots <- patchwork::wrap_plots(cosineSimilarity_StepWise, cosineSimilarity_MICE_RF,cosineSimilarity_MICE_PMM,  ncol = 3) +
   patchwork::plot_annotation(tag_levels = "A") &
   ggplot2::theme(plot.tag = ggplot2::element_text(size = 30, face = "bold"))
-
 
 
 ggplot2::ggsave(
