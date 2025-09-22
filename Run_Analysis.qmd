@@ -42,121 +42,36 @@ Install_Packages(packages)
 
 #TODO: the samples and prettyNames could be a dataframe with RUN, SampleName, PrettyName
 samples <- c(
-  P2_01 =  "NaCl_REP_1",
-  P2_02 = "NaCl_REP_2",
-  P2_03 =  "NaCl_REP_3",
+  HeLa_4mz_A_mixA = "MixA_REP_1",
+  HeLa_4mz_C_mixA = "MixA_REP_3",
+  HeLa_4mz_B_mixA = "MixA_REP_2",
   
-  P2_04 = "Actinonin_15mg_REP_1",
-  P2_05 =  "Actinonin_15mg_REP_2",
-  P2_06 = "Actinonin_15mg_REP_3",
-  P1_04 = "Actinonin_30mg_REP_1",
-  P1_05 =  "Actinonin_30mg_REP_2",
-  
-  P2_11 = "JPM_OEt_50mg_REP_1",
-  P2_12 =  "JPM_OEt_50mg_REP_2",
-  P1_10 =  "JPM_OEt_100mg_REP_1",
-  P1_11 = "JPM_OEt_100mg_REP_2",
-  P1_12 =  "JPM_OEt_100mg_REP_3",
-  
-  P1_02 = "Venom_REP_1",
-  P1_03 =  "Venom_REP_2",
-  
-  P2_07 =  "Ven_e_Actn_15mg_REP_1",
-  P2_08 = "Ven_e_Actn_15mg_REP_2",
-  P2_09 =  "Ven_e_Actn_15mg_REP_3",
-  
-  P1_07 = "Ven_e_Actn_30mg_REP_1",
-  P1_08 =  "Ven_e_Actn_30mg_REP_2",
-  P1_09 = "Ven_e_Actn_30mg_REP_3",
-  
-  P2_13 = "Ven_e_JPMOEt_50mg_REP_1",
-  P2_14 =  "Ven_e_JPMOEt_50mg_REP_2",
-  P2_15 = "Ven_e_JPMOEt_50mg_REP_3",
-  
-  P1_13 = "Ven_e_JPMOEt_100mg_REP_1",
-  P1_14 =  "Ven_e_JPMOEt_100mg_REP_2",
-  P1_15 = "Ven_e_JPMOEt_100mg_REP_3"
+  HeLa_4mz_A_mixB = "MixB_REP_1",
+  HeLa_4mz_B_mixB = "MixB_REP_2",
+  HeLa_4mz_C_mixB = "MixB_REP_3"  
 )
 
+
+
 prettyNames <- c(
-  "NaCl_REP_1" = "NaCl r1",
-  "NaCl_REP_2" = "NaCl r2",
-  "NaCl_REP_3" = "NaCl r3",
-  "NaCl" = "NaCl",
   
-  "Actinonin_15mg_REP_1" = "Actinonin 15mg r1",
-  "Actinonin_15mg_REP_2" = "Actinonin 15mg r2",
-  "Actinonin_15mg_REP_3" = "Actinonin 15mg r3",
-  "Actinonin_15mg" = "Actinonin 15mg",
+  "MixA_REP_1" = "Mix A r1",
+  "MixA_REP_2" = "Mix A r2",
+  "MixA_REP_3" = "Mix A r3",
   
-  "Actinonin_30mg_REP_1" = "Actinonin 30mg r1",
-  "Actinonin_30mg_REP_2" = "Actinonin 30mg r2",
-  "Actinonin_30mg" = "Actinonin 30mg",
-  
-  "JPM_OEt_50mg_REP_1" = "JPMOEt 50mg r1",
-  "JPM_OEt_50mg_REP_2" = "JPMOEt 50mg r2",
-  "JPM_OEt_50mg" = "JPMOEt 50mg",
-  
-  "JPM_OEt_100mg_REP_1" = "JPMOEt 100mg r1",
-  "JPM_OEt_100mg_REP_2" = "JPMOEt 100mg r2",
-  "JPM_OEt_100mg_REP_3" = "JPMOEt 100mg r3",
-  "JPM_OEt_100mg" = "JPMOEt 100mg",
-  
-  "Venom_REP_1" = "Venom r1",
-  "Venom_REP_2" = "Venom r2",
-  "Venom" = "Venom",
-  
-  "Ven_e_Actn_15mg_REP_1" = "Venom + Actinonin 15mg r1",
-  "Ven_e_Actn_15mg_REP_2" = "Venom + Actinonin 15mg r2",
-  "Ven_e_Actn_15mg_REP_3" = "Venom + Actinonin 15mg r3",
-  "Ven_e_Actn_15mg" = "Venom + Actinonin 15mg",
-  
-  "Ven_e_Actn_30mg_REP_1" = "Venom + Actinonin 30mg r1",
-  "Ven_e_Actn_30mg_REP_2" = "Venom + Actinonin 30mg r2",
-  "Ven_e_Actn_30mg_REP_3" = "Venom + Actinonin 30mg r3",
-  "Ven_e_Actn_30mg" = "Venom + Actinonin 30mg",
-  
-  "Ven_e_JPMOEt_50mg_REP_1" = "Venom + JPMOEt 50mg r1",
-  "Ven_e_JPMOEt_50mg_REP_2" = "Venom + JPMOEt 50mg r2",
-  "Ven_e_JPMOEt_50mg_REP_3" = "Venom + JPMOEt 50mg r3",
-  "Ven_e_JPMOEt_50mg" = "Venom + JPMOEt 50mg",
-  
-  "Ven_e_JPMOEt_100mg_REP_1" = "Venom + JPMOEt 100mg r1",
-  "Ven_e_JPMOEt_100mg_REP_2" = "Venom + JPMOEt 100mg r2",
-  "Ven_e_JPMOEt_100mg_REP_3" = "Venom + JPMOEt 100mg r3",
-  "Ven_e_JPMOEt_100mg" = "Venom + JPMOEt 100mg"
+  "MixB_REP_1" = "Mix B r1",
+  "MixB_REP_2" = "Mix B r2",
+  "MixB_REP_3" = "Mix B r3"
 )
 
 
 samplesToCompare = list(
-  Actinonin_15mg_vs_NaCl = "Actinonin_15mg - NaCl",
-  Actinonin_30mg_vs_NaCl = "Actinonin_30mg - NaCl",
-  
-  JPMOEt_50mg_vs_NaCl = "JPM_OEt_50mg - NaCl",
-  JPMOEt_100mg_vs_NaCl = "JPM_OEt_100mg - NaCl",
-  
-  Venom_vs_NaCl = "Venom - NaCl",
-  
-  Ven_e_Actn_15mg_vs_NaCl = "Ven_e_Actn_15mg - NaCl",
-  Ven_e_Actn_30mg_vs_NaCl = "Ven_e_Actn_30mg - NaCl",
-  
-  Ven_e_jPMOEt_50mg_vs_NaCl = "Ven_e_JPMOEt_50mg - NaCl",
-  Ven_e_jPMOEt_100mg_vs_NaCl = "Ven_e_JPMOEt_100mg - NaCl",
-  
-  Actinonin_15mg_vs_Actinonin_30mg = "Actinonin_15mg - Actinonin_30mg",
-  JPMOEt_50mg_vs_JPMOEt_100mg = "JPM_OEt_50mg - JPM_OEt_100mg",
-  
-  Ven_e_Actn_15mg_vs_Venom = "Ven_e_Actn_15mg - Venom",
-  Ven_e_Actn_30mg_vs_Venom = "Ven_e_Actn_30mg - Venom",
-  
-  Ven_e_jPMOEt_50mg_vs_Venom = "Ven_e_JPMOEt_50mg - Venom",
-  Ven_e_jPMOEt_100mg_vs_Venom = "Ven_e_JPMOEt_100mg - Venom"
+  MixA_vs_MixB = "MixA - MixB"
 )
 
 
 colors <- c(
-  "#a6cee3","#1f78b4","#b2df8a","#33a02c","#fb9a99",
-  "#e31a1c","#fdbf6f","#ff7f00","#cab2d6","#6a3d9a")
+  "#e31a1c","#1f78b4")
 
 clusterColor <- c(
   "#1f78b4","#33a02c","#e31a1c","#ff7f00","#6a3d9a")
@@ -181,7 +96,7 @@ genesToCompare <- c("Il1rap", "Lcn2", "Mup17", "Mup3","Umod", "Mup20")
 ```{r}
 Check_SampleName(samples)
 
-diannReport <- Generate_DiannReport(samples, organism = "MOUSE")
+diannReport <- Generate_DiannReport(samples)
 diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
 
 ```
@@ -195,7 +110,7 @@ ggplot2::ggsave(
   filename = paste0("Precursor_x_RT", ".png"),
   path = "./data/output/",
   plot = precursorRT,
-  width = 12, height = 10,
+  width = 12, height = 5,
   units = "in", dpi = 300
 )
 
@@ -211,7 +126,7 @@ ggplot2::ggsave(
   filename = paste0("ionCloud", ".png"),
   path = "./data/output/",
   plot = ionCloud,
-  width = 24, height = 10,
+  width = 12, height = 5,
   units = "in", dpi = 300
 )
 
@@ -227,7 +142,7 @@ ggplot2::ggsave(
   filename = paste0("number_peptides", ".png"),
   path = "./data/output/",
   plot = nPeptides,
-  width = 8, height = 10,
+  width = 4, height = 3,
   units = "in", dpi = 300
 )
 
@@ -243,7 +158,7 @@ ggplot2::ggsave(
   filename = paste0("number_proteins", ".png"),
   path = "./data/output/",
   plot = nProteins,
-  width = 8, height = 10,
+  width = 4, height = 3,
   units = "in", dpi = 300
 )
 
@@ -259,7 +174,7 @@ ggplot2::ggsave(
   filename = paste0("sparsityMatrix", ".png"),
   path = "./data/output/",
   plot = sparsityMatrix,
-  width = 12, height = 10,
+  width = 4, height = 5,
   units = "in", dpi = 300
 )
 
@@ -282,9 +197,9 @@ imputedMatrix_MICE_RF <- Create_ImputarionMatrix_MICE(filteredMatrix,
                                                       methodValue = "rf",
                                                       override = FALSE)
 
-imputedMatrix_MICE_PMM <- Create_ImputarionMatrix_MICE(filteredMatrix,
-                                                      methodValue = "pmm",
-                                                      override = FALSE)
+# imputedMatrix_MICE_PMM <- Create_ImputarionMatrix_MICE(filteredMatrix,
+#                                                       methodValue = "pmm",
+#                                                       override = FALSE)
 ```
 
 
