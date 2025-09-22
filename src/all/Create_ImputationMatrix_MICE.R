@@ -12,12 +12,8 @@ Create_ImputarionMatrix_MICE <- function(dm,
                                          mValue = 5,
                                          maxitValue = 5,
                                          seed = 123,
-                                         path = "././data/temp_files/") {
-  
-  
-  if (!methodValue %in% c("rf", "pmm")) {
-    cat("\nMethodValue is not valid.\nPlease select 'rf' or 'pmm'.")
-  }
+                                         path = "././data/temp_files/")
+  {
   
   fileName <- paste0(path, "result_imputation_MICE_", methodValue, ".rds")
   fileExist <- file.exists(fileName)
