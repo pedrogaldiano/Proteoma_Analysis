@@ -5,7 +5,7 @@
 # and making some basic filtering
 #############
 
-WGenerate_DiannReport <- function(
+Generate_DiannReport <- function(
     samples, #TODO: Change this variable name to avoid global interference when loading the global variable sample
     organism = "",
     parquetDIR = "./data/input/report.parquet",

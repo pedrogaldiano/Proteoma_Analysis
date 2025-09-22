@@ -43,8 +43,8 @@ Install_Packages(packages)
 #TODO: the samples and prettyNames could be a dataframe with RUN, SampleName, PrettyName
 samples <- c(
   HeLa_4mz_A_mixA = "MixA_REP_1",
-  HeLa_4mz_C_mixA = "MixA_REP_3",
   HeLa_4mz_B_mixA = "MixA_REP_2",
+  HeLa_4mz_C_mixA = "MixA_REP_3",
   
   HeLa_4mz_A_mixB = "MixB_REP_1",
   HeLa_4mz_B_mixB = "MixB_REP_2",
@@ -98,6 +98,8 @@ Check_SampleName(samples)
 
 diannReport <- Generate_DiannReport(samples)
 diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
+
+# Delete_TempFiles()
 
 ```
 
@@ -181,25 +183,165 @@ ggplot2::ggsave(
 rm(sparsityMatrix)
 ```
 
-
 # Data Imputation
 ```{r}
 
 Delete_TempFiles()
 
-filteredMatrix <- FilterMissingness(diannMatrix, threshold = 0.30)
+
+diannReport <- Generate_DiannReport(samples)
+diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
+
+# nrow(diannMatrix) # 9137
+
+complete <- FilterMissingness(diannMatrix, threshold = 0)
+
+# nrow(filtered) # 7983 (sparsity = 0)
+
+# remove 15% of the proteins
+
+# simulated <- mice::ampute(complete, prop = 0.15, bycases = FALSE)
+# saveRDS(simulated, "simulated_data.rds")
+# view(simulated$amp)
+
+simulated <- readRDS("simulated_data.rds")$amp
+
+timeout <- data.frame()
 
 
-imputedMatrix_StepWise <- Create_ImputationMatrix_StepWise(filteredMatrix,
-                                                           override = FALSE)
+start <- Sys.time()
+imp_Mean <- Create_ImputarionMatrix_MICE(
+  simulated,
+  methodValue = "mean",
+  mValue = 5,
+  maxitValue = 100,
+  override = TRUE
+)
 
-imputedMatrix_MICE_RF <- Create_ImputarionMatrix_MICE(filteredMatrix,
-                                                      methodValue = "rf",
-                                                      override = FALSE)
+end <- Sys.time()
+timeout <- rbind(timeout, c("Mean", as.character.Date(start), as.character.Date(end), difftime(end, start, units = "mins")))
 
-# imputedMatrix_MICE_PMM <- Create_ImputarionMatrix_MICE(filteredMatrix,
-#                                                       methodValue = "pmm",
-#                                                       override = FALSE)
+saveRDS(imp_Mean, "imp_Mean.rds")
+
+
+# ------
+start <- Sys.time()
+
+imp_RF <- Create_ImputarionMatrix_MICE(
+  simulated,
+  methodValue = "rf",
+  mValue = 5,
+  maxitValue = 100,
+  override = TRUE
+)
+
+end <- Sys.time()
+timeout <- rbind(timeout, c("RF", as.character.Date(start), as.character.Date(end), difftime(end, start, units = "mins")))
+
+saveRDS(imp_Mean, "imp_RF.rds")
+
+
+# ------
+start <- Sys.time()
+
+imp_PMM <- Create_ImputarionMatrix_MICE(
+  simulated,
+  methodValue = "pmm",
+  mValue = 5,
+  maxitValue = 100,
+  override = TRUE
+)
+
+end <- Sys.time()
+timeout <- rbind(timeout, c("PMM", as.character.Date(start), as.character.Date(end), difftime(end, start, units = "mins")))
+
+saveRDS(imp_Mean, "imp_PMM.rds")
+
+# ------
+start <- Sys.time()
+
+imp_NORM <- Create_ImputarionMatrix_MICE(
+  simulated,
+  methodValue = "norm",
+  mValue = 5,
+  maxitValue = 100,
+  override = TRUE
+)
+
+end <- Sys.time()
+timeout <- rbind(timeout, c("norm", as.character.Date(start), as.character.Date(end), difftime(end, start, units = "mins")))
+
+saveRDS(imp_Mean, "imp_NORM.rds")
+
+
+# ------
+start <- Sys.time()
+
+imp_MIDAS <- Create_ImputarionMatrix_MICE(
+  simulated,
+  methodValue = "midastouch",
+  mValue = 5,
+  maxitValue = 100,
+  override = TRUE
+)
+
+end <- Sys.time()
+timeout <- rbind(timeout, c("MIDAS", as.character.Date(start), as.character.Date(end), difftime(end, start, units = "mins")))
+
+saveRDS(imp_Mean, "imp_MIDAS.rds")
+
+# ------
+start <- Sys.time()
+
+imp_LASSO_NORM <- Create_ImputarionMatrix_MICE(
+  simulated,
+  methodValue = "lasso.norm",
+  mValue = 5,
+  maxitValue = 100,
+  override = TRUE
+)
+
+
+end <- Sys.time()
+timeout <- rbind(timeout, c("LASSO_NORM", as.character.Date(start), as.character.Date(end), difftime(end, start, units = "mins")))
+
+saveRDS(imp_Mean, "imp_LASSO_NORM.rds")
+
+# ------
+start <- Sys.time()
+
+imp_LASSO_SELECT <- Create_ImputarionMatrix_MICE(
+  simulated,
+  methodValue = "lasso.select.norm",
+  mValue = 5,
+  maxitValue = 100,
+  override = TRUE
+)
+
+
+end <- Sys.time()
+timeout <- rbind(timeout, c("LASSO_SELECT", as.character.Date(start), as.character.Date(end), difftime(end, start, units = "mins")))
+
+saveRDS(imp_Mean, "imp_LASSO_SELECT.rds")
+
+
+# ------
+start <- Sys.time()
+
+imputedMatrix_StepWise <- Create_ImputationMatrix_StepWise(
+  simulated,
+  override = TRUE
+)
+
+as.character.Date(start)
+
+end <- Sys.time()
+timeout <- rbind(timeout, c("StepWise", as.character.Date(start), as.character.Date(end), difftime(end, start, units = "mins")))
+
+saveRDS(imp_Mean, "imp_StepWise.rds")
+
+saveRDS(timeout, "timeout.rds")
+
 ```
 
 
