@@ -24,7 +24,8 @@ Generate_Graph_PCA_and_Kmeans <- function(imtx, numberOfClusters, clusterColors,
   
   kmeansPlot <- factoextra::fviz_nbclust(pcaTwoDimensions,
                                          FUNcluster = kmeans,
-                                         method = "wss") +
+                                         method = "wss",
+                                         k.max = ifelse(ncol(imtx) < 11, ncol(imtx) - 1, 10)) +
     
     ggplot2::geom_point(size = 4, color = "steelblue") +
     ggplot2::geom_vline(xintercept = numberOfClusters, linetype = "dashed") +

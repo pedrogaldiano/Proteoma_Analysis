@@ -188,13 +188,15 @@ rm(sparsityMatrix)
 
 # Data Imputation
 ```{r}
-imputedMatrix <- Create_ImputarionMatrix_MICE(
-  diannMatrix,
-  methodValue = "mean",
-  mValue = 1,
-  maxitValue = 3,
-  override = TRUE
-)
+# imputedMatrix <- Create_ImputarionMatrix_MICE(
+#   diannMatrix,
+#   methodValue = "mean",
+#   mValue = 1,
+#   maxitValue = 3,
+#   override = TRUE
+# )
+
+imputedMatrix <- Create_ImputationMatrix_StepWise(diannMatrix, override = TRUE)
 ```
 
 
@@ -213,16 +215,17 @@ ggplot2::ggsave(
   width = 20, height = 12,
   units = "in", dpi = 300
 )
-
+  
 rm(cosineSimilarity)
 ```
 
 
 # PCA and K-Means
 ```{r}
+
 kMeansPCA <- Generate_Graph_PCA_and_Kmeans(
   imputedMatrix,
-  numberOfClusters = 1,
+  numberOfClusters = 2,
   clusterColors = clusterColor,
   labels = prettyNames
 )
