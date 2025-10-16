@@ -189,310 +189,36 @@ rm(sparsityMatrix)
 
 
 
-# Midas imputation
-```{r}
-# start <- Sys.time()
-# 
-# imp_MIDAS <- Create_ImputarionMatrix_MICE(
-#   simulated,
-#   methodValue = "midastouch",
-#   mValue = 5,
-#   maxitValue = 100,
-#   override = TRUE
-# )
-# 
-# end <- Sys.time()
-# timeout <- rbind(timeout, c("MIDAS", as.character.Date(start), as.character.Date(end), difftime(end, start, units = "mins")))
-# 
-# saveRDS(imp_MIDAS, "imp_MIDAS.rds")
-```
-
 
 # Data Imputation
 ```{r}
-# 
-# # Delete_TempFiles()
-# 
-# 
-# # diannReport <- Generate_DiannReport(samples)
-# # diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
-# # 
-# # # nrow(diannMatrix) # 9137
-# # 
-# # complete <- FilterMissingness(diannMatrix, threshold = 0)
-# # 
-# # # nrow(complete) # 7983 (sparsity = 0)
-# # 
-# # # remove 15% of the proteins
-# # 
-# x <- mice::ampute(completeMatrix, prop = 0.15, bycases = FALSE)
-# 
-# x <- completeMatrix
-# 
-# for (i in 1:nrow(completeMatrix)) {
-#   for (j in 1:ncol(completeMatrix)) {
-#     if (sample(1:10, 1) < 4) {
-#       x[i,j] <- NA
-#     }
-#   }
-# }
-
-# simulated <- x
-
-# saveRDS(simulated, "simulated_data.rds")
-# # # view(simulated$amp)
-# # 
-# # simulated <- readRDS("simulated_data.rds")$amp
-# # 
-# timeout <- data.frame()
-# 
-# 
-# start <- Sys.time()
-# imp_Mean <- Create_ImputarionMatrix_MICE(
-#   simulated,
-#   methodValue = "mean",
-#   mValue = 5,
-#   maxitValue = 100,
-#   override = TRUE
-# )
-# 
-# end <- Sys.time()
-# timeout <- rbind(timeout, c("Mean", as.character.Date(start), as.character.Date(end), difftime(end, start, units = "mins")))
-# 
-# saveRDS(imp_Mean, "imp_Mean.rds")
-# 
-# 
-# # ------
-# start <- Sys.time()
-# 
-# imp_RF <- Create_ImputarionMatrix_MICE(
-#   simulated,
-#   methodValue = "rf",
-#   mValue = 5,
-#   maxitValue = 100,
-#   override = TRUE
-# )
-# 
-# end <- Sys.time()
-# timeout <- rbind(timeout, c("RF", as.character.Date(start), as.character.Date(end), difftime(end, start, units = "mins")))
-# 
-# saveRDS(imp_RF, "imp_RF.rds")
-# 
-# 
-# # ------
-# start <- Sys.time()
-# 
-# imp_PMM <- Create_ImputarionMatrix_MICE(
-#   simulated,
-#   methodValue = "pmm",
-#   mValue = 5,
-#   maxitValue = 100,
-#   override = TRUE
-# )
-# 
-# end <- Sys.time()
-# timeout <- rbind(timeout, c("PMM", as.character.Date(start), as.character.Date(end), difftime(end, start, units = "mins")))
-# 
-# saveRDS(imp_PMM, "imp_PMM.rds")
-# 
-# # ------
-# start <- Sys.time()
-# 
-# imp_NORM <- Create_ImputarionMatrix_MICE(
-#   simulated,
-#   methodValue = "norm",
-#   mValue = 5,
-#   maxitValue = 100,
-#   override = TRUE
-# )
-# 
-# end <- Sys.time()
-# timeout <- rbind(timeout, c("norm", as.character.Date(start), as.character.Date(end), difftime(end, start, units = "mins")))
-# 
-# saveRDS(imp_NORM, "imp_NORM.rds")
-# 
-# 
-# # ------
-# start <- Sys.time()
-# 
-# imp_LASSO_NORM <- Create_ImputarionMatrix_MICE(
-#   simulated,
-#   methodValue = "lasso.norm",
-#   mValue = 5,
-#   maxitValue = 100,
-#   override = TRUE
-# )
-# 
-# 
-# end <- Sys.time()
-# timeout <- rbind(timeout, c("LASSO_NORM", as.character.Date(start), as.character.Date(end), difftime(end, start, units = "mins")))
-# 
-# saveRDS(imp_LASSO_NORM, "imp_LASSO_NORM.rds")
-# 
-# # ------
-# start <- Sys.time()
-# 
-# imp_LASSO_SELECT <- Create_ImputarionMatrix_MICE(
-#   simulated,
-#   methodValue = "lasso.select.norm",
-#   mValue = 5,
-#   maxitValue = 100,
-#   override = TRUE
-# )
-# 
-# 
-# end <- Sys.time()
-# timeout <- rbind(timeout, c("LASSO_SELECT", as.character.Date(start), as.character.Date(end), difftime(end, start, units = "mins")))
-# 
-# saveRDS(imp_LASSO_SELECT, "imp_LASSO_SELECT.rds")
-# 
-# 
-# # ------
-# start <- Sys.time()
-# 
-# imp_StepWise <- Create_ImputationMatrix_StepWise(
-#   simulated,
-#   override = TRUE
-# )
-# 
-# as.character.Date(start)
-# 
-# end <- Sys.time()
-# timeout <- rbind(timeout, c("StepWise", as.character.Date(start), as.character.Date(end), difftime(end, start, units = "mins")))
-# 
-# saveRDS(imp_StepWise, "imp_StepWise.rds")
-# 
-# saveRDS(timeout, "timeout.rds")
-
+imputedMatrix <- Create_ImputarionMatrix_MICE(
+  diannMatrix,
+  methodValue = "mean",
+  mValue = 1,
+  maxitValue = 3,
+  override = TRUE
+)
 ```
-
-# Read Imputated Data with amputation of 15%
-```{r}
-# timeout <- readRDS("./data/output/imputed/timeout.rds")
-
-amputed_15 <- readRDS("./data/output/imputed/simulated_data.rds")$amp # 7983
-
-imp_Mean <- readRDS("./data/output/imputed/imp_Mean.rds")
-nrow(imp_Mean) # 7983
-
-imp_RF <- readRDS("./data/output/imputed/imp_RF.rds")
-nrow(imp_RF) # 7983
-
-imp_PMM <- readRDS("./data/output/imputed/imp_PMM.rds")
-nrow(imp_PMM) # 7983
-
-imp_NORM <- readRDS("./data/output/imputed/imp_NORM.rds")
-nrow(imp_NORM) # 7983
-
-imp_LASSO_NORM <- readRDS("./data/output/imputed/imp_LASSO_NORM.rds")
-nrow(imp_LASSO_NORM) # 7983
-
-imp_LASSO_SELECT <- readRDS("./data/output/imputed/imp_LASSO_SELECT.rds")
-nrow(imp_LASSO_SELECT) # 7983
-
-imp_StepWise <- readRDS("./data/output/imputed/imp_StepWise.rds")
-nrow(imp_StepWise) # 7983
-```
-
-
-# Compare two matrices
-```{r}
-
-# Compares which sample between matrices and produces the cosine of similarity
-# test <- proxy::dist(completeMatrix, imp_Mean)
-# tibble::view(test)
-# 
-# cos <- coop::cosine(completeMatrix, imp_Mean)
-# tibble::view(cos)
-
-
-
-# list_methods <- list(imp_Mean,
-#                      imp_RF,
-#                      imp_PMM,
-#                      imp_NORM,
-#                      imp_LASSO_NORM,
-#                      imp_LASSO_SELECT,
-#                      imp_StepWise)
-
-# View(imp_StepWise)
-
-cat("\n Mean: ",Metrics::rmse(completeMatrix, imp_Mean)) 
- # Mean:  0.9463299
-
-cat("\n Norm: ",Metrics::rmse(completeMatrix, imp_NORM))
- # Norm:  0.2318168
-
-cat("\n Lasso Norm: ",Metrics::rmse(completeMatrix, imp_LASSO_NORM))
- # Lasso Norm:  0.2316613
-
-cat("\n Lasso Norm Select: ",Metrics::rmse(completeMatrix, imp_LASSO_SELECT))
- # Lasso Norm Select:  0.2296615
-
-cat("\n PMM: ",Metrics::rmse(completeMatrix, imp_PMM))
- # PMM:  0.2258373
-
-cat("\n RF: ",Metrics::rmse(completeMatrix, imp_RF)) 
- # RF:  0.2211848
-
-
-
-cat("\n StepWise: ",Metrics::rmse(completeMatrix, imp_StepWise))
- # StepWise:  0.04483677
-
-
-
-
-
-
-DF_RMSE <- data.frame(Method = names(list_methods),
-                    RMSE = NA_real_)
-
-DF_RMSE[DF_RMSE$Method == quote(imp_PMM), "RMSE"] <- Metrics::rmse(
-  completeMatrix, imp_PMM)
-
-
-
-```
-
-
-
 
 
 # Cosine Similarity
 ```{r}
-cosineSimilarity_StepWise <- Generate_Graph_CosineSimilarity(
-  imputedMatrix_StepWise,
+cosineSimilarity <- Generate_Graph_CosineSimilarity(
+  imputedMatrix,
   samples,
   prettyNames
 )
-
-cosineSimilarity_MICE_RF <- Generate_Graph_CosineSimilarity(
-  imputedMatrix_MICE_RF,
-  samples,
-  prettyNames
-)
-
-cosineSimilarity_MICE_PMM <- Generate_Graph_CosineSimilarity(
-  imputedMatrix_MICE_PMM,
-  samples,
-  prettyNames
-)
-
-combinePlots <- patchwork::wrap_plots(cosineSimilarity_StepWise, cosineSimilarity_MICE_RF,cosineSimilarity_MICE_PMM,  ncol = 3) +
-  patchwork::plot_annotation(tag_levels = "A") &
-  ggplot2::theme(plot.tag = ggplot2::element_text(size = 30, face = "bold"))
-
 
 ggplot2::ggsave(
   filename = paste0("combinePlots", ".png"),
   path = "./data/output/",
-  plot = combinePlots,
-  width = 40, height = 12,
+  plot = cosineSimilarity,
+  width = 20, height = 12,
   units = "in", dpi = 300
 )
 
-rm(cosineSimilarity_StepWise, cosineSimilarity_MICE_RF, cosineSimilarity_MICE_PMM)
+rm(cosineSimilarity)
 ```
 
 
