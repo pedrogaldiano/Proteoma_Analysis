@@ -15,7 +15,7 @@ Count_SignificantProteins <- function(limmaResults) {
 }
 
 
-Generate_Graph_BlandAltman <- function(limmaResults, genesToHighLight) {
+Generate_Graph_BlandAltman <- function(limmaResults, genesToHighLight, labels, cols = 3) {
   
   signifProteins <- Count_SignificantProteins(limmaResults)
   
@@ -32,7 +32,8 @@ Generate_Graph_BlandAltman <- function(limmaResults, genesToHighLight) {
     ggplot2::scale_color_manual(values = c("Decreased" = "steelblue",
                                            "Not significant" = "grey60",
                                            "Increased" = "firebrick")) +
-    ggplot2::facet_wrap(~Comparison, scales = "free", ncol = 5) +
+    ggplot2::facet_wrap(~Comparison, scales = "free", ncol = cols,
+                        labeller = ggplot2::as_labeller(labels)) + 
     ggplot2::geom_text(data = signifProteins |> 
                          dplyr::filter(status == "Decreased"),
                        ggplot2::aes(x = 13.5, y = -3, label = paste0(proteins)),
