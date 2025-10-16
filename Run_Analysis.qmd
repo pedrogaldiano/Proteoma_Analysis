@@ -66,7 +66,7 @@ prettyNames <- c(
 
 
 samplesToCompare = list(
-  MixA_vs_MixB = "MixA - MixB"
+  MixB_vs_MixA = "MixB - MixA"
 )
 
 
@@ -77,13 +77,10 @@ clusterColor <- c(
   "#1f78b4","#33a02c","#e31a1c","#ff7f00","#6a3d9a")
 
 
-genesToHighLight_BlandAltman <- c("FTR1","BET2","RRP40","YVH1","MSS116")
+genesToHighLight_BlandAltman <- c("ACL4","EIF1B","CAMK1","NECTIN1","CDC25C","RFA3 ","NUP57","SPHK1","NUC1","CDPF1","TNFAIP1","RDL2 ","H3-3A","SDCCAG8","RAB43","OST3","YDR391C","CDNF ","PAAT","SHE2","MICALL2","STT4","YNL108C","LMO4 ","BHLHE40","TRIQK","YIF1","HPM1","SENP8","HBG2","ROT2")
 
 
-genesToCompare <- c("FTR1","BET2","RRP40","YVH1","MSS116","KRE5
-","MAM3","TRS31","DFR1","UBA4","YBL055C","XKS1","ATP14",
-"VPS5","AMDHD1","PBP4","RNF41","PEP8","MHP1","RSC6
-","APL4","CTR1","SPT8","SLC8B1","CKS1")
+genesToCompare <- c("ACL4","EIF1B","CAMK1","NECTIN1","CDC25C")
 
 
 ```
@@ -94,8 +91,6 @@ Check_SampleName(samples)
 
 diannReport <- Generate_DiannReport(samples)
 diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
-
-completeMatrix <- FilterMissingness(diannMatrix, threshold = 0) # 9137
 
 # Delete_TempFiles()
 
@@ -323,7 +318,7 @@ proteinComparisonPlot <- Compare_ProteinsAbundance(
   genes = genesToCompare,
   colorList = colors,
   labels = prettyNames,
-  n_columns = 10)
+  n_columns = 5)
 
 
 ggplot2::ggsave(
