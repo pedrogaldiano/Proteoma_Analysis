@@ -61,7 +61,9 @@ prettyNames <- c(
   
   "MixB_REP_1" = "Mix B r1",
   "MixB_REP_2" = "Mix B r2",
-  "MixB_REP_3" = "Mix B r3"
+  "MixB_REP_3" = "Mix B r3",
+  
+  "MixB_vs_MixA" = "MixB vs MixA"
 )
 
 
@@ -294,7 +296,8 @@ rm(limmaContrasts, number_significantProteins)
 ```{r}
 blandAltmanPlot <- Generate_Graph_BlandAltman(
   limmaResult, 
-  genesToHighLight_BlandAltman
+  genesToHighLight_BlandAltman,
+  labels = prettyNames
 )
 
 ggplot2::ggsave(
