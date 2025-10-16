@@ -17,39 +17,26 @@
 
 #############
 
-Create_ImputationMatrix_StepWise <- function(dm,
-                                             override = TRUE,
-                                             path = "././data/temp_files/") {
-
-  fileName <- paste0(path, "result_imputation_stepWise.rds")
-  fileExist <- file.exists(fileName)
+Create_ImputationMatrix_StepWise <- function(dm) {
   
-  if (!(override) & fileExist) {
-    
-    cat("\nLoad file:", fileName,"\n")
-    return(readRDS(fileName))
-  } else {
-    
-
-    matrixForImputation <- log2(dm + 1)
-    groupLabels <- stringr::str_remove(colnames(matrixForImputation), "_REP_\\d+")
-    
-    imputedData <- StepWiseImputation(
-      protein_matrix = matrixForImputation,
-      group_vector = groupLabels,
-      shift_value = -1.5,
-      noise_type = "normal",
-      noise_sd = 0.1,
-      min_detection_method = "global",
-      verbose = TRUE
-    )
-    result <- imputedData$imputed_data
-    # log <- imputedData$missing_protein_log
-    
-    saveRDS(result, fileName)
-    return(result)
-  }
+  matrixForImputation <- log2(dm + 1)
+  groupLabels <- stringr::str_remove(colnames(matrixForImputation), "_REP_\\d+")
+  
+  imputedData <- StepWiseImputation(
+    protein_matrix = matrixForImputation,
+    group_vector = groupLabels,
+    shift_value = -1.5,
+    noise_type = "normal",
+    noise_sd = 0.1,
+    min_detection_method = "global",
+    verbose = TRUE
+  )
+  result <- imputedData$imputed_data
+  # log <- imputedData$missing_protein_log
+  
+  return(result)
 }
+
 
 
 

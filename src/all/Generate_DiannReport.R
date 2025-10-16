@@ -9,12 +9,7 @@ Generate_DiannReport <- function(
     samples, #TODO: Change this variable name to avoid global interference when loading the global variable sample
     organism = "",
     parquetDIR = "./data/input/report.parquet",
-    rdsDIR = "./data/temp_files/diannReport.rds"
 ) {
-  
-  if (file.exists(rdsDIR)) {
-    return(readRDS(rdsDIR))
-  }
 
   report <- arrow::read_parquet(parquetDIR)
   
@@ -38,6 +33,5 @@ Generate_DiannReport <- function(
     peptide_length = nchar(Stripped.Sequence)
     )
   
-  saveRDS(report, rdsDIR)
   return(report)
 }

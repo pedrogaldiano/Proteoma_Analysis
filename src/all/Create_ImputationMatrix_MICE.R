@@ -11,46 +11,33 @@ Create_ImputarionMatrix_MICE <- function(dm,
                                          override = TRUE,
                                          mValue = 5,
                                          maxitValue = 5,
-                                         seed = 123,
-                                         path = "././data/temp_files/")
-  {
+                                         seed = 123)
+{
   
-  fileName <- paste0(path, "result_imputation_MICE_", methodValue, ".rds")
-  fileExist <- file.exists(fileName)
+  matrixForImputation <- log2(dm + 1) |>
+    as.data.frame() |>
+    tibble::rownames_to_column(var = "protein")
   
-  if (!(override) & fileExist) {
-    
-    cat("\nLoad file:", fileName,"\n")
-    return(readRDS(fileName))
-  } else {
-    
-    
-    matrixForImputation <- log2(dm + 1) |>
-      as.data.frame() |>
-      tibble::rownames_to_column(var = "protein")
+  cat("\nCreating the imputed matrix.\n\nThis is going to take a while.\n")
   
-    cat("\nCreating the imputed matrix.\n\nThis is going to take a while.\n")
-    
-    
-    # methods = rf (random forest imputations), pmm (predictive mean matching)
-    imputedMatrix <- mice::mice(matrixForImputation,
-                                method = methodValue,
-                                m = mValue,
-                                maxit = maxitValue,
-                                seed = seed)
-    
-    result <- mice::complete(imputedMatrix)
-    
-    
-    result <- result |>
-      tibble::column_to_rownames(var = "protein") |>
-      as.matrix()
-    
-    saveRDS(result, file = fileName)
-    
-    return(result)
-  }
+  
+  # methods = rf (random forest imputations), pmm (predictive mean matching)
+  imputedMatrix <- mice::mice(matrixForImputation,
+                              method = methodValue,
+                              m = mValue,
+                              maxit = maxitValue,
+                              seed = seed)
+  
+  result <- mice::complete(imputedMatrix)
+  
+  
+  result <- result |>
+    tibble::column_to_rownames(var = "protein") |>
+    as.matrix()
+  
+  return(result)
 }
+
 
 
 
