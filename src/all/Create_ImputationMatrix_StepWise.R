@@ -32,7 +32,7 @@ Create_ImputationMatrix_StepWise <- function(dm,
     
 
     matrixForImputation <- log2(dm + 1)
-    groupLabels <- stringr::str_remove(colnames(matrixForImputation), "_REP_.")
+    groupLabels <- stringr::str_remove(colnames(matrixForImputation), "_REP_\\d+")
     
     imputedData <- StepWiseImputation(
       protein_matrix = matrixForImputation,
