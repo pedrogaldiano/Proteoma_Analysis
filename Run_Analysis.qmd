@@ -100,7 +100,6 @@ diannReport <- Generate_DiannReport(samples)
 diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
 
 completeMatrix <- FilterMissingness(diannMatrix, threshold = 0) # 9137
-completeMatrix <- log2(completeMatrix + 1)
 
 # Delete_TempFiles()
 

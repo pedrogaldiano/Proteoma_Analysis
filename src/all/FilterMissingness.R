@@ -21,5 +21,5 @@ FilterMissingness <- function(data, threshold) {
   
   cat("\nMissingness threshold <=", threshold)
   
-  return(as.matrix(result))
+  return(log2(as.matrix(result) + 1))
 }
