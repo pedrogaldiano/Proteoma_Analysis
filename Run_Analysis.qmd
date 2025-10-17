@@ -49,6 +49,13 @@ samplesDF <- read.csv2("./Data/input/sample_name_mapping.csv",
 
 
 
+fancyLabels <- setNames(samplesDF$SampleName, samplesDF$PrettyName)
+# fancyLabels <- ggplot2::as_labeller(fancyLabels)
+# fancyLabels <- ggplot2::as_labeller(
+#   setNames(samplesDF$SampleName, samplesDF$PrettyName)
+# )
+
+
 samples <- c(
   HeLa_4mz_A_mixA = "MixA_REP_1",
   HeLa_4mz_B_mixA = "MixA_REP_2",
@@ -99,14 +106,12 @@ Check_SampleName(samplesDF$SampleName)
 diannReport <- Generate_DiannReport(samplesDF)
 diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
 
-# Delete_TempFiles()
-
 ```
 
 
 # Precursor x RT
 ```{r}
-precursorRT <- Generate_Graph_PrecursorRT(diannReport, prettyNames, colors)
+precursorRT <- Generate_Graph_PrecursorRT(diannReport, fancyLabels, colors)
 
 ggplot2::ggsave(
   filename = paste0("Precursor_x_RT", ".png"),
