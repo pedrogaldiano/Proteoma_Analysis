@@ -12,21 +12,17 @@
 
 Check_SampleName <- function(samples) {
   
-  samples <- samples
-  
-  groups <- unique(stringr::str_remove_all(unname(samples), "_REP_....$"))
-  problems <- list()
+  groups <- unique(stringr::str_remove_all(samples, "_REP_[[:alnum:]]+$"))
   
   for (group in groups) {
     occurrences = sum(stringr::str_detect(groups, group))
     
-    if (occurrences <= 1 | (stringr::str_detect(group,"[A-z]|_|[0-9]+", negate = TRUE))) {
-      problems <- append(problems, group)    
-      
+    if (occurrences < 1 | (stringr::str_detect(group,"[A-z]|_|[0-9]+", negate = TRUE))) {
+      problems <- append(problems, group)
     }
   }
   
-  if (length(problems) > 0) {
+  if (exists("problems")) {
     cat("\nThis name must be unique and not a substring of another name.
         \nThis name must contain only letters, underscore ('_') and numbers
         \nCheck those names:\n")
@@ -34,5 +30,7 @@ Check_SampleName <- function(samples) {
     for (name in problems) {
       cat(name, "\n")
     }
+  } else {
+    cat("\nSample Name seems fine!.\n")
   }
 }
