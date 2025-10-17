@@ -33,6 +33,6 @@ Check_SampleName <- function(samples) {
       cat(name, "\n")
     }
   } else {
-    cat("\nSample Name seems fine!.\n")
+    cat("\nSample Name seems fine!\n")
   }
 }

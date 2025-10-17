@@ -7,8 +7,14 @@
 
 Generate_IonCloud <- function(dr, labels, cols = 3, rows = NULL ) {
 
+  # dr <- diannReport
+  # labels <- fancyLabels
+  # cols = 3
+  
   ionCloud <- ggplot2::ggplot(dr, ggplot2::aes(x = RT, y = Precursor.Mz)) +
-    ggpointdensity::geom_pointdensity(size = 0.1) +
+    ggpointdensity::geom_pointdensity(size = 0.1,
+                                      method = "neighbors", #kde2d shows a weird legend
+                                      show.legend = TRUE) +
     viridis::scale_color_viridis(option = "H") +
     ggplot2::scale_x_continuous(limits = c(0, 90)) +
     ggplot2::labs(
@@ -31,7 +37,3 @@ Generate_IonCloud <- function(dr, labels, cols = 3, rows = NULL ) {
   
   return(ionCloud)
 }
-  
-  
-  
-  

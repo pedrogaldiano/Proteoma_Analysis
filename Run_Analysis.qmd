@@ -50,10 +50,6 @@ samplesDF <- read.csv2("./Data/input/sample_name_mapping.csv",
 
 
 fancyLabels <- setNames(samplesDF$PrettyName, samplesDF$SampleName)
-# fancyLabels <- ggplot2::as_labeller(fancyLabels)
-# fancyLabels <- ggplot2::as_labeller(
-#   setNames(samplesDF$SampleName, samplesDF$PrettyName)
-# )
 
 
 samples <- c(
@@ -88,7 +84,7 @@ colors <- c(
   "#e31a1c","#1f78b4")
 
 clusterColor <- c(
-  "#1f78b4","#33a02c","#e31a1c","#ff7f00","#6a3d9a")
+  "#e31a1c","#1f78b4")
 
 
 genesToHighLight_BlandAltman <- c("ACL4","EIF1B","CAMK1","NECTIN1","CDC25C","RFA3 ","NUP57","SPHK1","NUC1","CDPF1","TNFAIP1","RDL2 ","H3-3A","SDCCAG8","RAB43","OST3","YDR391C","CDNF ","PAAT","SHE2","MICALL2","STT4","YNL108C","LMO4 ","BHLHE40","TRIQK","YIF1","HPM1","SENP8","HBG2","ROT2")
@@ -127,7 +123,7 @@ rm(precursorRT)
 
 # Ion Cloud
 ```{r}
-ionCloud <- Generate_IonCloud(diannReport, prettyNames)
+ionCloud <- Generate_IonCloud(diannReport, fancyLabels)
 
 ggplot2::ggsave(
   filename = paste0("ionCloud", ".png"),
@@ -143,7 +139,7 @@ rm(ionCloud)
 
 # Number of Peptides
 ```{r}
-nPeptides <- Generate_Graph_NumberOfPeptides(diannReport, prettyNames, colors)
+nPeptides <- Generate_Graph_NumberOfPeptides(diannReport, fancyLabels, colors)
 
 ggplot2::ggsave(
   filename = paste0("number_peptides", ".png"),
@@ -159,7 +155,7 @@ rm(nPeptides)
 
 # Number of Proteins
 ```{r}
-nProteins <- Generate_Graph_NumberOfProteins(diannReport, prettyNames, colors)
+nProteins <- Generate_Graph_NumberOfProteins(diannReport, fancyLabels, colors)
 
 ggplot2::ggsave(
   filename = paste0("number_proteins", ".png"),
@@ -177,7 +173,7 @@ rm(nProteins)
 ```{r}
 
 
-sparsityMatrix <- Generate_SparsityMatrix(diannMatrix, prettyNames)
+sparsityMatrix <- Generate_SparsityMatrix(diannMatrix, fancyLabels)
 
 ggplot2::ggsave(
   filename = paste0("sparsityMatrix", ".png"),
@@ -211,8 +207,7 @@ imputedMatrix <- Create_ImputationMatrix_StepWise(diannMatrix)
 ```{r}
 cosineSimilarity <- Generate_Graph_CosineSimilarity(
   imputedMatrix,
-  samples,
-  prettyNames
+  fancyLabels
 )
 
 ggplot2::ggsave(
@@ -234,7 +229,7 @@ kMeansPCA <- Generate_Graph_PCA_and_Kmeans(
   imputedMatrix,
   numberOfClusters = 2,
   clusterColors = clusterColor,
-  labels = prettyNames
+  labels = fancyLabels
 )
 
 ggplot2::ggsave(
@@ -254,7 +249,7 @@ rm(kMeansPCA)
 CVs <- Generate_Graph_Coef_Variation(
   imputedMatrix,
   conditions = unique(diannReport$condition),
-  labelsName = prettyNames,
+  labelsName = fancyLabels,
   colorList = colors
 )
 
@@ -307,7 +302,7 @@ rm(limmaContrasts, number_significantProteins)
 blandAltmanPlot <- Generate_Graph_BlandAltman(
   limmaResult, 
   genesToHighLight_BlandAltman,
-  labels = prettyNames
+  labels = fancyLabels
 )
 
 ggplot2::ggsave(
@@ -330,7 +325,7 @@ proteinComparisonPlot <- Compare_ProteinsAbundance(
   imputedMatrix,
   genes = genesToCompare,
   colorList = colors,
-  labels = prettyNames,
+  labels = fancyLabels,
   n_columns = 5)
 
 
