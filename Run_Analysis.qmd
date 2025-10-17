@@ -41,6 +41,14 @@ Install_Packages(packages)
 ```{r}
 
 #TODO: the samples and prettyNames could be a dataframe with RUN, SampleName, PrettyName
+
+
+samplesDF <- read.csv2("./Data/input/sample_name_mapping.csv",
+              header = TRUE,
+              sep = ";")
+
+
+
 samples <- c(
   HeLa_4mz_A_mixA = "MixA_REP_1",
   HeLa_4mz_B_mixA = "MixA_REP_2",
@@ -51,10 +59,7 @@ samples <- c(
   HeLa_4mz_C_mixB = "MixB_REP_3"  
 )
 
-
-
 prettyNames <- c(
-  
   "MixA_REP_1" = "Mix A r1",
   "MixA_REP_2" = "Mix A r2",
   "MixA_REP_3" = "Mix A r3",
@@ -89,9 +94,9 @@ genesToCompare <- c("ACL4","EIF1B","CAMK1","NECTIN1","CDC25C")
 
 
 ```{r}
-Check_SampleName(samples)
+Check_SampleName(samplesDF$SampleName)
 
-diannReport <- Generate_DiannReport(samples)
+diannReport <- Generate_DiannReport(samplesDF)
 diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
 
 # Delete_TempFiles()

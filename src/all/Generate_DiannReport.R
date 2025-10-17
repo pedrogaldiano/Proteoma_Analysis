@@ -6,11 +6,10 @@
 #############
 
 Generate_DiannReport <- function(
-    samples, #TODO: Change this variable name to avoid global interference when loading the global variable sample
+    mapping,
     organism = "",
-    parquetDIR = "./data/input/report.parquet",
+    parquetDIR = "./data/input/report.parquet"
 ) {
-
   report <- arrow::read_parquet(parquetDIR)
   
   report <- dplyr::filter(
@@ -24,14 +23,16 @@ Generate_DiannReport <- function(
     report <- dplyr::filter(report, stringr::str_detect(Protein.Names, organism))
   }
   
+  report <- dplyr::left_join(report, mapping, by = c("Run" = "Run")) 
+  
   report <- dplyr::mutate(
     report,
-    Run = dplyr::recode(Run, !!!samples),
-    Run = factor(Run, levels = unname(samples)),
-    condition = stringr::str_remove(Run, "_REP_."),
+    Run = report$SampleName,
+    Run = factor(Run, levels = mapping$SampleName),
+    condition = stringr::str_remove(Run, "_REP_[[:alnum:]]+$"),
     File.Name = Run,
     peptide_length = nchar(Stripped.Sequence)
-    )
+  )
   
   return(report)
 }
