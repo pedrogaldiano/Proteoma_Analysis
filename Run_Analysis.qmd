@@ -49,7 +49,7 @@ samplesDF <- read.csv2("./Data/input/sample_name_mapping.csv",
 
 
 
-fancyLabels <- setNames(samplesDF$SampleName, samplesDF$PrettyName)
+fancyLabels <- setNames(samplesDF$PrettyName, samplesDF$SampleName)
 # fancyLabels <- ggplot2::as_labeller(fancyLabels)
 # fancyLabels <- ggplot2::as_labeller(
 #   setNames(samplesDF$SampleName, samplesDF$PrettyName)
