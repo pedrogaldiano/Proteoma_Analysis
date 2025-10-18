@@ -78,7 +78,7 @@ genesToCompare <- c("ACL4","EIF1B","CAMK1","NECTIN1","CDC25C")
 Check_SampleName(samplesDF$SampleName)
 
 
-diannReport <- Generate_DiannReport(samplesDF)
+diannReport <- Generate_DiannReport(samplesDF, organism = "")
 diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
 
 ```
