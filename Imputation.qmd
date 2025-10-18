@@ -21,6 +21,22 @@ diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
 
 # Data Imputation
 ```{r}
+
+sum(is.na(diannMatrix)) # 11036
+diannMatrix <- log2(diannMatrix + 1)
+
+# Imputed 0.1 to the NA in the diannMatrix
+zeros <- ifelse(is.na(diannMatrix), 0.1, diannMatrix)
+write.csv(zeros, "./data/output/matrices/imputed_zeros.csv")
+
+
+
+```
+
+
+
+# Data Imputation
+```{r}
 # imputedMatrix <- Create_ImputarionMatrix_MICE(
 #   diannMatrix,
 #   methodValue = "mean",
@@ -29,145 +45,5 @@ diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
 #   override = TRUE
 # )
 
-imputedMatrix <- Create_ImputationMatrix_StepWise(diannMatrix)
+# imputedMatrix <- Create_ImputationMatrix_StepWise(diannMatrix)
 ```
-
-
-# Cosine Similarity
-```{r}
-cosineSimilarity <- Generate_Graph_CosineSimilarity(
-  imputedMatrix,
-  fancyLabels
-)
-
-ggplot2::ggsave(
-  filename = paste0("cosine_Similarity", ".png"),
-  path = "./data/output/",
-  plot = cosineSimilarity,
-  width = 20, height = 12,
-  units = "in", dpi = 300
-)
-  
-rm(cosineSimilarity)
-```
-
-
-# PCA and K-Means
-```{r}
-
-kMeansPCA <- Generate_Graph_PCA_and_Kmeans(
-  imputedMatrix,
-  numberOfClusters = 2,
-  clusterColors = clusterColor,
-  labels = fancyLabels
-)
-
-ggplot2::ggsave(
-  filename = paste0("kMeans_PCA", ".png"),
-  path = "./data/output/",
-  plot = kMeansPCA,
-  width = 24, height = 10,
-  units = "in", dpi = 300
-)
-
-rm(kMeansPCA)
-```
-
-
-# Coefficient of Variation
-```{r}
-CVs <- Generate_Graph_Coef_Variation(
-  imputedMatrix,
-  conditions = unique(diannReport$condition),
-  labelsName = fancyLabels,
-  colorList = colors
-)
-
-
-ggplot2::ggsave(
-  filename = paste0("Coef_Variation", ".png"),
-  path = "./data/output/",
-  plot = CVs,
-  width = 10, height = 10,
-  units = "in", dpi = 300
-)
-
-rm(CVs)
-```
-
-
-# Limma
-```{r}
-limmaContrasts <- Create_ContrastFitQuantUMS(imputedMatrix, samplesToCompare)
-
-limmaResult <- CompareLimmaResults(limmaContrasts, samplesToCompare)
-
-# #Save limma result in a .tsv file
-write.table(
-  limmaResult,
-  file = "./data/output/allLimmaResultsCombined.tsv",
-  quote = FALSE,
-  sep = '\t',
-  col.names = NA
-)
-
-
-number_significantProteins <- Count_SignificantProteins(limmaResult)
-
-#Save limma result in a .tsv file
-write.table(
-  number_significantProteins,
-  file = "./data/output/number_significantProteins.tsv",
-  quote = FALSE,
-  sep = '\t',
-  col.names = NA
-)
-
-rm(limmaContrasts, number_significantProteins)
-```
-
-
-# Bland-Altman
-```{r}
-blandAltmanPlot <- Generate_Graph_BlandAltman(
-  limmaResult, 
-  genesToHighLight_BlandAltman,
-  labels = fancyLabels
-)
-
-ggplot2::ggsave(
-  paste0("Bland_Altman", ".png"),
-  path = "./data/output/",
-  plot = blandAltmanPlot,
-  width = 25, height = 12,
-  units = "in", dpi = 300,
-  bg = "white"
-)
-
-
-rm(blandAltmanPlot)
-```
-
-
-# Compare Proteins Abundance
-```{r}
-proteinComparisonPlot <- Compare_ProteinsAbundance(
-  imputedMatrix,
-  genes = genesToCompare,
-  colorList = colors,
-  labels = fancyLabels,
-  n_columns = 5)
-
-
-ggplot2::ggsave(
-  paste0("Proteins_Comparison", ".png"),
-  path = "./data/output/",
-  plot = proteinComparisonPlot,
-  width = 25, height = 8,
-  units = "in", dpi = 300,
-  bg = "white"
-)
-
-rm(proteinComparisonPlot)
-```
-
