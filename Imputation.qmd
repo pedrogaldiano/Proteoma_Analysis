@@ -5,58 +5,18 @@ format: html
 
 # Source everything :D
 ```{r}
-# Load all functions
-source("./src/Source_Everything.R")
+source("./src/Source_Everything.R") # Load all functions
+source("./LoadSamples.R") # Load samples and relations
+
+# Install_Packages(packages) 
 ```
-
-
-# Load samples names and relations
-```{r}
-# Name used for Run in the report.part
-# tibble::view(unique(arrow::read_parquet("./data/input/report.parquet")$Run))
-
-samplesDF <- read.csv2("./Data/input/sample_name_mapping.csv",
-              header = TRUE,
-              sep = ";")
-
-#Mix A -> 200ng HeLa + 300ng Yeast
-#Mix B -> 200ng HeLa + 100ng Yeast
-#Mix C -> 200ng HeLa + 50ng Yeast
-
-
-fancyLabels <- setNames(samplesDF$PrettyName, samplesDF$SampleName)
-
-samplesToCompare = list(
-  MixB_vs_MixA = "MixB - MixA"
-)
-
-
-colors <- c(
-  "#e31a1c","#1f78b4", "#008000")
-
-clusterColor <- c(
-  "#e31a1c","#1f78b4", "#008000")
-
-
-genesToHighLight_BlandAltman <- c("ACL4","EIF1B","CAMK1","NECTIN1","CDC25C","RFA3 ","NUP57","SPHK1","NUC1","CDPF1","TNFAIP1","RDL2 ","H3-3A","SDCCAG8","RAB43","OST3","YDR391C","CDNF ","PAAT","SHE2","MICALL2","STT4","YNL108C","LMO4 ","BHLHE40","TRIQK","YIF1","HPM1","SENP8","HBG2","ROT2")
-
-
-genesToCompare <- c("ACL4","EIF1B","CAMK1","NECTIN1","CDC25C")
-
-
-```
-
 
 ```{r}
 Check_SampleName(samplesDF$SampleName)
 
-# report <- arrow::read_parquet("./data/input/report.parquet")
-
 diannReport <- Generate_DiannReport(samplesDF, organism = "")
 diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
-
 ```
-
 
 
 # Data Imputation
