@@ -53,29 +53,6 @@ samplesDF <- read.csv2("./Data/input/sample_name_mapping.csv",
 fancyLabels <- setNames(samplesDF$PrettyName, samplesDF$SampleName)
 
 
-samples <- c(
-  HeLa_4mz_A_mixA = "MixA_REP_1",
-  HeLa_4mz_B_mixA = "MixA_REP_2",
-  HeLa_4mz_C_mixA = "MixA_REP_3",
-  
-  HeLa_4mz_A_mixB = "MixB_REP_1",
-  HeLa_4mz_B_mixB = "MixB_REP_2",
-  HeLa_4mz_C_mixB = "MixB_REP_3"  
-)
-
-prettyNames <- c(
-  "MixA_REP_1" = "Mix A r1",
-  "MixA_REP_2" = "Mix A r2",
-  "MixA_REP_3" = "Mix A r3",
-  
-  "MixB_REP_1" = "Mix B r1",
-  "MixB_REP_2" = "Mix B r2",
-  "MixB_REP_3" = "Mix B r3",
-  
-  "MixB_vs_MixA" = "MixB vs MixA"
-)
-
-
 samplesToCompare = list(
   MixB_vs_MixA = "MixB - MixA"
 )
@@ -220,10 +197,16 @@ kMeansPCA <- Generate_Graph_PCA_and_Kmeans(
   labels = fancyLabels
 )
 
+kmeans <- Generate_Graph_kmeans(imputedMatrix, numberOfClusters = 2)
+pca <- Generate_Graph_PCA(imputedMatrix, numberOfClusters = 2, clusterColors = clusterColor, labels = fancyLabels)
+
+
+combine <- patchwork::wrap_plots(kmeans, pca, ncol = 2)
+
 ggplot2::ggsave(
-  filename = paste0("kMeans_PCA", ".png"),
+  filename = paste0("kMeans_PCA____TESTE", ".png"),
   path = "./data/output/",
-  plot = kMeansPCA,
+  plot = combine,
   width = 24, height = 10,
   units = "in", dpi = 300
 )
