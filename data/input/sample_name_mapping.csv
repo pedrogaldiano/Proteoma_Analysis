@@ -1,7 +1,16 @@
 Run;SampleName;PrettyName
-HeLa_4mz_A_mixA;MixA_REP_1;MixA REP 1
-HeLa_4mz_B_mixA;MixA_REP_2;MixA REP 2
-HeLa_4mz_C_mixA;MixA_REP_3;MixA REP 3
-HeLa_4mz_A_mixB;MixB_REP_1;MixB REP 1
-HeLa_4mz_B_mixB;MixB_REP_2;MixB REP 2
-HeLa_4mz_C_mixB;MixB_REP_3;MixB REP 3
+mixA_r1;Mix_A_REP_1;Mix A r1
+mixA_r2;Mix_A_REP_2;Mix A r2
+mixA_r3;Mix_A_REP_3;Mix A r3
+mixA_r4;Mix_A_REP_4;Mix A r4
+mixA_r5;Mix_A_REP_5;Mix A r5
+mixB_r1;Mix_B_REP_1;Mix B r1
+mixB_r2;Mix_B_REP_2;Mix B r2
+mixB_r3;Mix_B_REP_3;Mix B r3
+mixB_r4;Mix_B_REP_4;Mix B r4
+mixB_r5;Mix_B_REP_5;Mix B r5
+mixC_r1;Mix_C_REP_1;Mix C r1
+mixC_r2;Mix_C_REP_2;Mix C r2
+mixC_r3;Mix_C_REP_3;Mix C r3
+mixC_r4;Mix_C_REP_4;Mix C r4
+mixC_r5;Mix_C_REP_5;Mix C r5

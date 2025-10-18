@@ -21,7 +21,7 @@ Generate_Graph_NumberOfPeptides <- function(dr, labels, colors) {
     ggplot2::scale_fill_manual(values = colors) +
     ggplot2::geom_text(
       ggplot2::aes(label = n_peptides, hjust =  +1),
-      color = "black", size = 4, fontface = "bold"
+      color = "black", size = 2, fontface = "bold"
     ) +
     ggplot2::labs(y = NULL,
                   x = NULL,
@@ -34,6 +34,7 @@ Generate_Graph_NumberOfPeptides <- function(dr, labels, colors) {
       plot.title = ggplot2::element_text(size = 20, face = "bold"),
       plot.subtitle = ggplot2::element_text(size = 12, face = "bold"),
       axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust = 1),
+      axis.text.y = ggplot2::element_text(size = 8, vjust = 0.5, hjust = 1),
       panel.border = ggplot2::element_rect(color = "black", fill = NA),
       panel.background = ggplot2::element_blank()
     )

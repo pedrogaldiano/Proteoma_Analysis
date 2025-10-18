@@ -16,7 +16,7 @@ Generate_IonCloud <- function(dr, labels, cols = 3, rows = NULL ) {
                                       method = "neighbors", #kde2d shows a weird legend
                                       show.legend = TRUE) +
     viridis::scale_color_viridis(option = "H") +
-    ggplot2::scale_x_continuous(limits = c(0, 90)) +
+    ggplot2::scale_x_continuous(limits = c(0, 60)) +
     ggplot2::labs(
       x = "Retention time (min)",
       y = "Scan range (m/z)",
