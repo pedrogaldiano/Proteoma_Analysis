@@ -8,6 +8,8 @@ format: html
 source("./src/Source_Everything.R") # Load all functions
 source("./LoadSamples.R") # Load samples and relations
 
+diannReport <- Generate_DiannReport(samplesDF, organism = "")
+
 # Install_Packages(packages) 
 ```
 
@@ -18,45 +20,36 @@ zeros <- as.matrix(tibble::column_to_rownames(
    "X"
    ))
 
-
+# To avoid having to switch everywhere
+imputed <- zeros
 ```
 
 # Quality Analysis
 ```{r}
 # Cosine Similarity
-cosineSimilarity <- Generate_Graph_CosineSimilarity(
-  zeros,
-  fancyLabels
-)
+cosineSimilarity <- Generate_Graph_CosineSimilarity(imputed, fancyLabels)
+
 # k-Means
-  kMeansPCA <- Generate_Graph_PCA_and_Kmeans(
-    zeros,
-    numberOfClusters = 2,
-    clusterColors = clusterColor,
-    labels = fancyLabels
-  )
+kmeans <- Generate_Graph_kmeans(imputed, numberOfClusters = 2)
 
 # PCA
+pca <- Generate_Graph_PCA(imputed, numberOfClusters = 2, clusterColors = clusterColor, labels = fancyLabels)
 
 # Coefficient of Variation
-CVs <- Generate_Graph_Coef_Variation(
-  zeros,
-  conditions = unique(diannReport$condition),
-  labelsName = fancyLabels,
-  colorList = colors
-)
+CVs <- Generate_Graph_Coef_Variation(imputed, unique(diannReport$condition), fancyLabels, colors)
 
-combine <- patchwork::wrap_plots(list(cosineSimilarity, kMeansPCA, CVs), cols = 3)
+
+combine <- patchwork::wrap_plots(list(cosineSimilarity, kmeans, pca, CVs), cols = 4, nrow =)
 
 ggplot2::ggsave(
   filename = paste0("quality_zeros", ".png"),
-  path = "./data/output/",
+  path = "./data/output/quality/",
   plot = combine,
-  width = 60, height = 30,
+  width = 80, height = 30,
   units = "cm", dpi = 300
 )
   
-rm(cosineSimilarity)
+rm(cosineSimilarity, kmeans, pca, CVs, combine)
 ```
 
 
