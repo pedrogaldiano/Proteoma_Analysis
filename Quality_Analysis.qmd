@@ -39,6 +39,8 @@ pca <- Generate_Graph_PCA(imputed, numberOfClusters = 2, clusterColors = cluster
 CVs <- Generate_Graph_Coef_Variation(imputed, unique(diannReport$condition), fancyLabels, colors)
 
 
+# TODO: Add a title at the combined plot with the Gene filter (HUMAN or Yeast) and the type of imputation used
+
 combine <- patchwork::wrap_plots(list(cosineSimilarity, kmeans, pca, CVs), cols = 4, nrow =)
 
 ggplot2::ggsave(

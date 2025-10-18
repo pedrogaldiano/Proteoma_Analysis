@@ -5,16 +5,17 @@
 # the scan range (m/z) for each sample.
 #############
 
-Generate_IonCloud <- function(dr, labels, cols = 3, rows = NULL ) {
-
+Generate_IonCloud <- function(dr, labels, cols = 3, rows = NULL) {
   # dr <- diannReport
   # labels <- fancyLabels
   # cols = 3
-  
+
   ionCloud <- ggplot2::ggplot(dr, ggplot2::aes(x = RT, y = Precursor.Mz)) +
-    ggpointdensity::geom_pointdensity(size = 0.1,
-                                      method = "neighbors", #kde2d shows a weird legend
-                                      show.legend = TRUE) +
+    ggpointdensity::geom_pointdensity(
+      size = 0.1,
+      method = "neighbors", #kde2d shows a weird legend
+      show.legend = TRUE
+    ) +
     viridis::scale_color_viridis(option = "H") +
     ggplot2::scale_x_continuous(limits = c(0, 60)) +
     ggplot2::labs(
@@ -22,10 +23,12 @@ Generate_IonCloud <- function(dr, labels, cols = 3, rows = NULL ) {
       y = "Scan range (m/z)",
       color = NULL
     ) +
-    ggplot2::facet_wrap(~Run,
-                        labeller = ggplot2::as_labeller(labels),
-                        scales = "free",
-                        ncol = cols) +
+    ggplot2::facet_wrap(
+      ~Run,
+      labeller = ggplot2::as_labeller(labels),
+      scales = "free",
+      ncol = cols
+    ) +
     ggplot2::theme(
       strip.background = ggplot2::element_blank(),
       legend.position = "bottom",
@@ -34,6 +37,6 @@ Generate_IonCloud <- function(dr, labels, cols = 3, rows = NULL ) {
       panel.border = ggplot2::element_rect(color = "black", fill = NA),
       panel.background = ggplot2::element_blank()
     )
-  
+
   return(ionCloud)
 }

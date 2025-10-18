@@ -4,11 +4,8 @@
 # Create a Diann Matrix using the package Diann
 #############
 
-
 Generate_DiannMatrix <- function(dr, header = "Genes") {
-  
   if (header == "Protein") {
-    
     result <- diann::diann_matrix(
       dr,
       id.header = "Protein.Group",
@@ -16,11 +13,9 @@ Generate_DiannMatrix <- function(dr, header = "Genes") {
       proteotypic.only = TRUE,
       pg.q = 0.01
     )
-    
+
     return(result)
-    
   } else if (header == "Genes") {
-    
     result <- diann::diann_matrix(
       dr,
       id.header = "Genes",
@@ -28,8 +23,7 @@ Generate_DiannMatrix <- function(dr, header = "Genes") {
       proteotypic.only = TRUE,
       pg.q = 0.01
     )
-    
+
     return(result)
   }
-  
 }

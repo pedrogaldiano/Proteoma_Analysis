@@ -5,13 +5,10 @@
 #############
 
 Delete_TempFiles <- function(path = "././data/temp_files") {
-  
   if (dir.exists(path)) {
-  
-  tempFiles <- list.files(path, full.names = TRUE)
-  
-  file.remove(tempFiles)
-  
+    tempFiles <- list.files(path, full.names = TRUE)
+
+    file.remove(tempFiles)
   } else {
     cat("Path doesn't exist")
   }

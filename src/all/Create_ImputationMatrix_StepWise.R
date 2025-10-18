@@ -1,14 +1,13 @@
-
 #############
 # Create Imputation Matrix Step Wise  ----
 # Two-Step Approach
 
-# Step 1: Handles proteins that are completely missing in entire groups by 
+# Step 1: Handles proteins that are completely missing in entire groups by
 # imputing values slightly below the detection limit with added noise
 
 # Step 2: Handles remaining missing values using either:
 # Mean imputation for low-abundance proteins (simpler, more stable)
-# MICE (Multiple Imputation) for high-abundance 
+# MICE (Multiple Imputation) for high-abundance
 # proteins (more sophisticated, preserves relationships)
 # This approach recognizes that low-abundance proteins often have more
 # technical noise, so simpler imputation is appropriate, while high-abundance
@@ -18,10 +17,12 @@
 #############
 
 Create_ImputationMatrix_StepWise <- function(dm) {
-  
   matrixForImputation <- log2(dm + 1)
-  groupLabels <- stringr::str_remove(colnames(matrixForImputation), "_REP_....$") #"_REP_\\d+"
-  
+  groupLabels <- stringr::str_remove(
+    colnames(matrixForImputation),
+    "_REP_....$"
+  ) #"_REP_\\d+"
+
   imputedData <- StepWiseImputation(
     protein_matrix = matrixForImputation,
     group_vector = groupLabels,
@@ -33,39 +34,37 @@ Create_ImputationMatrix_StepWise <- function(dm) {
   )
   result <- imputedData$imputed_data
   # log <- imputedData$missing_protein_log
-  
+
   return(result)
 }
 
 
-
-
 StepWiseImputation <- function(
-    protein_matrix,
-    group_vector,
-    use_mean_for_low = TRUE,
-    abundance_threshold = NULL,
-    shift_value = -1,
-    noise_type = "normal",
-    noise_sd = 0.1,
-    noise_range = c(-0.2, 0.2),
-    min_detection_method = "global",
-    seed = 123,
-    verbose = TRUE
+  protein_matrix,
+  group_vector,
+  use_mean_for_low = TRUE,
+  abundance_threshold = NULL,
+  shift_value = -1,
+  noise_type = "normal",
+  noise_sd = 0.1,
+  noise_range = c(-0.2, 0.2),
+  min_detection_method = "global",
+  seed = 123,
+  verbose = TRUE
 ) {
   set.seed(seed)
   result_matrix <- protein_matrix
   unique_groups <- unique(group_vector)
   missing_protein_log <- data.frame()
-  
+
   # Step 1: Handle completely missing proteins within groups
   if (verbose) {
     cat("Step 1: Detecting and handling completely missing proteins...\n")
   }
-  
+
   for (protein in 1:nrow(protein_matrix)) {
     protein_values <- protein_matrix[protein, ]
-    
+
     # Determine minimum value based on method
     if (min_detection_method == "global") {
       min_value <- min(protein_values, na.rm = TRUE)
@@ -81,17 +80,17 @@ StepWiseImputation <- function(
       })
       min_value <- min(group_mins[!is.infinite(group_mins)])
     }
-    
+
     # Skip if all values are missing for this protein
     if (is.infinite(min_value)) {
       next
     }
-    
+
     # Check each group for complete missingness
     for (group in unique_groups) {
       group_indices <- which(group_vector == group)
       group_protein_values <- protein_values[group_indices]
-      
+
       # If all values in this group are missing
       if (all(is.na(group_protein_values))) {
         if (verbose) {
@@ -102,7 +101,7 @@ StepWiseImputation <- function(
             min_value
           ))
         }
-        
+
         # Log this imputation
         missing_protein_log <- rbind(
           missing_protein_log,
@@ -113,70 +112,69 @@ StepWiseImputation <- function(
             shifted_value = min_value + shift_value
           )
         )
-        
+
         # Calculate shifted value
         shifted_value <- min_value + shift_value
-        
+
         # Generate values with noise for this group
         n_samples <- length(group_indices)
-        
+
         if (noise_type == "normal") {
           noise <- rnorm(n_samples, mean = 0, sd = noise_sd)
         } else if (noise_type == "uniform") {
           noise <- runif(n_samples, min = noise_range[1], max = noise_range[2])
         }
-        
+
         imputed_values <- shifted_value + noise
-        
+
         # Assign to result matrix
         result_matrix[protein, group_indices] <- imputed_values
       }
     }
   }
-  
+
   # Step 2: Main imputation for remaining missing values
   if (verbose) {
     cat("Step 2: Performing main imputation...\n")
   }
-  
+
   # Calculate overall abundance threshold if not provided
   if (is.null(abundance_threshold)) {
     abundance_threshold <- median(result_matrix, na.rm = TRUE)
   }
-  
+
   for (group in unique_groups) {
     if (verbose) {
       cat("  Processing group", group, "...\n")
     }
-    
+
     group_indices <- which(group_vector == group)
     group_data <- result_matrix[, group_indices, drop = FALSE]
-    
+
     if (any(is.na(group_data))) {
       for (protein in 1:nrow(group_data)) {
         protein_data <- group_data[protein, ]
-        
+
         if (any(is.na(protein_data))) {
           non_na_values <- protein_data[!is.na(protein_data)]
-          
+
           if (length(non_na_values) == 0) {
             # All missing - use threshold value (shouldn't happen after step 1)
             protein_data[] <- abundance_threshold
           } else if (length(non_na_values) == 1) {
             # Only one value - use it
             protein_data[is.na(protein_data)] <- non_na_values[1]
-            
-            # Does nothing because it means there is 
+
+            # Does nothing because it means there is
             # only one protein abundance in the group
-            
           } else {
             # Multiple values available
             protein_median <- median(non_na_values)
-            
+
             if (
               use_mean_for_low &&
-              !is.na(protein_median) &&
-              protein_median <= abundance_threshold
+                !is.na(protein_median) &&
+                protein_median <= abundance_threshold
             ) {
               # Low abundance - use mean
               protein_mean <- mean(non_na_values)
@@ -187,7 +185,7 @@ StepWiseImputation <- function(
                 value = protein_data,
                 group_id = rep(1, length(protein_data))
               )
-              
+
               tryCatch(
                 {
                   mice_result <- mice::mice(
@@ -208,13 +206,13 @@ StepWiseImputation <- function(
               )
             }
           }
-          
+
           result_matrix[protein, group_indices] <- protein_data
         }
       }
     }
   }
-  
+
   # Return results
   return(list(
     imputed_data = na.omit(result_matrix),
