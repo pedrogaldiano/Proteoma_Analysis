@@ -23,13 +23,63 @@ diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
 ```{r}
 
 sum(is.na(diannMatrix)) # 11036
-diannMatrix <- log2(diannMatrix + 1)
+diannMatrix_log <- log2(diannMatrix + 1)
 
 # Imputed 0.1 to the NA in the diannMatrix
-zeros <- ifelse(is.na(diannMatrix), 0.1, diannMatrix)
+zeros <- ifelse(is.na(diannMatrix_log), 0.1, diannMatrix)
 write.csv(zeros, "./data/output/matrices/imputed_zeros.csv")
 
 
+# Impute the mean of the column
+mean <- Create_ImputarionMatrix_MICE(diannMatrix, methodValue = "mean",  mValue = 1,  maxitValue = 3)
+tibble::view(t(diannMatrix))
+tibble::view(mean)
+write.csv(mean, "./data/output/matrices/imputed_mean_MICE_normal.csv")
+
+# Impute the mean of the column
+tMean <- Create_ImputarionMatrix_MICE(t(diannMatrix), methodValue = "mean",  mValue = 1,  maxitValue = 1)
+
+
+dm_temp <- diannMatrix
+
+# Mean by column
+for (j in 1:ncol(diannMatrix)) {
+    if (any(is.na(diannMatrix[,j]))) {
+        
+        x <- mean(diannMatrix[,j], na.rm = TRUE)
+        dm_temp[,j] <- ifelse(is.na(diannMatrix[,j]), x, diannMatrix[,j])
+    }
+}
+
+# Mean by row
+for (i in 1:nrow(diannMatrix)) {
+    if (any(is.na(diannMatrix[i,]))) {
+        
+        x <- mean(diannMatrix[i,], na.rm = TRUE)
+        dm_temp[i,] <- ifelse(is.na(diannMatrix[i,]), x, diannMatrix[i,])
+    }
+}
+
+# Mean by group
+
+
+
+
+
+mean(diannMatrix[,1], na.rm = TRUE)
+mean(dm_temp[,1])
+
+tibble::view(diannMatrix)
+tibble::view(dm_temp)
+
+
+
+
+
+
+
+
+write.csv(tMean, "./data/output/matrices/imputed_mean_MICE_transpose.csv")
 
 ```
 

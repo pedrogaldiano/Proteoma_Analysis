@@ -54,9 +54,12 @@ rm(cosineSimilarity, kmeans, pca, CVs, combine)
 
 
 
+
+
+
 # Limma
 ```{r}
-limmaContrasts <- Create_ContrastFitQuantUMS(imputedMatrix, samplesToCompare)
+limmaContrasts <- Create_ContrastFitQuantUMS(imputedMatrix, samplesToCompare, method = "robust")
 
 limmaResult <- CompareLimmaResults(limmaContrasts, samplesToCompare)
 
@@ -71,7 +74,6 @@ write.table(
 
 
 number_significantProteins <- Count_SignificantProteins(limmaResult)
-
 #Save limma result in a .tsv file
 write.table(
   number_significantProteins,
