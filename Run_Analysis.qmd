@@ -190,16 +190,8 @@ rm(cosineSimilarity)
 # PCA and K-Means
 ```{r}
 
-kMeansPCA <- Generate_Graph_PCA_and_Kmeans(
-  imputedMatrix,
-  numberOfClusters = 2,
-  clusterColors = clusterColor,
-  labels = fancyLabels
-)
-
 kmeans <- Generate_Graph_kmeans(imputedMatrix, numberOfClusters = 2)
 pca <- Generate_Graph_PCA(imputedMatrix, numberOfClusters = 2, clusterColors = clusterColor, labels = fancyLabels)
-
 
 combine <- patchwork::wrap_plots(kmeans, pca, ncol = 2)
 
