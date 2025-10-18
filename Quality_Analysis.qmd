@@ -1,0 +1,138 @@
+---
+title: "Run_Analysis"
+format: html
+---
+
+# Source everything :D
+```{r}
+source("./src/Source_Everything.R") # Load all functions
+source("./LoadSamples.R") # Load samples and relations
+
+# Install_Packages(packages) 
+```
+
+# Read data from .csv
+```{r}
+zeros <- as.matrix(tibble::column_to_rownames(
+  read.csv("./data/output/matrices/imputed_zeros.csv"),
+   "X"
+   ))
+
+
+```
+
+# Quality Analysis
+```{r}
+# Cosine Similarity
+cosineSimilarity <- Generate_Graph_CosineSimilarity(
+  zeros,
+  fancyLabels
+)
+# k-Means
+  kMeansPCA <- Generate_Graph_PCA_and_Kmeans(
+    zeros,
+    numberOfClusters = 2,
+    clusterColors = clusterColor,
+    labels = fancyLabels
+  )
+
+# PCA
+
+# Coefficient of Variation
+CVs <- Generate_Graph_Coef_Variation(
+  zeros,
+  conditions = unique(diannReport$condition),
+  labelsName = fancyLabels,
+  colorList = colors
+)
+
+combine <- patchwork::wrap_plots(list(cosineSimilarity, kMeansPCA, CVs), cols = 3)
+
+ggplot2::ggsave(
+  filename = paste0("quality_zeros", ".png"),
+  path = "./data/output/",
+  plot = combine,
+  width = 60, height = 30,
+  units = "cm", dpi = 300
+)
+  
+rm(cosineSimilarity)
+```
+
+
+
+# Limma
+```{r}
+limmaContrasts <- Create_ContrastFitQuantUMS(imputedMatrix, samplesToCompare)
+
+limmaResult <- CompareLimmaResults(limmaContrasts, samplesToCompare)
+
+# #Save limma result in a .tsv file
+write.table(
+  limmaResult,
+  file = "./data/output/allLimmaResultsCombined.tsv",
+  quote = FALSE,
+  sep = '\t',
+  col.names = NA
+)
+
+
+number_significantProteins <- Count_SignificantProteins(limmaResult)
+
+#Save limma result in a .tsv file
+write.table(
+  number_significantProteins,
+  file = "./data/output/number_significantProteins.tsv",
+  quote = FALSE,
+  sep = '\t',
+  col.names = NA
+)
+
+rm(limmaContrasts, number_significantProteins)
+```
+
+
+# Bland-Altman
+```{r}
+blandAltmanPlot <- Generate_Graph_BlandAltman(
+  limmaResult, 
+  genesToHighLight_BlandAltman,
+  labels = fancyLabels
+)
+
+ggplot2::ggsave(
+  paste0("Bland_Altman", ".png"),
+  path = "./data/output/",
+  plot = blandAltmanPlot,
+  width = 25, height = 12,
+  units = "in", dpi = 300,
+  bg = "white"
+)
+
+
+rm(blandAltmanPlot)
+```
+
+
+# Compare Proteins Abundance
+```{r}
+proteinComparisonPlot <- Compare_ProteinsAbundance(
+  imputedMatrix,
+  genes = genesToCompare,
+  colorList = colors,
+  labels = fancyLabels,
+  n_columns = 5)
+
+
+ggplot2::ggsave(
+  paste0("Proteins_Comparison", ".png"),
+  path = "./data/output/",
+  plot = proteinComparisonPlot,
+  width = 25, height = 8,
+  units = "in", dpi = 300,
+  bg = "white"
+)
+
+rm(proteinComparisonPlot)
+```
+
