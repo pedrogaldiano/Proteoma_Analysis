@@ -19,9 +19,10 @@ samplesDF <- read.csv2(
 fancyLabels <- setNames(samplesDF$PrettyName, samplesDF$SampleName)
 
 samplesToCompare = list(
-  MixB_vs_MixA = "MixB - MixA"
+  MixA_vs_MixB = "MixA - MixB",
+  MixA_vs_MixC = "MixA - MixC",
+  MixB_vs_MixC = "MixB - MixC"
 )
-
 
 colors <- c(
   "#e31a1c",
