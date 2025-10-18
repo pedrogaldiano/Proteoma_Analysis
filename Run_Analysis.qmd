@@ -40,7 +40,8 @@ Install_Packages(packages)
 # Load samples names and relations
 ```{r}
 
-#TODO: the samples and prettyNames could be a dataframe with RUN, SampleName, PrettyName
+# Name used for Run in the report.part
+# tibble::view(unique(arrow::read_parquet("./data/input/report.parquet")$Run))
 
 
 samplesDF <- read.csv2("./Data/input/sample_name_mapping.csv",
@@ -137,35 +138,22 @@ rm(ionCloud)
 ```
 
 
-# Number of Peptides
+# Number of Peptides and Proteins
 ```{r}
 nPeptides <- Generate_Graph_NumberOfPeptides(diannReport, fancyLabels, colors)
+nProteins <- Generate_Graph_NumberOfProteins(diannReport, labels = NULL, colors)
+
+pept_and_prot <- patchwork::wrap_plots(nPeptides, nProteins, ncol = 2)
 
 ggplot2::ggsave(
-  filename = paste0("number_peptides", ".png"),
-  path = "./data/output/",
-  plot = nPeptides,
-  width = 4, height = 3,
-  units = "in", dpi = 300
+  filename = paste0("number_peptides_and_proteins", ".png"),
+  path = "./data/output/basic/",
+  plot = pept_and_prot,
+  width = 20, height = 10,
+  units = "cm", dpi = 300
 )
 
-rm(nPeptides)
-```
-
-
-# Number of Proteins
-```{r}
-nProteins <- Generate_Graph_NumberOfProteins(diannReport, fancyLabels, colors)
-
-ggplot2::ggsave(
-  filename = paste0("number_proteins", ".png"),
-  path = "./data/output/",
-  plot = nProteins,
-  width = 4, height = 3,
-  units = "in", dpi = 300
-)
-
-rm(nProteins)
+rm(nPeptides, nProteins, pept_and_prot)
 ```
 
 

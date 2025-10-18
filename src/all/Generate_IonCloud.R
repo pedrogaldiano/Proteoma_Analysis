@@ -7,10 +7,6 @@
 
 Generate_IonCloud <- function(dr, labels, cols = 3, rows = NULL ) {
 
-  # dr <- diannReport
-  # labels <- fancyLabels
-  # cols = 3
-  
   ionCloud <- ggplot2::ggplot(dr, ggplot2::aes(x = RT, y = Precursor.Mz)) +
     ggpointdensity::geom_pointdensity(size = 0.1,
                                       method = "neighbors", #kde2d shows a weird legend
