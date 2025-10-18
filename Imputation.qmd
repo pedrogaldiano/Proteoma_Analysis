@@ -75,7 +75,7 @@ for (group in groups) {
       # If some of the group is NA, impute the mean
       x <- mean(diannMatrix_log[i, cols], na.rm = TRUE)
 
-      result_by_group[i, cols] <- ifelse(is.na(diannMatrix_log[i, cols]), m, diannMatrix_log[i, cols])
+      result_by_group[i, cols] <- ifelse(is.na(diannMatrix_log[i, cols]), x, diannMatrix_log[i, cols])
     }
   }
 }
@@ -83,8 +83,8 @@ for (group in groups) {
 write.csv(result_by_group, "./data/output/matrices/imputed_mean_by_group.csv" )
 
 
-# TODO: Check if all chunks does what I expect
-
+# diannMatrix_log
+# write.csv(diannMatrix_log, "./data/output/matrices/diannMatrix_log.csv" )
 
 ```
 
