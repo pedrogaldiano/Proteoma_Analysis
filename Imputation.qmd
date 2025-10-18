@@ -51,30 +51,6 @@ samplesDF <- read.csv2("./Data/input/sample_name_mapping.csv",
 
 fancyLabels <- setNames(samplesDF$PrettyName, samplesDF$SampleName)
 
-
-samples <- c(
-  HeLa_4mz_A_mixA = "MixA_REP_1",
-  HeLa_4mz_B_mixA = "MixA_REP_2",
-  HeLa_4mz_C_mixA = "MixA_REP_3",
-  
-  HeLa_4mz_A_mixB = "MixB_REP_1",
-  HeLa_4mz_B_mixB = "MixB_REP_2",
-  HeLa_4mz_C_mixB = "MixB_REP_3"  
-)
-
-prettyNames <- c(
-  "MixA_REP_1" = "Mix A r1",
-  "MixA_REP_2" = "Mix A r2",
-  "MixA_REP_3" = "Mix A r3",
-  
-  "MixB_REP_1" = "Mix B r1",
-  "MixB_REP_2" = "Mix B r2",
-  "MixB_REP_3" = "Mix B r3",
-  
-  "MixB_vs_MixA" = "MixB vs MixA"
-)
-
-
 samplesToCompare = list(
   MixB_vs_MixA = "MixB - MixA"
 )
@@ -99,95 +75,12 @@ genesToCompare <- c("ACL4","EIF1B","CAMK1","NECTIN1","CDC25C")
 ```{r}
 Check_SampleName(samplesDF$SampleName)
 
+# report <- arrow::read_parquet("./data/input/report.parquet")
+
 diannReport <- Generate_DiannReport(samplesDF)
 diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
 
 ```
-
-
-# Precursor x RT
-```{r}
-precursorRT <- Generate_Graph_PrecursorRT(diannReport, fancyLabels, colors)
-
-ggplot2::ggsave(
-  filename = paste0("Precursor_x_RT", ".png"),
-  path = "./data/output/",
-  plot = precursorRT,
-  width = 12, height = 5,
-  units = "in", dpi = 300
-)
-
-rm(precursorRT)
-```
-
-
-# Ion Cloud
-```{r}
-ionCloud <- Generate_IonCloud(diannReport, fancyLabels)
-
-ggplot2::ggsave(
-  filename = paste0("ionCloud", ".png"),
-  path = "./data/output/",
-  plot = ionCloud,
-  width = 12, height = 5,
-  units = "in", dpi = 300
-)
-
-rm(ionCloud)
-```
-
-
-# Number of Peptides
-```{r}
-nPeptides <- Generate_Graph_NumberOfPeptides(diannReport, fancyLabels, colors)
-
-ggplot2::ggsave(
-  filename = paste0("number_peptides", ".png"),
-  path = "./data/output/",
-  plot = nPeptides,
-  width = 4, height = 3,
-  units = "in", dpi = 300
-)
-
-rm(nPeptides)
-```
-
-
-# Number of Proteins
-```{r}
-nProteins <- Generate_Graph_NumberOfProteins(diannReport, fancyLabels, colors)
-
-ggplot2::ggsave(
-  filename = paste0("number_proteins", ".png"),
-  path = "./data/output/",
-  plot = nProteins,
-  width = 4, height = 3,
-  units = "in", dpi = 300
-)
-
-rm(nProteins)
-```
-
-
-# Sparsity Matrix
-```{r}
-
-
-sparsityMatrix <- Generate_SparsityMatrix(diannMatrix, fancyLabels)
-
-ggplot2::ggsave(
-  filename = paste0("sparsityMatrix", ".png"),
-  path = "./data/output/",
-  plot = sparsityMatrix,
-  width = 4, height = 5,
-  units = "in", dpi = 300
-)
-
-rm(sparsityMatrix)
-```
-
-
-
 
 # Data Imputation
 ```{r}

@@ -1,0 +1,151 @@
+---
+title: "Run_Analysis"
+format: html
+---
+
+# Source everything :D
+```{r}
+# Load all functions
+source("./src/Source_Everything.R")
+```
+
+
+# Install Packages
+```{r}
+# List of needed packages
+packages <- c(
+  "diann",           # to extract the MaxLFQ matrix from DIANN report
+  "arrow",           # to read the report.parquet file
+  "here",            # to avoid the need for use the path while loading the data
+  "tidyverse",       # to do the data wrangling, plots, etc...
+  "janitor",         # to clean the column names
+  "ggpointdensity",  # to reconstruct the m/z density map
+  "naniar",          # for sparsity analysis
+  "factoextra",      # to plot the PCA
+  "patchwork",       # to combine plots
+  "lsa",             # to calculate the cosine similarity
+  "ggvenn",          # to plot the Venn diagram
+  "paletteer",       # to use the nice color palette
+  "ggtext",          # to provide Markdown and HTML formatting in ggplot2
+  "ggrepel",         # to avoid the overlapping of the labels in the plots
+  "kableExtra",      # to format the tables
+  "limma",           # to calculate the differential abundance
+  "DIAgui"           # (no comment provided)
+)
+
+Install_Packages(packages)
+```
+
+
+# Load samples names and relations
+```{r}
+
+# Name used for Run in the report.part
+# tibble::view(unique(arrow::read_parquet("./data/input/report.parquet")$Run))
+
+samplesDF <- read.csv2("./Data/input/sample_name_mapping.csv",
+              header = TRUE,
+              sep = ";")
+
+fancyLabels <- setNames(samplesDF$PrettyName, samplesDF$SampleName)
+
+samplesToCompare = list(
+  MixB_vs_MixA = "MixB - MixA"
+)
+
+
+colors <- c(
+  "#e31a1c","#1f78b4", "#008000")
+
+clusterColor <- c(
+  "#e31a1c","#1f78b4", "#008000")
+
+
+genesToHighLight_BlandAltman <- c("ACL4","EIF1B","CAMK1","NECTIN1","CDC25C","RFA3 ","NUP57","SPHK1","NUC1","CDPF1","TNFAIP1","RDL2 ","H3-3A","SDCCAG8","RAB43","OST3","YDR391C","CDNF ","PAAT","SHE2","MICALL2","STT4","YNL108C","LMO4 ","BHLHE40","TRIQK","YIF1","HPM1","SENP8","HBG2","ROT2")
+
+
+genesToCompare <- c("ACL4","EIF1B","CAMK1","NECTIN1","CDC25C")
+
+
+```
+
+
+```{r}
+Check_SampleName(samplesDF$SampleName)
+
+# report <- arrow::read_parquet("./data/input/report.parquet")
+
+diannReport <- Generate_DiannReport(samplesDF)
+diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
+
+```
+
+
+# Precursor x RT
+```{r}
+precursorRT <- Generate_Graph_PrecursorRT(diannReport, fancyLabels, colors, cols = 5)
+
+ggplot2::ggsave(
+  filename = paste0("Precursor_x_RT", ".png"),
+  path = "./data/output/basic/",
+  plot = precursorRT,
+  width = 20, height = 10,
+  units = "cm", dpi = 300
+)
+
+rm(precursorRT)
+```
+
+
+# Ion Cloud
+```{r}
+ionCloud <- Generate_IonCloud(diannReport, fancyLabels, cols = 5)
+
+ggplot2::ggsave(
+  filename = paste0("ionCloud", ".png"),
+  path = "./data/output/basic/",
+  plot = ionCloud,
+  width = 20, height = 10,
+  units = "cm", dpi = 300
+)
+
+rm(ionCloud)
+```
+
+
+# Number of Peptides and proteins
+```{r}
+nPeptides <- Generate_Graph_NumberOfPeptides(diannReport, fancyLabels, colors)
+nProteins <- Generate_Graph_NumberOfProteins(diannReport, labels = NULL, colors)
+
+pept_and_prot <- patchwork::wrap_plots(nPeptides, nProteins, ncol = 2)
+
+ggplot2::ggsave(
+  filename = paste0("number_peptides_and_proteins", ".png"),
+  path = "./data/output/basic/",
+  plot = pept_and_prot,
+  width = 20, height = 10,
+  units = "cm", dpi = 300
+)
+
+rm(nPeptides, nProteins, pept_and_prot)
+```
+
+
+
+# Sparsity Matrix
+```{r}
+
+
+sparsityMatrix <- Generate_SparsityMatrix(diannMatrix, fancyLabels)
+
+ggplot2::ggsave(
+  filename = paste0("sparsityMatrix", ".png"),
+  path = "./data/output/basic/",
+  plot = sparsityMatrix,
+  width = 12, height = 20,
+  units = "cm", dpi = 300
+)
+
+rm(sparsityMatrix)
+```
