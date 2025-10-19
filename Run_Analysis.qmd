@@ -75,33 +75,33 @@ genesToCompare <- c("ACL4","EIF1B","CAMK1","NECTIN1","CDC25C")
 
 
 ```{r}
-Check_SampleName(samplesDF$SampleName)
+Check_Names(samplesDF$SampleName)
 
-diannReport <- Generate_DiannReport(samplesDF)
-diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
+diannReport <- Make_DiannReport(samplesDF)
+diannMatrix <- Make_DiannMatrix(diannReport, header = "Genes")
 
 ```
 
 
 # Precursor x RT
 ```{r}
-precursorRT <- Generate_Graph_PrecursorRT(diannReport, fancyLabels, colors)
+chromatogram <- Plot_Chromatogram(diannReport, fancyLabels, colors)
 
 ggplot2::ggsave(
-  filename = paste0("Precursor_x_RT", ".png"),
+  filename = paste0("Chromatogram", ".png"),
   path = "./data/output/",
-  plot = precursorRT,
+  plot = chromatogram,
   width = 12, height = 5,
   units = "in", dpi = 300
 )
 
-rm(precursorRT)
+rm(chromatogram)
 ```
 
 
 # Ion Cloud
 ```{r}
-ionCloud <- Generate_IonCloud(diannReport, fancyLabels)
+ionCloud <- Plot_IonCloud(diannReport, fancyLabels)
 
 ggplot2::ggsave(
   filename = paste0("ionCloud", ".png"),
@@ -117,14 +117,14 @@ rm(ionCloud)
 
 # Number of Peptides and Proteins
 ```{r}
-nPeptides <- Generate_Graph_NumberOfPeptides(diannReport, fancyLabels, colors)
-nProteins <- Generate_Graph_NumberOfProteins(diannReport, labels = NULL, colors)
+nPeptides <- Plot_nPeptides(diannReport, fancyLabels, colors)
+nProteins <- Plot_nProteins(diannReport, labels = NULL, colors)
 
 pept_and_prot <- patchwork::wrap_plots(nPeptides, nProteins, ncol = 2)
 
 ggplot2::ggsave(
   filename = paste0("number_peptides_and_proteins", ".png"),
-  path = "./data/output/basic/",
+  path = "./data/output/",
   plot = pept_and_prot,
   width = 20, height = 10,
   units = "cm", dpi = 300
@@ -136,19 +136,17 @@ rm(nPeptides, nProteins, pept_and_prot)
 
 # Sparsity Matrix
 ```{r}
-
-
-sparsityMatrix <- Generate_SparsityMatrix(diannMatrix, fancyLabels)
+sparsity <- Plot_Sparsity(diannMatrix, fancyLabels)
 
 ggplot2::ggsave(
-  filename = paste0("sparsityMatrix", ".png"),
+  filename = paste0("Sparsity", ".png"),
   path = "./data/output/",
-  plot = sparsityMatrix,
+  plot = sparsity,
   width = 4, height = 5,
   units = "in", dpi = 300
 )
 
-rm(sparsityMatrix)
+rm(sparsity)
 ```
 
 
@@ -164,51 +162,51 @@ rm(sparsityMatrix)
 #   override = TRUE
 # )
 
-imputedMatrix <- Create_ImputationMatrix_StepWise(diannMatrix)
+imputedMatrix <- Impute_StepWise(diannMatrix)
 ```
 
 
 # Cosine Similarity
 ```{r}
-cosineSimilarity <- Generate_Graph_CosineSimilarity(
+cosine <- Plot_Cosine(
   imputedMatrix,
   fancyLabels
 )
 
 ggplot2::ggsave(
-  filename = paste0("cosine_Similarity", ".png"),
+  filename = paste0("Cosine", ".png"),
   path = "./data/output/",
-  plot = cosineSimilarity,
+  plot = cosine,
   width = 20, height = 12,
   units = "in", dpi = 300
 )
   
-rm(cosineSimilarity)
+rm(cosine)
 ```
 
 
 # PCA and K-Means
 ```{r}
-kmeans <- Generate_Graph_kmeans(imputedMatrix, numberOfClusters = 2)
-pca <- Generate_Graph_PCA(imputedMatrix, numberOfClusters = 2, clusterColors = clusterColor, labels = fancyLabels)
+kmeans <- Plot_kMeans(imputedMatrix, numberOfClusters = 2)
+pca <- Plot_PCA(imputedMatrix, numberOfClusters = 2, clusterColors = clusterColor, labels = fancyLabels)
 
-combine <- patchwork::wrap_plots(kmeans, pca, ncol = 2)
+kmeans_and_pca <- patchwork::wrap_plots(kmeans, pca, ncol = 2)
 
 ggplot2::ggsave(
-  filename = paste0("kMeans_PCA____TESTE", ".png"),
+  filename = paste0("kMeans_and_PCA", ".png"),
   path = "./data/output/",
-  plot = combine,
+  plot = kmeans_and_pca,
   width = 24, height = 10,
   units = "in", dpi = 300
 )
 
-rm(kMeansPCA)
+rm(kmeans, pca, kmeans_and_pca)
 ```
 
 
 # Coefficient of Variation
 ```{r}
-CVs <- Generate_Graph_Coef_Variation(
+CVs <- Plot_CV(
   imputedMatrix,
   conditions = unique(diannReport$condition),
   labelsName = fancyLabels,
@@ -230,9 +228,9 @@ rm(CVs)
 
 # Limma
 ```{r}
-limmaContrasts <- Create_ContrastFitQuantUMS(imputedMatrix, samplesToCompare)
+limmaContrasts <- Make_Limma_Contrast(imputedMatrix, samplesToCompare, method = "robust")
 
-limmaResult <- CompareLimmaResults(limmaContrasts, samplesToCompare)
+limmaResult <- Compare_Limma_Contrast(limmaContrasts, samplesToCompare)
 
 # #Save limma result in a .tsv file
 write.table(
@@ -261,7 +259,7 @@ rm(limmaContrasts, number_significantProteins)
 
 # Bland-Altman
 ```{r}
-blandAltmanPlot <- Generate_Graph_BlandAltman(
+blandAltman <- Plot_BlandAltman(
   limmaResult, 
   genesToHighLight_BlandAltman,
   labels = fancyLabels
@@ -270,20 +268,20 @@ blandAltmanPlot <- Generate_Graph_BlandAltman(
 ggplot2::ggsave(
   paste0("Bland_Altman", ".png"),
   path = "./data/output/",
-  plot = blandAltmanPlot,
+  plot = blandAltman,
   width = 25, height = 12,
   units = "in", dpi = 300,
   bg = "white"
 )
 
 
-rm(blandAltmanPlot)
+rm(blandAltman)
 ```
 
 
 # Compare Proteins Abundance
 ```{r}
-proteinComparisonPlot <- Compare_ProteinsAbundance(
+abundanceComparison <- Compare_Abundances(
   imputedMatrix,
   genes = genesToCompare,
   colorList = colors,
@@ -294,12 +292,12 @@ proteinComparisonPlot <- Compare_ProteinsAbundance(
 ggplot2::ggsave(
   paste0("Proteins_Comparison", ".png"),
   path = "./data/output/",
-  plot = proteinComparisonPlot,
+  plot = abundanceComparison,
   width = 25, height = 8,
   units = "in", dpi = 300,
   bg = "white"
 )
 
-rm(proteinComparisonPlot)
+rm(abundanceComparison)
 ```
 
