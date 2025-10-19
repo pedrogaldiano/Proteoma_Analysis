@@ -6,7 +6,7 @@
 #############
 
 
-Create_ImputarionMatrix_MICE <- function(dm,
+Impute_MICE <- function(dm,
                                          methodValue,
                                          override = TRUE,
                                          mValue = 5,

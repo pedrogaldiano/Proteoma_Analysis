@@ -5,7 +5,7 @@
 #############
 
 
-Generate_DiannMatrix <- function(dr, header = "Genes") {
+Make_DiannMatrix <- function(dr, header = "Genes") {
   
   if (header == "Protein") {
     

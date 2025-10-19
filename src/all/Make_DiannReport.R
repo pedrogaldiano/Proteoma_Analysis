@@ -5,7 +5,7 @@
 # and making some basic filtering
 #############
 
-Generate_DiannReport <- function(
+Make_DiannReport <- function(
     mapping,
     organism = "",
     parquetDIR = "./data/input/report.parquet"

@@ -10,7 +10,7 @@
 #############
 
 
-Check_SampleName <- function(samples) {
+Check_Names <- function(samples) {
   
   groups <- unique(stringr::str_remove_all(samples, "_REP_[[:alnum:]]+$"))
   

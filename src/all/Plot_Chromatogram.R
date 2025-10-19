@@ -3,7 +3,7 @@
 # plotted over the retention time (min) for each sample.
 
 
-Generate_Graph_PrecursorRT <- function(dr, labels, colors, cols = 3, rows = NULL) {
+Plot_Chromatogram <- function(dr, labels, colors, cols = 3, rows = NULL) {
  precursorRT <- ggplot2::ggplot(dr, ggplot2::aes(x = RT, y = Precursor.Quantity)) +
    ggplot2::geom_line(ggplot2::aes(color = condition), show.legend = FALSE) +
    ggplot2::scale_color_manual(values = colors) +

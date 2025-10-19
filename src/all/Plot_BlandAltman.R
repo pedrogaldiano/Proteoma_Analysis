@@ -15,7 +15,7 @@ Count_SignificantProteins <- function(limmaResults) {
 }
 
 
-Generate_Graph_BlandAltman <- function(limmaResults, genesToHighLight, labels, cols = 3) {
+Plot_BlandAltman <- function(limmaResults, genesToHighLight, labels, cols = 3) {
   
   signifProteins <- Count_SignificantProteins(limmaResults)
   

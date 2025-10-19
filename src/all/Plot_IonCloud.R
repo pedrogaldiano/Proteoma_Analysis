@@ -5,7 +5,7 @@
 # the scan range (m/z) for each sample.
 #############
 
-Generate_IonCloud <- function(dr, labels, cols = 3, rows = NULL ) {
+Plot_IonCloud <- function(dr, labels, cols = 3, rows = NULL ) {
 
   ionCloud <- ggplot2::ggplot(dr, ggplot2::aes(x = RT, y = Precursor.Mz)) +
     ggpointdensity::geom_pointdensity(size = 0.1,

@@ -4,7 +4,7 @@
 # Remove proteins where the missing value is above a threshold
 #############
 
-FilterMissingness <- function(data, threshold) {
+Acceptable_Missing <- function(data, threshold) {
 
   prot_miss <- NULL
   

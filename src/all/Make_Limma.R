@@ -4,7 +4,7 @@
 #This file contain all limma related functions
 #############
 
-Create_ContrastFitQuantUMS <- function(imtx, comparisonList, method = "robust" ) {
+Make_Limma_Contrast <- function(imtx, comparisonList, method = "robust" ) {
 
   if (!method %in% c("robust", "ls"))
   {
@@ -38,7 +38,7 @@ Create_ContrastFitQuantUMS <- function(imtx, comparisonList, method = "robust" )
 }
 
 
-ApplyLimmaTopTable <- function(contrastFitQuantUMS, comparison) {
+Limma_TopTable <- function(contrastFitQuantUMS, comparison) {
   
   limmaResult <- limma::topTable(contrastFitQuantUMS,
                                  coef = comparison,
@@ -58,13 +58,13 @@ ApplyLimmaTopTable <- function(contrastFitQuantUMS, comparison) {
   return(limmaResult)
 }
 
-CompareLimmaResults <- function(contrastFit,
+Compare_Limma_Contrast <- function(contrastFit,
                                 comparisonList) {
   
   resultQuantUMS <- list() # Result from samples comparison
 
   for (item in names(comparisonList)) {
-    limmaResult <- ApplyLimmaTopTable(contrastFit, item)
+    limmaResult <- Limma_TopTable(contrastFit, item)
     resultQuantUMS <- dplyr::bind_rows(resultQuantUMS,limmaResult)
   }
   

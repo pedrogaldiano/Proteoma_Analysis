@@ -189,7 +189,6 @@ rm(cosineSimilarity)
 
 # PCA and K-Means
 ```{r}
-
 kmeans <- Generate_Graph_kmeans(imputedMatrix, numberOfClusters = 2)
 pca <- Generate_Graph_PCA(imputedMatrix, numberOfClusters = 2, clusterColors = clusterColor, labels = fancyLabels)
 

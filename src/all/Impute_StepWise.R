@@ -17,7 +17,7 @@
 
 #############
 
-Create_ImputationMatrix_StepWise <- function(dm) {
+Impute_StepWise <- function(dm) {
   
   matrixForImputation <- log2(dm + 1)
   groupLabels <- stringr::str_remove(colnames(matrixForImputation), "_REP_....$") #"_REP_\\d+"

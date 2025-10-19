@@ -31,7 +31,7 @@ CV_Matrix <- function(data, condition) {
 }
 
 
-Generate_Graph_Coef_Variation <- function(imtx,
+Plot_CV <- function(imtx,
                                           conditions,
                                           labelsName,
                                           colorList) {
