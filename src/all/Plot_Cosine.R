@@ -4,7 +4,7 @@
 #Compares graphically the difference between samples using cosine similarity
 #############
 
-Generate_Graph_CosineSimilarity <- function(imtx, labels) {
+Plot_Cosine <- function(imtx, labels) {
   cosine <- as.data.frame(lsa::cosine(imtx))
   cosine <- tibble::rownames_to_column(cosine, var = "Sample")
   cosine <- tidyr::pivot_longer(cosine, -Sample, names_to = "Match")

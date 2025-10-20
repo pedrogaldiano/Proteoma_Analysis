@@ -27,7 +27,7 @@ CV_Matrix <- function(data, condition) {
 }
 
 
-Generate_Graph_Coef_Variation <- function(
+Plot_CV <- function(
   imtx,
   conditions,
   labelsName,
