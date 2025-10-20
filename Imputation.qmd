@@ -16,6 +16,10 @@ Check_SampleName(samplesDF$SampleName)
 
 diannReport <- Generate_DiannReport(samplesDF, organism = "")
 diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
+
+
+diannMatrix_log <- log2(diannMatrix + 1)
+result <- diannMatrix_log
 ```
 
 
@@ -23,43 +27,48 @@ diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
 
 # Impute "zero"
 ```{r}
-diannMatrix_log <- log2(diannMatrix + 1)
-
 # Imputed 0.1 to the NA in the diannMatrix
 zeros <- ifelse(is.na(diannMatrix_log), 0.1, diannMatrix_log)
 write.csv(zeros, "./data/output/matrices/imputed_zeros.csv")
 ```
 
-# Impute by Column, Row and Group
-```{r}
-diannMatrix_log <- log2(diannMatrix + 1)
-result_by_group <- result_by_row <- result_by_column <- diannMatrix_log
 
 # Mean by column
+```{r}
+result <- diannMatrix_log
+
 for (j in 1:ncol(diannMatrix_log)) {
   if (any(is.na(diannMatrix_log[, j]))) {
 
     x <- mean(diannMatrix_log[, j], na.rm = TRUE)
-    result_by_column[, j] <- ifelse(is.na(diannMatrix_log[, j]), x, diannMatrix_log[, j])
+    result[, j] <- ifelse(is.na(diannMatrix_log[, j]), x, diannMatrix_log[, j])
   }
 }
 
-write.csv(result_by_column, "./data/output/matrices/imputed_mean_by_column.csv")
+write.csv(result, "./data/output/matrices/imputed_mean_by_column.csv")
+```
 
 
 # Mean by row
+ ```{r}
+result <- diannMatrix_log
+
 for (i in 1:nrow(diannMatrix_log)) {
   if (any(is.na(diannMatrix_log[i, ]))) {
 
     x <- mean(diannMatrix_log[i, ], na.rm = TRUE)
-    result_by_row[i, ] <- ifelse(is.na(diannMatrix_log[i, ]), x, diannMatrix_log[i, ])
+    result[i, ] <- ifelse(is.na(diannMatrix_log[i, ]), x, diannMatrix_log[i, ])
   }
 }
 
-write.csv(result_by_row, "./data/output/matrices/imputed_mean_by_row.csv" )
+write.csv(result, "./data/output/matrices/imputed_mean_by_row.csv" )
+```
 
 
 # Mean by group
+ ```{r}
+result <- diannMatrix_log
+
 groups <- unique(diannReport$condition)
 for (group in groups) {
   cols <- stringr::str_detect(colnames(diannMatrix_log), group)
@@ -68,20 +77,20 @@ for (group in groups) {
     if (all(is.na(diannMatrix_log[i, cols]))) {
       
       # If all the group is NA, impute 0.1
-      result_by_group[i, cols] <- ifelse(is.na(diannMatrix_log[i, cols]), 0.1, diannMatrix_log[i,cols])
+      result[i, cols] <- ifelse(is.na(diannMatrix_log[i, cols]), 0.1, diannMatrix_log[i,cols])
 
     } else if (any(is.na(diannMatrix_log[i, cols]))) {
       
       # If some of the group is NA, impute the mean
       x <- mean(diannMatrix_log[i, cols], na.rm = TRUE)
-
-      result_by_group[i, cols] <- ifelse(is.na(diannMatrix_log[i, cols]), x, diannMatrix_log[i, cols])
+      result[i, cols] <- ifelse(is.na(diannMatrix_log[i, cols]), x, diannMatrix_log[i, cols])
     }
   }
 }
 
-write.csv(result_by_group, "./data/output/matrices/imputed_mean_by_group.csv" )
+write.csv(result, "./data/output/matrices/imputed_mean_by_group.csv" )
 
+#To do: separar yeast de Hela até o limma (no limma junta tudo)
 
 # diannMatrix_log
 # write.csv(diannMatrix_log, "./data/output/matrices/diannMatrix_log.csv" )
@@ -89,15 +98,19 @@ write.csv(result_by_group, "./data/output/matrices/imputed_mean_by_group.csv" )
 ```
 
 
-# Data Imputation
-```{r}
-# imputedMatrix <- Create_ImputarionMatrix_MICE(
-#   diannMatrix,
-#   methodValue = "mean",
-#   mValue = 1,
-#   maxitValue = 3,
-#   override = TRUE
-# )
+ # Mean by protein in group
+ ```{r}
+result <- diannMatrix_log
 
-# imputedMatrix <- Create_ImputationMatrix_StepWise(diannMatrix)
-```
+groups <- unique(diannReport$condition)
+for (group in groups) {
+  cols <- stringr::str_detect(colnames(diannMatrix), group)
+
+  x <- mice::mice(diannMatrix_log[, cols], method = "mean")
+  x <- as.matrix(mice::complete(x))
+
+  result[, cols] <- x
+}
+
+write.csv(result, "./data/output/matrices/imputed_by_protein_in_group.csv" )
+ ```
