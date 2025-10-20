@@ -65,12 +65,9 @@ ggplot2::ggsave(
 rm(ionCloud)
 ```
 
-# Number of Peptides and proteins
 
+# Number of Peptides
 ```{r}
-#TODO: make the inside count bigger
-#TODO: change the color for one more "light"
-
 theme <- ggplot2::theme(
       plot.title = ggplot2::element_text(size = 12, face = "bold", vjust = 0.5),
       plot.subtitle = ggplot2::element_text(size = 8)
@@ -86,28 +83,44 @@ Y_nPeptides <- Plot_nPeptides(yeast_DiannReport, fancyLabels, colors) +
 H_nPeptides <- Plot_nPeptides(human_DiannReport, fancyLabels, colors) +
     ggplot2::labs(title = "(C) HeLa") + theme
 
-combine <- patchwork::wrap_plots(HL_nPeptides, Y_nPeptides, H_nPeptides, nrow = 1)
-
+combine_Pept <- patchwork::wrap_plots(HL_nPeptides, Y_nPeptides, H_nPeptides, nrow = 1)
 
 ggplot2::ggsave(
   filename = paste0("nPeptides", ".png"),
   path = "./data/output/basic/",
-  plot = combine,
+  plot = combine_Pept,
   width = 30, height = 12,
   units = "cm", dpi = 300)
 
+rm(theme, HL_nPeptides, Y_nPeptides, H_nPeptides, combine_Pept)
+```
 
+# Number of Proteins
+```{r}
+theme <- ggplot2::theme(
+      plot.title = ggplot2::element_text(size = 12, face = "bold", vjust = 0.5),
+      plot.subtitle = ggplot2::element_text(size = 8)
+      )
 
-HL_nProteins <- Plot_nProteins(diannReport, labels = NULL, colors)
+HL_nProteins <- Plot_nProteins(diannReport, labels = fancyLabels, colors) +
+    ggplot2::labs(title = "(A) HeLa + Yeast") + theme
 
-Y_nProteins <- Plot_nProteins(yeast_DiannReport, labels = NULL, colors)
+Y_nProteins <- Plot_nProteins(yeast_DiannReport, labels = fancyLabels, colors) +
+    ggplot2::labs(title = "(B) Yeast") + theme
 
-H_nProteins <- Plot_nProteins(human_DiannReport, labels = NULL, colors)
+H_nProteins <- Plot_nProteins(human_DiannReport, labels = fancyLabels, colors) +
+    ggplot2::labs(title = "(C) HeLa") + theme
 
+combine_Prot <- patchwork::wrap_plots(HL_nProteins, Y_nProteins, H_nProteins)
 
+ggplot2::ggsave(
+  filename = paste0("nProteins", ".png"),
+  path = "./data/output/basic/",
+  plot = combine_Prot,
+  width = 30, height = 12,
+  units = "cm", dpi = 300)
 
-)
-
+rm(HL_nProteins, Y_nProteins, H_nProteins, combine_Prot)
 ```
 
 # Sparsity Matrix

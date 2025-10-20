@@ -27,9 +27,9 @@ samplesToCompare = list(
 
 
 colors <- c(
-  "#e31a1c",
-  "#1f78b4",
-  "#008000"
+  "#A3CCDA",
+  "#BDE3C3",
+  "#FFCF71"
 )
 
 clusterColor <- c(
