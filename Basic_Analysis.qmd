@@ -18,6 +18,11 @@ Check_SampleName(samplesDF$SampleName)
 
 
 diannReport <- Make_DiannReport(samplesDF, organism = "")
+yeast_DiannReport <- dplyr::filter(diannReport, stringr::str_detect(Protein.Names, "YEAST"))
+human_DiannReport <- dplyr::filter(diannReport, stringr::str_detect(Protein.Names, "HUMAN"))
+
+
+
 diannMatrix <- Make_DiannMatrix(diannReport, header = "Protein.Names")
 
 
@@ -29,8 +34,6 @@ diannMatrix <- Make_DiannMatrix(diannReport, header = "Protein.Names")
 chromatogram <- Plot_Chromatogram(diannReport, fancyLabels, colors, cols = 5) +
   ggplot2::labs(title = "HeLa + Yeast") +
   ggplot2::theme(plot.title = ggplot2::element_text(size = 12, face = "bold", vjust = 0.5, hjust = 0.5))
-
-plot(chromatogram)
 
 
 ggplot2::ggsave(
@@ -47,7 +50,9 @@ rm(chromatogram)
 # Ion Cloud
 
 ```{r}
-ionCloud <- Plot_IonCloud(diannReport, fancyLabels, cols = 5)
+ionCloud <- Plot_IonCloud(diannReport, fancyLabels, cols = 5) +
+  ggplot2::labs(title = "HeLa + Yeast") +
+  ggplot2::theme(plot.title = ggplot2::element_text(size = 12, face = "bold", vjust = 0.5, hjust = 0.5))
 
 ggplot2::ggsave(
   filename = paste0("ionCloud", ".png"),
@@ -63,26 +68,52 @@ rm(ionCloud)
 # Number of Peptides and proteins
 
 ```{r}
-nPeptides <- Plot_nPeptides(diannReport, fancyLabels, colors)
-nProteins <- Plot_nProteins(diannReport, labels = NULL, colors)
+#TODO: make the inside count bigger
+#TODO: change the color for one more "light"
 
-combine <- patchwork::wrap_plots(nPeptides, nProteins, ncol = 2)
+theme <- ggplot2::theme(
+      plot.title = ggplot2::element_text(size = 12, face = "bold", vjust = 0.5),
+      plot.subtitle = ggplot2::element_text(size = 8)
+      )
+
+# Count the peptides for:  Yeast and Human combined, Yeast only, and Human only
+HL_nPeptides <- Plot_nPeptides(diannReport, fancyLabels, colors) +
+    ggplot2::labs(title = "(A) HeLa + Yeast") + theme
+
+Y_nPeptides <- Plot_nPeptides(yeast_DiannReport, fancyLabels, colors) +
+    ggplot2::labs(title = "(B) Yeast") + theme
+
+H_nPeptides <- Plot_nPeptides(human_DiannReport, fancyLabels, colors) +
+    ggplot2::labs(title = "(C) HeLa") + theme
+
+combine <- patchwork::wrap_plots(HL_nPeptides, Y_nPeptides, H_nPeptides, nrow = 1)
+
 
 ggplot2::ggsave(
-  filename = paste0("number_peptides_and_proteins", ".png"),
+  filename = paste0("nPeptides", ".png"),
   path = "./data/output/basic/",
   plot = combine,
-  width = 20, height = 10,
-  units = "cm", dpi = 300
+  width = 30, height = 12,
+  units = "cm", dpi = 300)
+
+
+
+HL_nProteins <- Plot_nProteins(diannReport, labels = NULL, colors)
+
+Y_nProteins <- Plot_nProteins(yeast_DiannReport, labels = NULL, colors)
+
+H_nProteins <- Plot_nProteins(human_DiannReport, labels = NULL, colors)
+
+
+
 )
 
-rm(nPeptides, nProteins, combine)
 ```
 
 # Sparsity Matrix
 
 ```{r}
-sparsity <- Plot_Sparsity(diannMatrix, fancyLabels)
+  sparsity <- Plot_Sparsity(diannMatrix, fancyLabels)
 
 ggplot2::ggsave(
   filename = paste0("sparsity", ".png"),
