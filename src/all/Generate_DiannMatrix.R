@@ -9,8 +9,6 @@
 #  Protein.Names -> Protein name + organism
 #############
 
-# TODO: id.header = "Protein.Names"
-
 Generate_DiannMatrix <- function(dr, header = c("Genes", "Protein.Group", "Protein.Names")) {
   
 header <- match.arg(header)
