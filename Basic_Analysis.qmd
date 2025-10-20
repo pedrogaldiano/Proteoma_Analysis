@@ -23,7 +23,10 @@ human_DiannReport <- dplyr::filter(diannReport, stringr::str_detect(Protein.Name
 
 
 
-diannMatrix <- Make_DiannMatrix(diannReport, header = "Protein.Names")
+#TODO: maybe I should use "Protein.Names" rather than "Genes", but I think since I have alreary filtered it doesn't really matter
+diannMatrix <- Make_DiannMatrix(diannReport, header = "Genes")
+yeast_DiannMatrix <- Make_DiannMatrix(yeast_DiannReport, header = "Genes")
+human_DiannMatrix <- Make_DiannMatrix(human_DiannReport, header = "Genes")
 
 
 
@@ -120,21 +123,36 @@ ggplot2::ggsave(
   width = 30, height = 12,
   units = "cm", dpi = 300)
 
-rm(HL_nProteins, Y_nProteins, H_nProteins, combine_Prot)
+rm(theme, HL_nProteins, Y_nProteins, H_nProteins, combine_Prot)
 ```
 
 # Sparsity Matrix
 
 ```{r}
-  sparsity <- Plot_Sparsity(diannMatrix, fancyLabels)
+theme <- ggplot2::theme(
+      plot.title = ggplot2::element_text(size = 25, face = "bold", vjust = 0.5)#,
+      # plot.subtitle = ggplot2::element_text(size = 8)
+      )
+
+  HL_sparsity <- Plot_Sparsity(diannMatrix, fancyLabels) +
+    ggplot2::labs(title = "(A) HeLa + Yeast") + theme
+
+  Y_sparsity <- Plot_Sparsity(yeast_DiannMatrix, fancyLabels) +
+    ggplot2::labs(title = "(B) Yeast") + theme
+
+  H_sparsity <- Plot_Sparsity(human_DiannMatrix, fancyLabels) +
+    ggplot2::labs(title = "(C) HeLa") + theme
+
+
+combine_sparsity <- patchwork::wrap_plots(HL_sparsity, Y_sparsity, H_sparsity)
 
 ggplot2::ggsave(
   filename = paste0("sparsity", ".png"),
   path = "./data/output/basic/",
-  plot = sparsity,
-  width = 12, height = 20,
+  plot = combine_sparsity,
+  width = 36, height = 26,
   units = "cm", dpi = 300
 )
 
-rm(sparsity)
+rm(HL_sparsity, Y_sparsity, H_sparsity, combine_sparsity, theme)
 ```
