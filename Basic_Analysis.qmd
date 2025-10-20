@@ -18,14 +18,20 @@ Check_SampleName(samplesDF$SampleName)
 
 
 diannReport <- Make_DiannReport(samplesDF, organism = "")
-diannMatrix <- Make_DiannMatrix(diannReport, header = "Genes")
+diannMatrix <- Make_DiannMatrix(diannReport, header = "Protein.Names")
+
+
 
 ```
 
 # Precursor x RT
-
 ```{r}
-chromatogram <- Plot_Chromatogram(diannReport, fancyLabels, colors, cols = 5)
+chromatogram <- Plot_Chromatogram(diannReport, fancyLabels, colors, cols = 5) +
+  ggplot2::labs(title = "HeLa + Yeast") +
+  ggplot2::theme(plot.title = ggplot2::element_text(size = 12, face = "bold", vjust = 0.5, hjust = 0.5))
+
+plot(chromatogram)
+
 
 ggplot2::ggsave(
   filename = paste0("Chromatogram", ".png"),
