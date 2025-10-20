@@ -22,6 +22,7 @@ zeros <- as.matrix(tibble::column_to_rownames(
 
 # To avoid having to switch everywhere
 imputed <- zeros
+fileName <- "Zeros_HeLa_+_Yeast"
 ```
 
 # Quality Analysis
@@ -33,25 +34,51 @@ cosineSimilarity <- Generate_Graph_CosineSimilarity(imputed, fancyLabels)
 kmeans <- Generate_Graph_kmeans(imputed, numberOfClusters = 2)
 
 # PCA
-pca <- Generate_Graph_PCA(imputed, numberOfClusters = 2, clusterColors = clusterColor, labels = fancyLabels)
+pca <- Generate_Graph_PCA(
+  imputed,
+  numberOfClusters = 2,
+  clusterColors = clusterColor,
+  labels = fancyLabels
+)
 
 # Coefficient of Variation
-CVs <- Generate_Graph_Coef_Variation(imputed, unique(diannReport$condition), fancyLabels, colors)
+CVs <- Generate_Graph_Coef_Variation(
+  imputed,
+  unique(diannReport$condition),
+  fancyLabels,
+  colors
+)
 
 
 # TODO: Add a title at the combined plot with the Gene filter (HUMAN or Yeast) and the type of imputation used
 
-combine <- patchwork::wrap_plots(list(cosineSimilarity, kmeans, pca, CVs), cols = 4, nrow =)
+title <- stringr::str_replace_all(fileName, "_", " ")
+
+combine <- patchwork::wrap_plots(
+  list(cosineSimilarity, kmeans, pca, CVs),
+  cols = 4,
+  nrow = 1
+) +
+  patchwork::plot_annotation(
+    title = paste0(title),
+    tag_levels = "A",
+    theme = ggplot2::theme(
+      plot.title = ggplot2::element_text(face = "bold", size = "20"),
+    )
+  )
+
 
 ggplot2::ggsave(
-  filename = paste0("quality_zeros", ".png"),
+  filename = paste0("quality_", fileName, ".png"),
   path = "./data/output/quality/",
   plot = combine,
-  width = 80, height = 30,
-  units = "cm", dpi = 300
+  width = 80,
+  height = 30,
+  units = "cm",
+  dpi = 300
 )
-  
-rm(cosineSimilarity, kmeans, pca, CVs, combine)
+
+# rm(cosineSimilarity, kmeans, pca, CVs, combine)
 ```
 
 
