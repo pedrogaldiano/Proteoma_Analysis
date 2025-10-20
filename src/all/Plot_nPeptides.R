@@ -25,7 +25,7 @@ Plot_nPeptides <- function(dr, labels, colors) {
     ggplot2::geom_text(
       ggplot2::aes(label = n_peptides, hjust = +1),
       color = "black",
-      size = 2,
+      size = 2.7,
       fontface = "bold"
     ) +
     ggplot2::labs(
