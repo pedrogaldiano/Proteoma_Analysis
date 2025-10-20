@@ -8,7 +8,7 @@ format: html
 source("./src/Source_Everything.R") # Load all functions
 source("./LoadSamples.R") # Load samples and relations
 
-diannReport <- Generate_DiannReport(samplesDF, organism = "")
+diannReport <- Make_DiannReport(samplesDF, organism = "")
 
 # Install_Packages(packages) 
 ```
@@ -27,21 +27,20 @@ imputed <- zeros
 # Quality Analysis
 ```{r}
 # Cosine Similarity
-cosineSimilarity <- Generate_Graph_CosineSimilarity(imputed, fancyLabels)
+cosine <- Plot_Cosine(imputed, fancyLabels)
 
 # k-Means
-kmeans <- Generate_Graph_kmeans(imputed, numberOfClusters = 2)
+kmeans <- Plot_kMeans(imputed, numberOfClusters = 2)
 
 # PCA
-pca <- Generate_Graph_PCA(
-  imputed,
+pca <- Plot_PCA(imputed,
   numberOfClusters = 2,
   clusterColors = clusterColor,
   labels = fancyLabels
 )
 
 # Coefficient of Variation
-CVs <- Generate_Graph_Coef_Variation(
+CVs <- Plot_CV(
   imputed,
   unique(diannReport$condition),
   fancyLabels,
@@ -49,7 +48,7 @@ CVs <- Generate_Graph_Coef_Variation(
 )
 
 combine <- patchwork::wrap_plots(
-  list(cosineSimilarity, kmeans, pca, CVs),
+  list(cosine, kmeans, pca, CVs),
   cols = 4,
   nrow = 1
 ) +
@@ -57,7 +56,7 @@ combine <- patchwork::wrap_plots(
     title = "Zeros | HeLa + Yeast",
     tag_levels = "A",
     theme = ggplot2::theme(
-      plot.title = ggplot2::element_text(face = "bold", size = "35", hjust = 0.5),
+      plot.title = ggplot2::element_text(face = "bold", size = "35", hjust = 0.5, vjust = 0.5),
     )
   )
 
@@ -72,7 +71,7 @@ ggplot2::ggsave(
   dpi = 300
 )
 
-# rm(cosineSimilarity, kmeans, pca, CVs, combine)
+rm(cosine, kmeans, pca, CVs, combine)
 ```
 
 
@@ -82,9 +81,9 @@ ggplot2::ggsave(
 
 # Limma
 ```{r}
-limmaContrasts <- Create_ContrastFitQuantUMS(imputedMatrix, samplesToCompare, method = "robust")
+limmaContrasts <- Make_Limma_Contrast(imputed, samplesToCompare, method = "robust")
 
-limmaResult <- CompareLimmaResults(limmaContrasts, samplesToCompare)
+limmaResult <- Compare_Limma_Results(limmaContrasts, samplesToCompare)
 
 # #Save limma result in a .tsv file
 write.table(
@@ -112,7 +111,7 @@ rm(limmaContrasts, number_significantProteins)
 
 # Bland-Altman
 ```{r}
-blandAltmanPlot <- Generate_Graph_BlandAltman(
+blandAltmanPlot <- Plot_BlandAltman(
   limmaResult, 
   genesToHighLight_BlandAltman,
   labels = fancyLabels
@@ -134,8 +133,8 @@ rm(blandAltmanPlot)
 
 # Compare Proteins Abundance
 ```{r}
-proteinComparisonPlot <- Compare_ProteinsAbundance(
-  imputedMatrix,
+proteinComparisonPlot <- Compare_Abundance(
+  imputed,
   genes = genesToCompare,
   colorList = colors,
   labels = fancyLabels,

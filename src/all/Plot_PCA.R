@@ -4,7 +4,7 @@
 # Counting the number of unique peptides per run
 #############
 
-Generate_Graph_PCA <- function(
+Plot_PCA <- function(
   imtx,
   numberOfClusters,
   clusterColors,

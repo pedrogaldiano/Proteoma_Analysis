@@ -14,8 +14,8 @@ source("./LoadSamples.R") # Load samples and relations
 ```{r}
 Check_SampleName(samplesDF$SampleName)
 
-diannReport <- Generate_DiannReport(samplesDF, organism = "")
-diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
+diannReport <- Make_DiannReport(samplesDF, organism = "")
+diannMatrix <- Make_DiannMatrix(diannReport, header = "Genes")
 
 
 diannMatrix_log <- log2(diannMatrix + 1)
