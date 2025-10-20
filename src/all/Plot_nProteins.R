@@ -1,20 +1,20 @@
 #############
-# Generate Number of Peptides  ----
+# Generate Number of Proteins  ----
 
-# Counting the number of unique peptides per run
+# Counting the number of unique proteins per run
 #############
 
-Generate_Graph_NumberOfPeptides <- function(dr, labels, colors) {
-  totalUniquePeptides <- dplyr::n_distinct(dr$Stripped.Sequence)
+Plot_nProteins <- function(dr, labels, colors) {
+  totalUniqueProteins <- dplyr::n_distinct(dr$Protein.Ids)
 
-  peptByRun <- dplyr::summarise(
+  protByRun <- dplyr::summarise(
     dplyr::group_by(dr, Run, condition),
-    n_peptides = dplyr::n_distinct(Stripped.Sequence)
+    n_proteins = dplyr::n_distinct(Protein.Ids)
   )
 
-  peptidesPlot <- ggplot2::ggplot(
-    peptByRun,
-    ggplot2::aes(y = Run, x = n_peptides, fill = condition)
+  proteinsPlot <- ggplot2::ggplot(
+    protByRun,
+    ggplot2::aes(y = Run, x = n_proteins, fill = condition)
   ) +
     ggplot2::geom_bar(
       stat = "identity",
@@ -23,7 +23,7 @@ Generate_Graph_NumberOfPeptides <- function(dr, labels, colors) {
     ) +
     ggplot2::scale_fill_manual(values = colors) +
     ggplot2::geom_text(
-      ggplot2::aes(label = n_peptides, hjust = +1),
+      ggplot2::aes(label = n_proteins, hjust = +1),
       color = "black",
       size = 2,
       fontface = "bold"
@@ -31,8 +31,8 @@ Generate_Graph_NumberOfPeptides <- function(dr, labels, colors) {
     ggplot2::labs(
       y = NULL,
       x = NULL,
-      subtitle = paste(totalUniquePeptides, "unique peptides"),
-      title = "Number of peptides",
+      subtitle = paste(totalUniqueProteins, "unique proteins"),
+      title = "Number of proteins",
       fill = NULL
     ) +
     ggplot2::scale_y_discrete(labels = labels) +
@@ -46,5 +46,5 @@ Generate_Graph_NumberOfPeptides <- function(dr, labels, colors) {
       panel.background = ggplot2::element_blank()
     )
 
-  return(peptidesPlot)
+  return(proteinsPlot)
 }

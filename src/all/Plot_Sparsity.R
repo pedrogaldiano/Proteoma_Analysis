@@ -2,7 +2,7 @@
 # Generate Sparsity Matrix  ----
 #############
 
-Generate_SparsityMatrix <- function(dm, labels) {
+Plot_Sparsity <- function(dm, labels) {
   #Filter to use only labels that exist in the matrix
   labels <- labels[colnames(dm)]
 

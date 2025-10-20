@@ -2,7 +2,7 @@
 # Reconstruction of the ion chromatograms, the precursor quantity is
 # plotted over the retention time (min) for each sample.
 
-Generate_Graph_PrecursorRT <- function(
+Plot_Chromatogram <- function(
   dr,
   labels,
   colors,

@@ -3,7 +3,7 @@
 
 #############
 
-Compare_ProteinsAbundance <- function(
+Compare_Abundance <- function(
   imtx,
   genes,
   colorList,
