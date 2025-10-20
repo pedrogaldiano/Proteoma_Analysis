@@ -63,7 +63,7 @@ combine <- patchwork::wrap_plots(
     title = paste0(title),
     tag_levels = "A",
     theme = ggplot2::theme(
-      plot.title = ggplot2::element_text(face = "bold", size = "20"),
+      plot.title = ggplot2::element_text(face = "bold", size = "35", hjust = 0.5),
     )
   )
 

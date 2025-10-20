@@ -4,6 +4,8 @@
 # Create a Diann Matrix using the package Diann
 #############
 
+# TODO: id.header = "Protein.Names"
+
 Generate_DiannMatrix <- function(dr, header = "Genes") {
   if (header == "Protein") {
     result <- diann::diann_matrix(
