@@ -17,31 +17,31 @@ source("./LoadSamples.R") # Load samples and relations
 Check_SampleName(samplesDF$SampleName)
 
 
-diannReport <- Generate_DiannReport(samplesDF, organism = "")
-diannMatrix <- Generate_DiannMatrix(diannReport, header = "Genes")
+diannReport <- Make_DiannReport(samplesDF, organism = "")
+diannMatrix <- Make_DiannMatrix(diannReport, header = "Genes")
 
 ```
 
 # Precursor x RT
 
 ```{r}
-precursorRT <- Generate_Graph_PrecursorRT(diannReport, fancyLabels, colors, cols = 5)
+chromatogram <- Plot_Chromatogram(diannReport, fancyLabels, colors, cols = 5)
 
 ggplot2::ggsave(
-  filename = paste0("Precursor_x_RT", ".png"),
+  filename = paste0("Chromatogram", ".png"),
   path = "./data/output/basic/",
-  plot = precursorRT,
+  plot = chromatogram,
   width = 20, height = 10,
   units = "cm", dpi = 300
 )
 
-rm(precursorRT)
+rm(chromatogram)
 ```
 
 # Ion Cloud
 
 ```{r}
-ionCloud <- Generate_IonCloud(diannReport, fancyLabels, cols = 5)
+ionCloud <- Plot_IonCloud(diannReport, fancyLabels, cols = 5)
 
 ggplot2::ggsave(
   filename = paste0("ionCloud", ".png"),
@@ -57,34 +57,34 @@ rm(ionCloud)
 # Number of Peptides and proteins
 
 ```{r}
-nPeptides <- Generate_Graph_NumberOfPeptides(diannReport, fancyLabels, colors)
-nProteins <- Generate_Graph_NumberOfProteins(diannReport, labels = NULL, colors)
+nPeptides <- Plot_nPeptides(diannReport, fancyLabels, colors)
+nProteins <- Plot_nProteins(diannReport, labels = NULL, colors)
 
-pept_and_prot <- patchwork::wrap_plots(nPeptides, nProteins, ncol = 2)
+combine <- patchwork::wrap_plots(nPeptides, nProteins, ncol = 2)
 
 ggplot2::ggsave(
   filename = paste0("number_peptides_and_proteins", ".png"),
   path = "./data/output/basic/",
-  plot = pept_and_prot,
+  plot = combine,
   width = 20, height = 10,
   units = "cm", dpi = 300
 )
 
-rm(nPeptides, nProteins, pept_and_prot)
+rm(nPeptides, nProteins, combine)
 ```
 
 # Sparsity Matrix
 
 ```{r}
-sparsityMatrix <- Generate_SparsityMatrix(diannMatrix, fancyLabels)
+sparsity <- Plot_Sparsity(diannMatrix, fancyLabels)
 
 ggplot2::ggsave(
-  filename = paste0("sparsityMatrix", ".png"),
+  filename = paste0("sparsity", ".png"),
   path = "./data/output/basic/",
-  plot = sparsityMatrix,
+  plot = sparsity,
   width = 12, height = 20,
   units = "cm", dpi = 300
 )
 
-rm(sparsityMatrix)
+rm(sparsity)
 ```

@@ -19,9 +19,9 @@ samplesDF <- read.csv2(
 fancyLabels <- setNames(samplesDF$PrettyName, samplesDF$SampleName)
 
 samplesToCompare = list(
-  MixA_vs_MixB = "MixA - MixB",
-  MixA_vs_MixC = "MixA - MixC",
-  MixB_vs_MixC = "MixB - MixC"
+  MixA_vs_MixB = "Mix_A - Mix_B",
+  MixA_vs_MixC = "Mix_A - Mix_C",
+  MixB_vs_MixC = "Mix_B - Mix_C"
 )
 
 
