@@ -4,7 +4,6 @@
 # Counting the number of unique peptides per run
 #############
 
-# TODO:: This should be broken down in 2 or 3 functions
 Generate_Graph_kmeans <- function(imtx, numberOfClusters, seed = 123) {
   pcaComplete <- prcomp(t(imtx), scale = TRUE)
 

@@ -22,7 +22,6 @@ zeros <- as.matrix(tibble::column_to_rownames(
 
 # To avoid having to switch everywhere
 imputed <- zeros
-fileName <- "Zeros_HeLa_+_Yeast"
 ```
 
 # Quality Analysis
@@ -49,18 +48,13 @@ CVs <- Generate_Graph_Coef_Variation(
   colors
 )
 
-
-# TODO: Add a title at the combined plot with the Gene filter (HUMAN or Yeast) and the type of imputation used
-
-title <- stringr::str_replace_all(fileName, "_", " ")
-
 combine <- patchwork::wrap_plots(
   list(cosineSimilarity, kmeans, pca, CVs),
   cols = 4,
   nrow = 1
 ) +
   patchwork::plot_annotation(
-    title = paste0(title),
+    title = "Zeros | HeLa + Yeast",
     tag_levels = "A",
     theme = ggplot2::theme(
       plot.title = ggplot2::element_text(face = "bold", size = "35", hjust = 0.5),
@@ -69,7 +63,7 @@ combine <- patchwork::wrap_plots(
 
 
 ggplot2::ggsave(
-  filename = paste0("quality_", fileName, ".png"),
+  filename = paste0("quality_", "Zeros_HeLa_and_Yeast", ".png"),
   path = "./data/output/quality/",
   plot = combine,
   width = 80,
