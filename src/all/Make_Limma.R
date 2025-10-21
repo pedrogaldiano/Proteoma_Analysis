@@ -5,7 +5,7 @@
 #############
 
 Make_Limma_Contrast <- function(
-  imtx,
+  mtx,
   comparisonList,
   method = "robust"
 ) {
@@ -13,9 +13,6 @@ Make_Limma_Contrast <- function(
     cat("method should recieve 'ls' or 'robust'.")
     break
   }
-
-  #TODO: move it to outside of the function
-  mtx <- limma::normalizeBetweenArrays(imtx, method = "scale")
 
   cols <- stringr::str_remove(colnames(mtx), "_REP_.")
   groups <- factor(cols, levels = unique(cols))
