@@ -81,7 +81,12 @@ rm(cosine, kmeans, pca, CVs, combine)
 
 # Limma
 ```{r}
-limmaContrasts <- Make_Limma_Contrast(imputed, samplesToCompare, method = "robust")
+
+norm_Matrix <- limma::normalizeBetweenArrays(imtx, method = scale) #cyclicloess or scale
+
+
+limmaContrasts <- Make_Limma_Contrast(norm_Matrix, samplesToCompare, method = "robust")
+
 
 limmaResult <- Compare_Limma_Results(limmaContrasts, samplesToCompare)
 
