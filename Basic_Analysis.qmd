@@ -77,7 +77,7 @@ theme <- ggplot2::theme(
       )
 
 # Count the peptides for:  Yeast and Human combined, Yeast only, and Human only
-HL_nPeptides <- Plot_nPeptides(diannReport, fancyLabels, colors) +
+HY_nPeptides <- Plot_nPeptides(diannReport, fancyLabels, colors) +
     ggplot2::labs(title = "(A) HeLa + Yeast") + theme
 
 Y_nPeptides <- Plot_nPeptides(yeast_DiannReport, fancyLabels, colors) +
@@ -86,7 +86,7 @@ Y_nPeptides <- Plot_nPeptides(yeast_DiannReport, fancyLabels, colors) +
 H_nPeptides <- Plot_nPeptides(human_DiannReport, fancyLabels, colors) +
     ggplot2::labs(title = "(C) HeLa") + theme
 
-combine_Pept <- patchwork::wrap_plots(HL_nPeptides, Y_nPeptides, H_nPeptides, nrow = 1)
+combine_Pept <- patchwork::wrap_plots(HY_nPeptides, Y_nPeptides, H_nPeptides, nrow = 1)
 
 ggplot2::ggsave(
   filename = paste0("nPeptides", ".png"),
@@ -95,7 +95,7 @@ ggplot2::ggsave(
   width = 30, height = 12,
   units = "cm", dpi = 300)
 
-rm(theme, HL_nPeptides, Y_nPeptides, H_nPeptides, combine_Pept)
+rm(theme, HY_nPeptides, Y_nPeptides, H_nPeptides, combine_Pept)
 ```
 
 # Number of Proteins
@@ -105,7 +105,7 @@ theme <- ggplot2::theme(
       plot.subtitle = ggplot2::element_text(size = 8)
       )
 
-HL_nProteins <- Plot_nProteins(diannReport, labels = fancyLabels, colors) +
+HY_nProteins <- Plot_nProteins(diannReport, labels = fancyLabels, colors) +
     ggplot2::labs(title = "(A) HeLa + Yeast") + theme
 
 Y_nProteins <- Plot_nProteins(yeast_DiannReport, labels = fancyLabels, colors) +
@@ -114,7 +114,7 @@ Y_nProteins <- Plot_nProteins(yeast_DiannReport, labels = fancyLabels, colors) +
 H_nProteins <- Plot_nProteins(human_DiannReport, labels = fancyLabels, colors) +
     ggplot2::labs(title = "(C) HeLa") + theme
 
-combine_Prot <- patchwork::wrap_plots(HL_nProteins, Y_nProteins, H_nProteins)
+combine_Prot <- patchwork::wrap_plots(HY_nProteins, Y_nProteins, H_nProteins)
 
 ggplot2::ggsave(
   filename = paste0("nProteins", ".png"),
@@ -123,7 +123,7 @@ ggplot2::ggsave(
   width = 30, height = 12,
   units = "cm", dpi = 300)
 
-rm(theme, HL_nProteins, Y_nProteins, H_nProteins, combine_Prot)
+rm(theme, HY_nProteins, Y_nProteins, H_nProteins, combine_Prot)
 ```
 
 # Sparsity Matrix
@@ -134,7 +134,7 @@ theme <- ggplot2::theme(
       # plot.subtitle = ggplot2::element_text(size = 8)
       )
 
-  HL_sparsity <- Plot_Sparsity(diannMatrix, fancyLabels) +
+  HY_sparsity <- Plot_Sparsity(diannMatrix, fancyLabels) +
     ggplot2::labs(title = "(A) HeLa + Yeast") + theme
 
   Y_sparsity <- Plot_Sparsity(yeast_DiannMatrix, fancyLabels) +
@@ -144,7 +144,7 @@ theme <- ggplot2::theme(
     ggplot2::labs(title = "(C) HeLa") + theme
 
 
-combine_sparsity <- patchwork::wrap_plots(HL_sparsity, Y_sparsity, H_sparsity)
+combine_sparsity <- patchwork::wrap_plots(HY_sparsity, Y_sparsity, H_sparsity)
 
 ggplot2::ggsave(
   filename = paste0("sparsity", ".png"),
@@ -154,5 +154,5 @@ ggplot2::ggsave(
   units = "cm", dpi = 300
 )
 
-rm(HL_sparsity, Y_sparsity, H_sparsity, combine_sparsity, theme)
+rm(HY_sparsity, Y_sparsity, H_sparsity, combine_sparsity, theme)
 ```
