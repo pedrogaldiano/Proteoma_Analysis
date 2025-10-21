@@ -90,11 +90,6 @@ for (group in groups) {
 
 write.csv(result, "./data/output/matrices/imputed_mean_by_group.csv" )
 
-#To do: separar yeast de Hela até o limma (no limma junta tudo)
-
-# diannMatrix_log
-# write.csv(diannMatrix_log, "./data/output/matrices/diannMatrix_log.csv" )
-
 ```
 
 

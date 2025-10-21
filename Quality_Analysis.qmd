@@ -75,10 +75,6 @@ rm(cosine, kmeans, pca, CVs, combine)
 ```
 
 
-
-
-
-
 # Limma
 ```{r}
 
