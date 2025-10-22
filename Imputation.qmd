@@ -11,6 +11,7 @@ source("./LoadSamples.R") # Load samples and relations
 # Install_Packages(packages)
 ```
 
+# Generate the diannReport and diannMatrix for all scenearios
 ```{r}
 Check_SampleName(samplesDF$SampleName)
 
@@ -19,6 +20,7 @@ yeast_DiannReport <- dplyr::filter(
   HY_diannReport,
   stringr::str_detect(Protein.Names, "YEAST")
 )
+
 human_DiannReport <- dplyr::filter(
   HY_diannReport,
   stringr::str_detect(Protein.Names, "HUMAN")
@@ -26,15 +28,9 @@ human_DiannReport <- dplyr::filter(
 
 
 #TODO: maybe I should use "Protein.Names" rather than "Genes", but I think since I have alreary filtered it doesn't really matter
-HY_diannMatrix <- as.matrix(log2(
-  Make_DiannMatrix(HY_diannReport, header = "Genes") + 1
-))
-yeast_DiannMatrix <- as.matrix(log2(
-  Make_DiannMatrix(yeast_DiannReport, header = "Genes") + 1
-))
-human_DiannMatrix <- as.matrix(log2(
-  Make_DiannMatrix(human_DiannReport, header = "Genes") + 1
-))
+HY_diannMatrix <- as.matrix(log2(Make_DiannMatrix(HY_diannReport, header = "Genes") + 1))
+yeast_DiannMatrix <- as.matrix(log2(Make_DiannMatrix(yeast_DiannReport, header = "Genes") + 1))
+human_DiannMatrix <- as.matrix(log2(Make_DiannMatrix(human_DiannReport, header = "Genes") + 1))
 
 matrices <- list(
   HY = HY_diannMatrix,
@@ -47,7 +43,7 @@ matrices <- list(
 
 # Data Imputation
 
-# Impute "zero" (0.1) to all missing values
+## Impute "zero" (0.1) to all missing values ------
 ```{r}
 # Imputed 0.1 to the NA in the diannMatrix
 result <- ifelse(is.na(diannMatrix_log), 0.1, diannMatrix_log)
@@ -57,12 +53,31 @@ rm(result)
 ```
 
 
-# Mean
-# by column
+## Mean ------
+
+### by matrix
 ```{r}
 # Iterate over each diannMatrix ("HY", "Y", "H")
 for (name in names(matrices)) {
-  result <- mtx <- matrices[[name]] # matrix associate with the name ("HY")
+  result <- mtx <- matrices[[name]] # matrix associate with the name
+
+     # Imputation function
+      x <- mean(mtx[, j], na.rm = TRUE)
+      # Add the imputed values to the right positions
+      result <- ifelse(is.na(mtx), x, mtx)
+  # Save the imputation as .CSV
+  dir <- paste0("./data/output/matrices/", "basic", "/")
+  file <- paste("mean", name, "_by_matrix", sep = "_")
+  write.csv(result, paste0(dir, file))
+  rm(result, mtx, dir, file)
+}
+```
+
+### by column
+```{r}
+# Iterate over each diannMatrix ("HY", "Y", "H")
+for (name in names(matrices)) {
+  result <- mtx <- matrices[[name]] # matrix associate with the name
 
   # Iterate over all the colunms of the "HY" matrix
   for (j in 1:ncol(mtx)) {
@@ -75,108 +90,123 @@ for (name in names(matrices)) {
     }
   }
   # Save the imputation as .CSV
-  write.csv(result, paste0("./data/output/matrices/", name ,"_Mean_by_col"))
-  rm(result, mtx)
+  dir <- paste0("./data/output/matrices/", "basic", "/")
+  file <- paste("mean", name, "_by_col", sep = "_")
+  write.csv(result, paste0(dir, file))
+  rm(result, mtx, dir, file)
 }
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Mean by column
-```{r}
-result <- diannMatrix_log
-
-for (j in 1:ncol(diannMatrix_log)) {
-  if (any(is.na(diannMatrix_log[, j]))) {
-    x <- mean(diannMatrix_log[, j], na.rm = TRUE)
-    result[, j] <- ifelse(is.na(diannMatrix_log[, j]), x, diannMatrix_log[, j])
-  }
-}
-
-write.csv(result, "./data/output/matrices/imputed_mean_by_column.csv")
-rm(result)
-
-```
-
-
-# Mean by row
+### by row
  ```{r}
-result <- diannMatrix_log
+# Iterate over each diannMatrix ("HY", "Y", "H")
+for (name in names(matrices)) {
+  result <- mtx <- matrices[[name]] # matrix associate with the name
 
-for (i in 1:nrow(diannMatrix_log)) {
-  if (any(is.na(diannMatrix_log[i, ]))) {
-    x <- mean(diannMatrix_log[i, ], na.rm = TRUE)
-    result[i, ] <- ifelse(is.na(diannMatrix_log[i, ]), x, diannMatrix_log[i, ])
-  }
-}
-
-write.csv(result, "./data/output/matrices/imputed_mean_by_row.csv")
-rm(result)
-
-```
-
-
-# Mean by Protein whithin a group
- ```{r}
-result <- diannMatrix_log
-
-groups <- unique(diannReport$condition)
-for (group in groups) {
-  cols <- stringr::str_detect(colnames(diannMatrix_log), group)
-
-  for (i in 1:nrow(diannMatrix_log)) {
-    if (all(is.na(diannMatrix_log[i, cols]))) {
-      # If all the group is NA, impute 0.1
-      result[i, cols] <- ifelse(
-        is.na(diannMatrix_log[i, cols]),
-        0.1,
-        diannMatrix_log[i, cols]
-      )
-    } else if (any(is.na(diannMatrix_log[i, cols]))) {
-      # If some of the group is NA, impute the mean
-      x <- mean(diannMatrix_log[i, cols], na.rm = TRUE)
-      result[i, cols] <- ifelse(
-        is.na(diannMatrix_log[i, cols]),
-        x,
-        diannMatrix_log[i, cols]
-      )
+  # Iterate over all the rows of the "HY" matrix
+  for (i in 1:nrow(mtx)) {
+    # Check if there is any NA in the column
+    if (any(is.na(mtx[i, ]))) {
+      # Imputation function
+      x <- mean(mtx[i, ], na.rm = TRUE)
+      # Add the imputed values to the right positions
+      result[i, ] <- ifelse(is.na(mtx[i, ]), x, mtx[i, ])
     }
   }
+  # Save the imputation as .CSV
+  dir <- paste0("./data/output/matrices/", "basic", "/")
+  file <- paste("mean", name, "by_row", sep = "_")
+  write.csv(result, paste0(dir, file))
+  rm(result, mtx, dir, file)
 }
+```
 
-write.csv(result, "./data/output/matrices/imputed_mean_by_group.csv")
-rm(result)
+### by group
+ ```{r}
+# Iterate over each diannMatrix ("HY", "Y", "H")
+for (name in names(matrices)) {
+  result <- mtx <- matrices[[name]] # matrix associate with the name
+
+  # Get the conditions to iterate over
+  groups <- unique(HY_diannReport$condition) #Todo: a nicer way of doing thix
+  for (group in groups) {
+    # find which columns match the condition
+    cols <- stringr::str_detect(colnames(mtx), group)
+    # Imputation function
+    x <- mean(mtx[, cols], na.rm = TRUE)
+    # Add the imputed values to the right positions
+    result[, cols] <- x
+  }
+
+  # Save the imputation as .CSV
+  dir <- paste0("./data/output/matrices/", "basic", "/")
+  file <- paste("mean", name, "by_group", sep = "_")
+  write.csv(result, paste0(dir, file))
+  rm(result, mtx, dir, file)
+}
+```
+
+### by Protein whithin a group
+ ```{r}
+# Iterate over each diannMatrix ("HY", "Y", "H")
+for (name in names(matrices)) {
+  result <- mtx <- matrices[[name]] # matrix associate with the name
+
+  groups <- unique(HY_diannReport$condition)
+  for (group in groups) {
+    cols <- stringr::str_detect(colnames(mtx), group)
+
+    for (i in 1:nrow(mtx)) {
+      # If all the group is NA, impute the same value
+      if (all(is.na(mtx[i, cols]))) {
+        # Value to impute
+        value <- 0.1
+        result[i, cols] <- ifelse(is.na(mtx[i, cols]), value, mtx[i, cols])
+        # If some of the group is NA
+      } else if (any(is.na(mtx[i, cols]))) {
+        # Imputation function
+        x <- mean(mtx[i, cols], na.rm = TRUE)
+
+        result[i, cols] <- ifelse(is.na(mtx[i, cols]), x, mtx[i, cols])
+      }
+    }
+  }
+  # Save the imputation as .CSV
+  dir <- paste0("./data/output/matrices/", "basic", "/")
+  file <- paste("mean", name, "by_protein_in_group", sep = "_")
+  write.csv(result, paste0(dir, file))
+  rm(result, mtx, dir, file, value)
+}
 
 ```
 
 
- # Mice by group
+## MICE ------
+
+### by group
  ```{r}
-result <- diannMatrix_log
+# Iterate over each diannMatrix ("HY", "Y", "H")
+for (name in names(matrices)) {
+  result <- mtx <- matrices[[name]] # matrix associate with the name
 
-groups <- unique(diannReport$condition)
-for (group in groups) {
-  cols <- stringr::str_detect(colnames(diannMatrix), group)
+  # Get the conditions to iterate over
+  groups <- unique(HY_diannReport$condition) #Todo: a nicer way of doing thix
+  for (group in groups) {
+    # find which columns match the condition
+    cols <- stringr::str_detect(colnames(mtx), group)
 
-  x <- mice::mice(diannMatrix_log[, cols], method = "mean")
-  x <- as.matrix(mice::complete(x))
+    # Imputation function
+    x <- mice::mice(mtx[, cols], method = "mean", m = 5, maxit = 1)
+    x <- as.matrix(mice::complete(x))
 
-  result[, cols] <- x
+    # Add the imputed values to the right positions
+    result[, cols] <- x
+  }
+
+  # Save the imputation as .CSV
+  dir <- paste0("./data/output/matrices/", "basic", "/")
+  file <- paste("mean", name, "by_group", sep = "_")
+  write.csv(result, paste0(dir, file))
+  rm(result, mtx, dir, file)
 }
-
-write.csv(result, "./data/output/matrices/imputed_by_protein_in_group.csv")
-rm(result)
-
- ```
+```
