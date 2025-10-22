@@ -28,9 +28,15 @@ human_DiannReport <- dplyr::filter(
 
 
 #TODO: maybe I should use "Protein.Names" rather than "Genes", but I think since I have alreary filtered it doesn't really matter
-HY_diannMatrix <- as.matrix(log2(Make_DiannMatrix(HY_diannReport, header = "Genes") + 1))
-yeast_DiannMatrix <- as.matrix(log2(Make_DiannMatrix(yeast_DiannReport, header = "Genes") + 1))
-human_DiannMatrix <- as.matrix(log2(Make_DiannMatrix(human_DiannReport, header = "Genes") + 1))
+HY_diannMatrix <- as.matrix(log2(
+  Make_DiannMatrix(HY_diannReport, header = "Genes") + 1
+))
+yeast_DiannMatrix <- as.matrix(log2(
+  Make_DiannMatrix(yeast_DiannReport, header = "Genes") + 1
+))
+human_DiannMatrix <- as.matrix(log2(
+  Make_DiannMatrix(human_DiannReport, header = "Genes") + 1
+))
 
 matrices <- list(
   HY = HY_diannMatrix,
@@ -55,7 +61,7 @@ for (name in names(matrices)) {
   dir <- paste0("./data/output/matrices/", "basic", "/")
   file <- paste("zero", name, "_by_matrix", sep = "_")
   write.csv(result, paste0(dir, file))
-  rm(result, mtx, dir, file)
+  rm(result, mtx, dir, file, name)
 }
 ```
 
@@ -68,63 +74,16 @@ for (name in names(matrices)) {
 for (name in names(matrices)) {
   result <- mtx <- matrices[[name]] # matrix associate with the name
 
-     # Imputation function
-      x <- mean(mtx[, j], na.rm = TRUE)
-      # Add the imputed values to the right positions
-      result <- ifelse(is.na(mtx), x, mtx)
+  # Imputation function
+  x <- mean(mtx, na.rm = TRUE)
+  # Add the imputed values to the right positions
+  result <- ifelse(is.na(mtx), x, mtx)
+
   # Save the imputation as .CSV
   dir <- paste0("./data/output/matrices/", "basic", "/")
   file <- paste("mean", name, "_by_matrix", sep = "_")
   write.csv(result, paste0(dir, file))
-  rm(result, mtx, dir, file)
-}
-```
-
-### by column
-```{r}
-# Iterate over each diannMatrix ("HY", "Y", "H")
-for (name in names(matrices)) {
-  result <- mtx <- matrices[[name]] # matrix associate with the name
-
-  # Iterate over all the colunms of the "HY" matrix
-  for (j in 1:ncol(mtx)) {
-    # Check if there is any NA in the column
-    if (any(is.na(mtx[, j]))) {
-      # Imputation function
-      x <- mean(mtx[, j], na.rm = TRUE)
-      # Add the imputed values to the right positions
-      result[, j] <- ifelse(is.na(mtx[, j]), x, mtx[, j])
-    }
-  }
-  # Save the imputation as .CSV
-  dir <- paste0("./data/output/matrices/", "basic", "/")
-  file <- paste("mean", name, "_by_col", sep = "_")
-  write.csv(result, paste0(dir, file))
-  rm(result, mtx, dir, file)
-}
-```
-
-### by row
- ```{r}
-# Iterate over each diannMatrix ("HY", "Y", "H")
-for (name in names(matrices)) {
-  result <- mtx <- matrices[[name]] # matrix associate with the name
-
-  # Iterate over all the rows of the "HY" matrix
-  for (i in 1:nrow(mtx)) {
-    # Check if there is any NA in the column
-    if (any(is.na(mtx[i, ]))) {
-      # Imputation function
-      x <- mean(mtx[i, ], na.rm = TRUE)
-      # Add the imputed values to the right positions
-      result[i, ] <- ifelse(is.na(mtx[i, ]), x, mtx[i, ])
-    }
-  }
-  # Save the imputation as .CSV
-  dir <- paste0("./data/output/matrices/", "basic", "/")
-  file <- paste("mean", name, "by_row", sep = "_")
-  write.csv(result, paste0(dir, file))
-  rm(result, mtx, dir, file)
+  rm(result, mtx, dir, file, name, x)
 }
 ```
 
@@ -149,7 +108,55 @@ for (name in names(matrices)) {
   dir <- paste0("./data/output/matrices/", "basic", "/")
   file <- paste("mean", name, "by_group", sep = "_")
   write.csv(result, paste0(dir, file))
-  rm(result, mtx, dir, file)
+  rm(result, mtx, dir, file, cols, group, name, groups, x)
+}
+```
+
+### by column
+```{r}
+# Iterate over each diannMatrix ("HY", "Y", "H")
+for (name in names(matrices)) {
+  result <- mtx <- matrices[[name]] # matrix associate with the name
+
+  # Iterate over all the colunms of the "HY" matrix
+  for (j in 1:ncol(mtx)) {
+    # Check if there is any NA in the column
+    if (any(is.na(mtx[, j]))) {
+      # Imputation function
+      x <- mean(mtx[, j], na.rm = TRUE)
+      # Add the imputed values to the right positions
+      result[, j] <- ifelse(is.na(mtx[, j]), x, mtx[, j])
+    }
+  }
+  # Save the imputation as .CSV
+  dir <- paste0("./data/output/matrices/", "basic", "/")
+  file <- paste("mean", name, "_by_col", sep = "_")
+  write.csv(result, paste0(dir, file))
+  rm(result, mtx, dir, file, j, name, x)
+}
+```
+
+### by row
+ ```{r}
+# Iterate over each diannMatrix ("HY", "Y", "H")
+for (name in names(matrices)) {
+  result <- mtx <- matrices[[name]] # matrix associate with the name
+
+  # Iterate over all the rows of the "HY" matrix
+  for (i in 1:nrow(mtx)) {
+    # Check if there is any NA in the column
+    if (any(is.na(mtx[i, ]))) {
+      # Imputation function
+      x <- mean(mtx[i, ], na.rm = TRUE)
+      # Add the imputed values to the right positions
+      result[i, ] <- ifelse(is.na(mtx[i, ]), x, mtx[i, ])
+    }
+  }
+  # Save the imputation as .CSV
+  dir <- paste0("./data/output/matrices/", "basic", "/")
+  file <- paste("mean", name, "by_row", sep = "_")
+  write.csv(result, paste0(dir, file))
+  rm(result, mtx, dir, file, i, name, x)
 }
 ```
 
@@ -182,13 +189,34 @@ for (name in names(matrices)) {
   dir <- paste0("./data/output/matrices/", "basic", "/")
   file <- paste("mean", name, "by_protein_in_group", sep = "_")
   write.csv(result, paste0(dir, file))
-  rm(result, mtx, dir, file, value)
+  rm(result, mtx, dir, file, value, name, x, cols, group, groups, i)
 }
 
 ```
 
 
 ## MICE ------
+
+### by matrix
+```{r}
+# Iterate over each diannMatrix ("HY", "Y", "H")
+for (name in names(matrices)) {
+  result <- mtx <- matrices[[name]] # matrix associate with the name
+
+  # Imputation function
+  result <- mice::mice(mtx, method = "rf", m = 1, maxit = 1) #TODO: Switch both to 5!
+  result <- as.matrix(mice::complete(result))
+
+  # Save the imputation as .CSV
+  dir <- paste0("./data/output/matrices/", "MICE", "/")
+  file <- paste("rf", name, "by_matrix", sep = "_")
+  write.csv(result, paste0(dir, file))
+  rm(result, mtx, dir, file, name)
+
+  break #todo: Remove it, is just for faster testing
+}
+```
+
 
 ### by group
  ```{r}
@@ -203,7 +231,7 @@ for (name in names(matrices)) {
     cols <- stringr::str_detect(colnames(mtx), group)
 
     # Imputation function
-    x <- mice::mice(mtx[, cols], method = "mean", m = 5, maxit = 1)
+    x <- mice::mice(mtx[, cols], method = "rf", m = 1, maxit = 1) #TODO: Switch both to 5!
     x <- as.matrix(mice::complete(x))
 
     # Add the imputed values to the right positions
@@ -211,9 +239,15 @@ for (name in names(matrices)) {
   }
 
   # Save the imputation as .CSV
-  dir <- paste0("./data/output/matrices/", "basic", "/")
-  file <- paste("mean", name, "by_group", sep = "_")
+  dir <- paste0("./data/output/matrices/", "MICE", "/")
+  file <- paste("rf", name, "by_group", sep = "_")
   write.csv(result, paste0(dir, file))
-  rm(result, mtx, dir, file)
+  rm(result, mtx, dir, file, x, cols, groups, group, name)
+
+  break #todo: Remove it, is just for faster testing
 }
 ```
+
+### by column / by eow
+#### Cannot be used
+
