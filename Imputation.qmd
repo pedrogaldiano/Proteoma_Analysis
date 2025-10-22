@@ -195,7 +195,7 @@ for (name in names(matrices)) {
 ```
 
 
-## MICE ------
+## MICE - Random Forest ------
 
 ### by matrix
 ```{r}
@@ -217,7 +217,6 @@ for (name in names(matrices)) {
   break #todo: Remove it, is just for faster testing
 }
 ```
-
 
 ### by group
  ```{r}
@@ -249,6 +248,96 @@ for (name in names(matrices)) {
   break #todo: Remove it, is just for faster testing
 }
 ```
+
+
+
+## MICE - All ------
+
+### by matrix
+```{r}
+# Iterate over each diannMatrix ("HY", "Y", "H")
+for (method in c(
+  "pmm",
+    # "midastouch",
+    "sample",
+    "cart",
+    "rf",
+    "norm",
+    "lasso.norm",
+    "lasso.select.norm",
+    "2l.norm",
+    "2l.bin",
+    "2lonly.mean",
+    "2lonly.norm",
+    "2lonly.pmm"
+  )) {
+  for (name in names(matrices)) {
+    result <- mtx <- matrices[[name]] # matrix associate with the name
+
+    # Imputation function
+    result <- mice::mice(mtx, method = method, m = 1, maxit = 1) #TODO: Switch both to 5!
+    result <- as.matrix(mice::complete(result))
+
+    set.seed(123)
+    # Save the imputation as .CSV
+    dir <- paste0("./data/output/matrices/", "MICE", "/")
+    file <- paste(method, name, "by_matrix", sep = "_")
+    write.csv(result, paste0(dir, file))
+    rm(result, mtx, dir, file, name)
+
+    break #todo: Remove it, is just for faster testing
+  }
+}
+```
+
+### by group
+```{r}
+# Iterate over each diannMatrix ("HY", "Y", "H")
+for (method in c(
+    "pmm",
+    # "midastouch",
+    "sample",
+    "cart",
+    "rf",
+    "norm",
+    "lasso.norm",
+    "lasso.select.norm",
+    "2l.norm",
+    "2l.bin",
+    "2lonly.mean",
+    "2lonly.norm",
+    "2lonly.pmm"
+  )) {
+  for (name in names(matrices)) {
+    result <- mtx <- matrices[[name]] # matrix associate with the name
+
+  # Get the conditions to iterate over
+  groups <- unique(HY_diannReport$condition) #Todo: a nicer way of doing thix
+  for (group in groups) {
+    # find which columns match the condition
+    cols <- stringr::str_detect(colnames(mtx), group)
+
+    # Imputation function
+    set.seed(123)
+    x <- mice::mice(mtx[, cols], method = method, m = 1, maxit = 1) #TODO: Switch both to 5!
+    x <- as.matrix(mice::complete(x))
+
+    # Add the imputed values to the right positions
+    result[, cols] <- x
+  }
+
+  # Save the imputation as .CSV
+  dir <- paste0("./data/output/matrices/", "MICE", "/")
+  file <- paste(method, name, "by_group", sep = "_")
+  write.csv(result, paste0(dir, file))
+  rm(result, mtx, dir, file, x, cols, groups, group, name)
+
+  break #todo: Remove it, is just for faster testing
+  }
+}
+```
+
+
 
 
 
