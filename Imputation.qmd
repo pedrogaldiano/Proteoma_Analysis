@@ -207,6 +207,7 @@ for (name in names(matrices)) {
   result <- mice::mice(mtx, method = "rf", m = 1, maxit = 1) #TODO: Switch both to 5!
   result <- as.matrix(mice::complete(result))
 
+  set.seed(123)
   # Save the imputation as .CSV
   dir <- paste0("./data/output/matrices/", "MICE", "/")
   file <- paste("rf", name, "by_matrix", sep = "_")
@@ -231,6 +232,7 @@ for (name in names(matrices)) {
     cols <- stringr::str_detect(colnames(mtx), group)
 
     # Imputation function
+    set.seed(123)
     x <- mice::mice(mtx[, cols], method = "rf", m = 1, maxit = 1) #TODO: Switch both to 5!
     x <- as.matrix(mice::complete(x))
 
@@ -248,6 +250,18 @@ for (name in names(matrices)) {
 }
 ```
 
-### by column / by eow
-#### Cannot be used
 
+
+
+# Compare
+```{r}
+a <- "./data/output/matrices/MICE/rf_HY_by_matrix"
+dfa <- read.csv(a)
+
+b <- "./data/output/matrices/MICE/rf_HY_by_group"
+dfb <- read.csv(b)
+
+all.equal(dfa, dfb)
+
+waldo::compare(dfa[1:30, 2], dfb[1:30, 2])
+```
