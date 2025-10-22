@@ -46,10 +46,17 @@ matrices <- list(
 ## Impute "zero" (0.1) to all missing values ------
 ```{r}
 # Imputed 0.1 to the NA in the diannMatrix
-result <- ifelse(is.na(diannMatrix_log), 0.1, diannMatrix_log)
+for (name in names(matrices)) {
+  result <- mtx <- matrices[[name]] # matrix associate with the name
 
-write.csv(result, "./data/output/matrices/imputed_zeros.csv")
-rm(result)
+  result <- ifelse(is.na(mtx), 0.1, mtx)
+
+  # Save the imputation as .CSV
+  dir <- paste0("./data/output/matrices/", "basic", "/")
+  file <- paste("zero", name, "_by_matrix", sep = "_")
+  write.csv(result, paste0(dir, file))
+  rm(result, mtx, dir, file)
+}
 ```
 
 
