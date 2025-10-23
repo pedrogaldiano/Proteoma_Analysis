@@ -21,55 +21,20 @@ csvList <- list.files(
   full.names = TRUE,
   ignore.case = TRUE
 )
-
-csv <- as.matrix(tibble::column_to_rownames(read.csv(csvList[1]), var = "X"))
-
-csv
-
-methods <- list()
-# for (dir in csvList) {
-#   print(element)
-
-#   name <- stringr::str_remove(basename(dir), ".csv$")
-#   methods <- append(methods, setNames(name, dir), name)
-# }
-
-x = as.matrix(tibble::column_to_rownames(
-  read.csv(names(methods[1])),
-  var = "X"
-))
-
-names(methods[1]) <- x
-
-
-methods = x
-
-class(x)
-
 ```
 
-
-
-# Read data from .csv
-```{r}
-zeros <- as.matrix(tibble::column_to_rownames(
-  read.csv("./data/output/matrices/imputed_zeros.csv"),
-  "X"
-))
-
-
-# To avoid having to switch everywhere
-imputed <- zeros
-```
 
 # Quality Analysis
 ```{r}
+# Iterate over the directory of the imputed .csv
 for (dir in csvList) {
+  #read the .csv
   imputed <- as.matrix(tibble::column_to_rownames(
     read.csv(dir),
     var = "X"
   ))
 
+  # clean up the graph name
   name <- stringr::str_to_title(
     stringr::str_replace_all(
       stringr::str_remove(basename(dir), ".csv$"),
@@ -95,17 +60,19 @@ for (dir in csvList) {
   # Coefficient of Variation
   #TODO: remove (Log2 + 1)
   CVs <- Plot_CV(
-    imputed,#2^(imputed - 1), #Todo: verificar com o Alison se está certo
+    imputed,# 2^(imputed - 1), #Todo: verificar com o Alison se está certo
     unique(diannReport$condition),
     fancyLabels,
     colors
   )
 
+  # Aggregate all plots for better visualization
   combine <- patchwork::wrap_plots(
     list(cosine, kmeans, pca, CVs),
     cols = 4,
     nrow = 1
   ) +
+    # Plot title and general formatting
     patchwork::plot_annotation(
       title = name,
       tag_levels = "A",
@@ -119,6 +86,7 @@ for (dir in csvList) {
       )
     )
 
+  # Save the plot file
   ggplot2::ggsave(
     filename = paste0("quality_", stringr::str_replace_all(name, " ", "_"), ".png"),
     path = "./data/output/quality/",
@@ -137,6 +105,8 @@ for (dir in csvList) {
 
 # Limma
 ```{r}
+
+
 for (dir in csvList) {
   imputed <- as.matrix(tibble::column_to_rownames(
     read.csv(dir),
@@ -150,6 +120,8 @@ for (dir in csvList) {
       " "
     )
   )
+
+
 
   #Normalization by limma
 for (method in c("scale", "cyclicloess"))
