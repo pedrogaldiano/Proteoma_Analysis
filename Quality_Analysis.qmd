@@ -33,7 +33,9 @@ par(mar = c(8 ,4 ,4 ,2) + 0.1)
 boxplot(log2(diannMatrix + 1), main = "raw", las = 2)
 boxplot(imputed, main = "imputed", las = 2)
 
-diannMatrix
+
+
+
 ```
 
 
