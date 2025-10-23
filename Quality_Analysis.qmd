@@ -10,15 +10,53 @@ source("./LoadSamples.R") # Load samples and relations
 
 diannReport <- Make_DiannReport(samplesDF, organism = "")
 
-# Install_Packages(packages) 
+# Install_Packages(packages)
 ```
+
+# Get all the strings for the .csv
+```{r}
+csvList <- list.files(
+  c("./data/output/matrices/basic/", "./data/output/matrices/MICE/"),
+  pattern = "*.csv$",
+  full.names = TRUE,
+  ignore.case = TRUE
+)
+
+csv <- as.matrix(tibble::column_to_rownames(read.csv(csvList[1]), var = "X"))
+
+csv
+
+methods <- list()
+# for (dir in csvList) {
+#   print(element)
+
+#   name <- stringr::str_remove(basename(dir), ".csv$")
+#   methods <- append(methods, setNames(name, dir), name)
+# }
+
+x = as.matrix(tibble::column_to_rownames(
+  read.csv(names(methods[1])),
+  var = "X"
+))
+
+names(methods[1]) <- x
+
+
+methods = x
+
+class(x)
+
+```
+
+
 
 # Read data from .csv
 ```{r}
 zeros <- as.matrix(tibble::column_to_rownames(
   read.csv("./data/output/matrices/imputed_zeros.csv"),
-   "X"
-   ))
+  "X"
+))
+
 
 # To avoid having to switch everywhere
 imputed <- zeros
@@ -26,62 +64,115 @@ imputed <- zeros
 
 # Quality Analysis
 ```{r}
-# Cosine Similarity
-cosine <- Plot_Cosine(imputed, fancyLabels)
+for (dir in csvList) {
+  imputed <- as.matrix(tibble::column_to_rownames(
+    read.csv(dir),
+    var = "X"
+  ))
 
-# k-Means
-kmeans <- Plot_kMeans(imputed, numberOfClusters = 2)
-
-# PCA
-pca <- Plot_PCA(imputed,
-  numberOfClusters = 2,
-  clusterColors = clusterColor,
-  labels = fancyLabels
-)
-
-# Coefficient of Variation
-CVs <- Plot_CV(
-  imputed,
-  unique(diannReport$condition),
-  fancyLabels,
-  colors
-)
-
-combine <- patchwork::wrap_plots(
-  list(cosine, kmeans, pca, CVs),
-  cols = 4,
-  nrow = 1
-) +
-  patchwork::plot_annotation(
-    title = "Zeros | HeLa + Yeast",
-    tag_levels = "A",
-    theme = ggplot2::theme(
-      plot.title = ggplot2::element_text(face = "bold", size = "35", hjust = 0.5, vjust = 0.5),
+  name <- stringr::str_to_title(
+    stringr::str_replace_all(
+      stringr::str_remove(basename(dir), ".csv$"),
+      "_",
+      " "
     )
   )
 
+  # Cosine Similarity
+  cosine <- Plot_Cosine(imputed, fancyLabels)
 
-ggplot2::ggsave(
-  filename = paste0("quality_", "Zeros_HeLa_and_Yeast", ".png"),
-  path = "./data/output/quality/",
-  plot = combine,
-  width = 80,
-  height = 30,
-  units = "cm",
-  dpi = 300
-)
+  # k-Means
+  kmeans <- Plot_kMeans(imputed, numberOfClusters = 2)
 
-rm(cosine, kmeans, pca, CVs, combine)
+  # PCA
+  pca <- Plot_PCA(
+    imputed,
+    numberOfClusters = 2,
+    clusterColors = clusterColor,
+    labels = fancyLabels
+  )
+
+  # Coefficient of Variation
+  #TODO: remove (Log2 + 1)
+  CVs <- Plot_CV(
+    imputed,#2^(imputed - 1), #Todo: verificar com o Alison se está certo
+    unique(diannReport$condition),
+    fancyLabels,
+    colors
+  )
+
+  combine <- patchwork::wrap_plots(
+    list(cosine, kmeans, pca, CVs),
+    cols = 4,
+    nrow = 1
+  ) +
+    patchwork::plot_annotation(
+      title = name,
+      tag_levels = "A",
+      theme = ggplot2::theme(
+        plot.title = ggplot2::element_text(
+          face = "bold",
+          size = "35",
+          hjust = 0.5,
+          vjust = 0.5
+        ),
+      )
+    )
+
+  ggplot2::ggsave(
+    filename = paste0("quality_", stringr::str_replace_all(name, " ", "_"), ".png"),
+    path = "./data/output/quality/",
+    plot = combine,
+    width = 80,
+    height = 30,
+    units = "cm",
+    dpi = 300
+  )
+
+  rm(cosine, kmeans, pca, CVs, combine, name, dir)
+  break
+}
 ```
 
 
 # Limma
 ```{r}
+for (dir in csvList) {
+  imputed <- as.matrix(tibble::column_to_rownames(
+    read.csv(dir),
+    var = "X"
+  ))
 
-norm_Matrix <- limma::normalizeBetweenArrays(imtx, method = scale) #cyclicloess or scale
+  name <- stringr::str_to_title(
+    stringr::str_replace_all(
+      stringr::str_remove(basename(dir), ".csv$"),
+      "_",
+      " "
+    )
+  )
+
+  #Normalization by limma
+for (method in c("scale", "cyclicloess"))
+  {
+    norm_Matrix <- limma::normalizeBetweenArrays(imputed, method = scale)
 
 
-limmaContrasts <- Make_Limma_Contrast(norm_Matrix, samplesToCompare, method = "robust")
+
+  }
+
+```
+
+
+
+```{r}
+
+
+
+limmaContrasts <- Make_Limma_Contrast(
+  norm_Matrix,
+  samplesToCompare,
+  method = "robust"
+)
 
 
 limmaResult <- Compare_Limma_Results(limmaContrasts, samplesToCompare)
@@ -110,10 +201,11 @@ rm(limmaContrasts, number_significantProteins)
 ```
 
 
+
 # Bland-Altman
 ```{r}
 blandAltmanPlot <- Plot_BlandAltman(
-  limmaResult, 
+  limmaResult,
   genesToHighLight_BlandAltman,
   labels = fancyLabels
 )
@@ -122,8 +214,10 @@ ggplot2::ggsave(
   paste0("Bland_Altman", ".png"),
   path = "./data/output/",
   plot = blandAltmanPlot,
-  width = 25, height = 12,
-  units = "in", dpi = 300,
+  width = 25,
+  height = 12,
+  units = "in",
+  dpi = 300,
   bg = "white"
 )
 
@@ -139,15 +233,18 @@ proteinComparisonPlot <- Compare_Abundance(
   genes = genesToCompare,
   colorList = colors,
   labels = fancyLabels,
-  n_columns = 5)
+  n_columns = 5
+)
 
 
 ggplot2::ggsave(
   paste0("Proteins_Comparison", ".png"),
   path = "./data/output/",
   plot = proteinComparisonPlot,
-  width = 25, height = 8,
-  units = "in", dpi = 300,
+  width = 25,
+  height = 8,
+  units = "in",
+  dpi = 300,
   bg = "white"
 )
 
