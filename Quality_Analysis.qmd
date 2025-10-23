@@ -9,6 +9,8 @@ source("./src/Source_Everything.R") # Load all functions
 source("./LoadSamples.R") # Load samples and relations
 
 diannReport <- Make_DiannReport(samplesDF, organism = "")
+diannMatrix <- Make_DiannMatrix(diannReport, header = "Genes")
+
 
 # Install_Packages(packages)
 ```
@@ -21,6 +23,17 @@ csvList <- list.files(
   full.names = TRUE,
   ignore.case = TRUE
 )
+
+# VIM::aggr(diannMatrix)
+
+
+# Resize the margins for plot (bottom, left, top right)
+par(mar = c(8 ,4 ,4 ,2) + 0.1)
+
+boxplot(log2(diannMatrix + 1), main = "raw", las = 2)
+boxplot(imputed, main = "imputed", las = 2)
+
+diannMatrix
 ```
 
 
@@ -28,6 +41,8 @@ csvList <- list.files(
 ```{r}
 # Iterate over the directory of the imputed .csv
 for (dir in csvList) {
+dir <- csvList[1]
+
   #read the .csv
   imputed <- as.matrix(tibble::column_to_rownames(
     read.csv(dir),
