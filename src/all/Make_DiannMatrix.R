@@ -11,7 +11,7 @@
 
 Make_DiannMatrix <- function(dr, header = c("Genes", "Protein.Group", "Protein.Names")) {
   
-header <- match.arg(header)
+  header <- match.arg(header)
 
   result <- diann::diann_matrix(
     dr,
@@ -20,7 +20,7 @@ header <- match.arg(header)
     proteotypic.only = TRUE,
     pg.q = 0.01
   )
-  
+
   return(result)
 }
 
