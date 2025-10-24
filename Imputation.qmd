@@ -15,7 +15,8 @@ source("./LoadSamples.R") # Load samples and relations
 ```{r}
 Check_SampleName(samplesDF$SampleName)
 
-
+dir_input <- "./data/input/processed/"
+Yeast_Mix_C <- read.csv(paste0(dir_input, "diannMatrix_YEAST.csv" ))
 
 
 
