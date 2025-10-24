@@ -15,36 +15,15 @@ source("./LoadSamples.R") # Load samples and relations
 ```{r}
 Check_SampleName(samplesDF$SampleName)
 
-HY_diannReport <- Make_DiannReport(samplesDF, organism = "")
-yeast_DiannReport <- dplyr::filter(
-  HY_diannReport,
-  stringr::str_detect(Protein.Names, "YEAST")
-)
-
-human_DiannReport <- dplyr::filter(
-  HY_diannReport,
-  stringr::str_detect(Protein.Names, "HUMAN")
-)
 
 
-#TODO: maybe I should use "Protein.Names" rather than "Genes", but I think since I have alreary filtered it doesn't really matter
-HY_diannMatrix <- as.matrix(log2(
-  Make_DiannMatrix(HY_diannReport, header = "Genes") + 1
-))
-yeast_DiannMatrix <- as.matrix(log2(
-  Make_DiannMatrix(yeast_DiannReport, header = "Genes") + 1
-))
-human_DiannMatrix <- as.matrix(log2(
-  Make_DiannMatrix(human_DiannReport, header = "Genes") + 1
-))
+
 
 matrices <- list(
-  HY = HY_diannMatrix,
-  Yeast = yeast_DiannMatrix,
-  Human = human_DiannMatrix
+  # HY = HY_diannMatrix,
+  Yeast = yeast_DiannMatrix #,
+  # Human = human_DiannMatrix
 )
-
-# result <- diannMatrix
 ```
 
 # Data Imputation
@@ -171,10 +150,10 @@ for (name in names(matrices)) {
      cols <- stringr::str_detect(colnames(mtx), group)
 
      for (i in 1:nrow(mtx)) {
-       # If all the group is NA, impute the same value
+       # If all the group is NA, use the row mean
        if (all(is.na(mtx[i, cols]))) {
          # Value to impute
-         value <- 0.1
+         value <- mean(mtx[i,], na.rm = TRUE)
          result[i, cols] <- ifelse(is.na(mtx[i, cols]), value, mtx[i, cols])
          # If some of the group is NA
        } else if (any(is.na(mtx[i, cols]))) {
@@ -206,26 +185,28 @@ for (method in c(
   "sample",
   "cart",
   "rf",
-  "norm",
-  "lasso.norm",
-  "lasso.select.norm",
-  "2l.norm",
-  "2l.bin",
-  "2lonly.mean",
-  "2lonly.norm",
-  "2lonly.pmm"
+  "norm" #,
+  # "lasso.norm",
+  # "lasso.select.norm",
+  # "2l.norm",
+  # "2l.bin",
+  # "2lonly.mean",
+  # "2lonly.norm",
+  # "2lonly.pmm"
 )) {
+
   for (name in names(matrices)) {
+    name <- names(matrices)[1]
+    
     result <- mtx <- matrices[[name]] # matrix associate with the name
 
+    set.seed(123)
     # Imputation function
     result <- mice::mice(mtx, method = method, m = 1, maxit = 1) #TODO: Switch both to 5!
     result <- as.matrix(mice::complete(result))
 
-    set.seed(123)
     # Save the imputation as .CSV
     dir <- paste0("./data/output/matrices/", "MICE", "/")
-    method <- stringr::str_replace_all(method, ".", "_")
     file <- paste(method, name, "by_matrix.csv", sep = "_")
     write.csv(result, paste0(dir, file))
     rm(result, mtx, dir, file, name)
@@ -244,14 +225,14 @@ for (method in c(
   "sample",
   "cart",
   "rf",
-  "norm",
-  "lasso.norm",
-  "lasso.select.norm",
-  "2l.norm",
-  "2l.bin",
-  "2lonly.mean",
-  "2lonly.norm",
-  "2lonly.pmm"
+  "norm" #,
+  # "lasso.norm",
+  # "lasso.select.norm",
+  # "2l.norm",
+  # "2l.bin",
+  # "2lonly.mean",
+  # "2lonly.norm",
+  # "2lonly.pmm"
 )) {
   for (name in names(matrices)) {
     result <- mtx <- matrices[[name]] # matrix associate with the name
@@ -273,7 +254,6 @@ for (method in c(
 
     # Save the imputation as .CSV
     dir <- paste0("./data/output/matrices/", "MICE", "/")
-    method <- stringr::str_replace_all(method, ".", "_")
     file <- paste(method, name, "by_group.csv", sep = "_")
     write.csv(result, paste0(dir, file))
     rm(result, mtx, dir, file, x, cols, groups, group, name)

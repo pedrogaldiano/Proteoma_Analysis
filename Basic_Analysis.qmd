@@ -17,17 +17,35 @@ source("./LoadSamples.R") # Load samples and relations
 Check_SampleName(samplesDF$SampleName)
 
 
+dir <- "./data/input/processed/"
+
+# Generate the Diann Report from the report.parquet
+# HeLa + Yeast
 diannReport <- Make_DiannReport(samplesDF, organism = "")
+write.csv(diannReport, paste0(dir, "diannReport_HY.csv")
+
+# Yeast
 yeast_DiannReport <- dplyr::filter(diannReport, stringr::str_detect(Protein.Names, "YEAST"))
+write.csv(diannReport, paste0(dir, "diannReport_YEAST.csv")
+
+# HeLa
 human_DiannReport <- dplyr::filter(diannReport, stringr::str_detect(Protein.Names, "HUMAN"))
+write.csv(diannReport, paste0(dir, "diannReport_HeLa.csv")
 
 
 
-#TODO: maybe I should use "Protein.Names" rather than "Genes", but I think since I have alreary filtered it doesn't really matter
-diannMatrix <- Make_DiannMatrix(diannReport, header = "Genes")
-yeast_DiannMatrix <- Make_DiannMatrix(yeast_DiannReport, header = "Genes")
-human_DiannMatrix <- Make_DiannMatrix(human_DiannReport, header = "Genes")
+# Generate the Diann Matrix from the Diann Report
+# HeLa + Yeast
+diannMatrix <- log2(Make_DiannMatrix(diannReport, header = "Genes") + 1)
+write.csv(diannReport, paste0(dir, "diannMatrix_HY.csv")
 
+# Yeast
+yeast_DiannMatrix <- log2(Make_DiannMatrix(yeast_DiannReport, header = "Genes") + 1)
+write.csv(diannReport, paste0(dir, "diannMatrix_YEAST.csv")
+
+# HeLa
+human_DiannMatrix <- log2(Make_DiannMatrix(human_DiannReport, header = "Genes") + 1)
+write.csv(diannReport, paste0(dir, "diannMatrix_HeLa.csv")
 
 
 ```
