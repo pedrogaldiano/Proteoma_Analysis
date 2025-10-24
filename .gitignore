@@ -59,3 +59,5 @@ rsconnect/
 *.lintr
 *.RDataTmp
 *.RDataTmp*
+*.csv
+!sample_name_mapping.csv
