@@ -107,30 +107,6 @@ dir <- csvList[1]
 ```
 
 
-# Limma
-```{r}
-
-# Resize the margins for plot (bottom, left, top right)
-par(mar = c(8, 4, 4, 2) + 0.1)
-
-# Create a box plot
-boxList <- list(boxplot(log2(diannMatrix + 1), main = "raw", las = 2, plot = FALSE))
-
-log_diannMatrix <- log2(diannMatrix + 1)
-
-
-#TODO: use pivot_longer before
-# df <- as.data.frame(mat)
-# df_long <- pivot_longer(df, cols = everything(), names_to = "Sample", values_to = "Value")
-
-# ggplot(df_long, aes(x = Sample, y = Value)) +
-#   geom_boxplot() +
-#   theme_bw() +
-#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
-
-
-ggplot2::ggplot(log_diannMatrix, ggplot2::aes(x = , y = )) + ggplot2::geom_boxplot()
-
 # Resize the margins for plot (bottom, left, top right)
 # par(mar = c(2, 4, 2, 4) + 0.1)
 
@@ -138,36 +114,81 @@ ggplot2::ggplot(log_diannMatrix, ggplot2::aes(x = , y = )) + ggplot2::geom_boxpl
 # densityPlot <- plot(density(log2(diannMatrix + 1), na.rm = TRUE), main = "udhisud")
 # lines(density(imputed, na.rm = TRUE), col = "red", lty = 5)
 
+
+# Limma
+```{r}
+theme <- ggplot2::theme(
+  axis.text.x = ggplot2::element_text(angle = 90, size = 15, face = "bold"),
+  axis.text.y = ggplot2::element_text(size = 15, face = "bold"),
+  title = ggplot2::element_text(
+    size = 14,
+    face = "bold",
+    hjust = 0.5,
+    vjust = 0.5
+  )
+  #TODO: tirar o "sample" e o "Value"
+)
+
+log_diannMatrix <- log2(diannMatrix + 1)
+
 for (csv in csvList) {
-  csv <- csvList[1]
+  pivot <- tidyr::pivot_longer(
+    as.data.frame(log_diannMatrix),
+    cols = everything(),
+    names_to = "Sample",
+    values_to = "Value",
+    values_drop_na = TRUE
+  )
+
+  boxList <- list(
+    ggplot2::ggplot(pivot, ggplot2::aes(x = Sample, y = Value)) +
+      ggplot2::geom_boxplot() +
+      theme +
+      ggplot2::labs(title = "RAW")
+  )
+
   imputed <- as.matrix(tibble::column_to_rownames(read.csv(csv), var = "X"))
-  name <- stringr::str_to_title(stringr::str_remove(basename(csv), ".csv$"))
-  
-  imputed_box <- boxplot(imputed, main = stringr::str_replace_all(name, "_", " "), las = 2, plot = FALSE)
-  boxList <- append(boxList, imputed_box)
+  name_ <- stringr::str_remove(basename(csv), ".csv$")
+  name <- stringr::str_to_title(stringr::str_replace_all(name_, "_", " "))
 
-    # Iterate over normalization methods using limma
-    for (norm_method in c("scale", "cyclicloess")) {
-      norm_method <- "scale"
-      # Normalization function
-      norm_Matrix <- limma::normalizeBetweenArrays(imputed, method = norm_method)
-      norm_box <- boxplot(norm_Matrix, main = norm_method, las = 2, plot = FALSE)
+  pivot <- tidyr::pivot_longer(
+    as.data.frame(imputed),
+    cols = everything(),
+    names_to = "Sample",
+    values_to = "Value"
+  )
 
-      boxList <- append(boxList, norm_box)
+  imputed_box <- ggplot2::ggplot(pivot, ggplot2::aes(x = Sample, y = Value)) +
+    ggplot2::geom_boxplot() +
+    theme +
+    ggplot2::labs(title = name)
 
+  boxList <- append(boxList, list(imputed_box)) #funciona
 
-      # fileName <- paste(name, norm_method, sep = "_")
-      # dir <- paste0("./data/output/limma/norm", fileName)
-      # write.csv(norm_box, dir)
+  # Iterate over normalization methods using limma
+  for (norm_method in c("scale", "cyclicloess")) {
+    # Normalization function
+    norm_Matrix <- limma::normalizeBetweenArrays(imputed, method = norm_method)
+
+    pivot <- tidyr::pivot_longer(
+      as.data.frame(norm_Matrix),
+      cols = everything(),
+      names_to = "Sample",
+      values_to = "Value"
+    )
+
+    imputed_box <- ggplot2::ggplot(pivot, ggplot2::aes(x = Sample, y = Value)) +
+      ggplot2::geom_boxplot() +
+      theme +
+      ggplot2::labs(title = norm_method)
+
+    boxList <- append(boxList, list(imputed_box))
   }
-}
-
-print(boxList)
   # Aggregate all plots for better visualization
   combine <- patchwork::wrap_plots(
     boxList,
-    cols = 4,
-    nrow = 1
+    cols = 2,
+    nrow = 2
   ) +
     # Plot title and general formatting
     patchwork::plot_annotation(
@@ -183,20 +204,18 @@ print(boxList)
       )
     )
 
-
-
   # Save the plot file
   ggplot2::ggsave(
-    filename = paste0(fileName, ".png"),
-    path = paste0(dir, "/images/"),
+    filename = paste0(name_, "_norm.png"),
+    path = "./data/output/limma/norm/",
     plot = combine,
-    width = 80,
-    height = 30,
+    width = 40,
+    height = 40,
     units = "cm",
     dpi = 300
   )
-
-  break
+  rm(norm_matrix, pivot, boxList, csv, fileName, imputedBox, name, name_, norm_method)
+}
 
 
 ```    
