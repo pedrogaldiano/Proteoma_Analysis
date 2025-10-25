@@ -15,16 +15,26 @@ source("./LoadSamples.R") # Load samples and relations
 ```{r}
 Check_SampleName(samplesDF$SampleName)
 
-dir_input <- "./data/input/processed/"
-Yeast_Mix_C <- read.csv(paste0(dir_input, "diannMatrix_YEAST.csv" ))
+# HeLa + Yeast
+diannReport_HY<- Make_DiannReport(samplesDF, organism = "")
+HY_diannMatrix <- log2(Make_DiannMatrix(diannReport_HY, header = "Genes") + 1)
 
+# Yeast
+diannReport_Yeast <- Make_DiannReport(samplesDF, organism = "YEAST")
+Yeast_diannMatrix <- log2(Make_DiannMatrix(diannReport_Yeast, header = "Genes") + 1)
+
+# HeLa
+diannReport_HeLa<- Make_DiannReport(samplesDF, organism = "HUMAN")
+HeLa_diannMatrix <- log2(Make_DiannMatrix(diannReport_HeLa, header = "Genes") + 1)
 
 
 matrices <- list(
-  # HY = HY_diannMatrix,
-  Yeast = yeast_DiannMatrix #,
-  # Human = human_DiannMatrix
+  HY = HY_diannMatrix,
+  Yeast = Yeast_diannMatrix,
+  HeLa = HeLa_diannMatrix
 )
+# Remove unnecessary objects. Do not remove diannReport_HY!
+rm(HY_diannMatrix, diannReport_Yeast, Yeast_diannMatrix, diannReport_HeLa, HeLa_diannMatrix)
 ```
 
 # Data Imputation
@@ -74,7 +84,7 @@ for (name in names(matrices)) {
    result <- mtx <- matrices[[name]] # matrix associate with the name
 
    # Get the conditions to iterate over
-   groups <- unique(HY_diannReport$condition) #Todo: a nicer way of doing thix
+   groups <- unique(diannReport_HY$condition) #Todo: a nicer way of doing thix
    for (group in groups) {
      # find which columns match the condition
      cols <- stringr::str_detect(colnames(mtx), group)
@@ -146,7 +156,7 @@ for (name in names(matrices)) {
 for (name in names(matrices)) {
    result <- mtx <- matrices[[name]] # matrix associate with the name
 
-   groups <- unique(HY_diannReport$condition)
+   groups <- unique(diannReport_HY$condition)
    for (group in groups) {
      cols <- stringr::str_detect(colnames(mtx), group)
 
@@ -239,7 +249,7 @@ for (method in c(
     result <- mtx <- matrices[[name]] # matrix associate with the name
 
     # Get the conditions to iterate over
-    groups <- unique(HY_diannReport$condition) #Todo: a nicer way of doing thix
+    groups <- unique(diannReport_HY$condition) #Todo: a nicer way of doing thix
     for (group in groups) {
       # find which columns match the condition
       cols <- stringr::str_detect(colnames(mtx), group)
