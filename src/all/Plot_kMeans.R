@@ -38,3 +38,34 @@ Plot_kMeans <- function(imtx, numberOfClusters, seed = 123) {
 
   return(kmeansPlot)
 }
+
+
+
+
+Get_OptimalCluster <- function(imtx, seed = 123) {
+  pcaComplete <- prcomp(t(imtx), scale = TRUE)
+
+  # Principal component 1 and 2
+  pcaTwoDimensions <- as.data.frame(pcaComplete$x[, 1:2])
+
+  pdf(NULL)  # prevent plotting
+  nbClust <- NbClust::NbClust(
+    pcaTwoDimensions,
+    distance = "euclidean",
+    min.nc = 2,
+    max.nc = 10,
+    method = "kmeans"
+  )
+  dev.off() #TODO: not sure if I need this to avoid the plotting
+
+  clusters <- nbClust$Best.nc[1,]
+
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+  result <- Mode(clusters)
+  return(result)
+}
+
