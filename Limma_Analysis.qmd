@@ -1,0 +1,240 @@
+# Limma
+```{r}
+theme <- ggplot2::theme(
+  axis.text.x = ggplot2::element_text(angle = 90, size = 15, face = "bold"),
+  axis.text.y = ggplot2::element_text(size = 15, face = "bold"),
+  title = ggplot2::element_text(
+    size = 14,
+    face = "bold",
+    hjust = 0.5,
+    vjust = 0.5
+  )
+  #TODO: tirar o "sample" e o "Value"
+)
+
+log_diannMatrix <- log2(diannMatrix + 1)
+
+for (csv in csvList) {
+  pivot <- tidyr::pivot_longer(
+    as.data.frame(log_diannMatrix),
+    cols = everything(),
+    names_to = "Sample",
+    values_to = "Value",
+    values_drop_na = TRUE
+  )
+
+  boxList <- list(
+    ggplot2::ggplot(pivot, ggplot2::aes(x = Sample, y = Value)) +
+      ggplot2::geom_boxplot() +
+      theme +
+      ggplot2::labs(title = "RAW")
+  )
+
+  imputed <- as.matrix(tibble::column_to_rownames(read.csv(csv), var = "X"))
+  name_ <- stringr::str_remove(basename(csv), ".csv$")
+  name <- stringr::str_to_title(stringr::str_replace_all(name_, "_", " "))
+
+  pivot <- tidyr::pivot_longer(
+    as.data.frame(imputed),
+    cols = everything(),
+    names_to = "Sample",
+    values_to = "Value"
+  )
+
+  imputed_box <- ggplot2::ggplot(pivot, ggplot2::aes(x = Sample, y = Value)) +
+    ggplot2::geom_boxplot() +
+    theme +
+    ggplot2::labs(title = name)
+
+  boxList <- append(boxList, list(imputed_box)) #funciona
+
+  # Iterate over normalization methods using limma
+  for (norm_method in c("scale", "cyclicloess")) {
+    # Normalization function
+    norm_Matrix <- limma::normalizeBetweenArrays(imputed, method = norm_method)
+
+    pivot <- tidyr::pivot_longer(
+      as.data.frame(norm_Matrix),
+      cols = everything(),
+      names_to = "Sample",
+      values_to = "Value"
+    )
+
+    imputed_box <- ggplot2::ggplot(pivot, ggplot2::aes(x = Sample, y = Value)) +
+      ggplot2::geom_boxplot() +
+      theme +
+      ggplot2::labs(title = norm_method)
+
+    boxList <- append(boxList, list(imputed_box))
+  }
+  # Aggregate all plots for better visualization
+  combine <- patchwork::wrap_plots(
+    boxList,
+    cols = 2,
+    nrow = 2
+  ) +
+    # Plot title and general formatting
+    patchwork::plot_annotation(
+      title = stringr::str_replace_all(name, "_", " "),
+      tag_levels = "A",
+      theme = ggplot2::theme(
+        plot.title = ggplot2::element_text(
+          face = "bold",
+          size = "35",
+          hjust = 0.5,
+          vjust = 0.5
+        ),
+      )
+    )
+
+  # Save the plot file
+  ggplot2::ggsave(
+    filename = paste0(name_, "_norm.png"),
+    path = "./data/output/limma/norm/",
+    plot = combine,
+    width = 40,
+    height = 40,
+    units = "cm",
+    dpi = 300
+  )
+  rm(norm_matrix, pivot, boxList, csv, fileName, imputedBox, name, name_, norm_method)
+}
+
+
+```    
+
+
+```{r}  
+    #   # Iterate over limma methods of analysis
+    #   for (limma_method in c ("robust", "ls") {
+    #     limma_method <- "robust"
+    #     # Limma analysis function
+    #     limma_contrast <- Make_Limma_Contrast(norm_Matrix,
+    #      samplesToCompare, method = limma_method)
+
+
+    #     limmaResult <- Compare_Limma_Results(limma_contrast, samplesToCompare)
+
+    #     # Save limma result in a .tsv file
+    #     fileName <- paste(name, norm_method, limma_method, sep = "_")
+    #     write.table(
+    #       limmaResult,
+    #       file = paste0("./data/output/Limma/", fileName, ".tsv"),
+    #       quote = FALSE,
+    #       sep = '\t',
+    #       col.names = NA
+    #     )
+    # }
+  }
+}
+
+```
+
+# Comparison before and after limma
+```{r}
+# Resize the margins for plot (bottom, left, top right)
+par(mar = c(8, 4, 4, 2) + 0.1)
+
+# Create a box plot
+raw_box <- boxplot(log2(diannMatrix + 1), main = "raw", las = 2)
+imputed_box <- boxplot(imputed, main = "imputed", las = 2)
+
+
+
+
+# Resize the margins for plot (bottom, left, top right)
+par(mar = c(2, 4, 2, 4) + 0.1)
+
+# Create a Densisty plot
+plot(density(log2(diannMatrix + 1), na.rm = TRUE), main = "udhisud")
+lines(density(imputed, na.rm = TRUE), col = "red", lty = 5)
+
+```
+
+```{r}
+
+
+
+limmaContrasts <- Make_Limma_Contrast(
+  norm_Matrix,
+  samplesToCompare,
+  method = "robust"
+)
+
+
+limmaResult <- Compare_Limma_Results(limmaContrasts, samplesToCompare)
+
+# #Save limma result in a .tsv file
+write.table(
+  limmaResult,
+  file = "./data/output/allLimmaResultsCombined.tsv",
+  quote = FALSE,
+  sep = '\t',
+  col.names = NA
+)
+
+
+number_significantProteins <- Count_SignificantProteins(limmaResult)
+#Save limma result in a .tsv file
+write.table(
+  number_significantProteins,
+  file = "./data/output/number_significantProteins.tsv",
+  quote = FALSE,
+  sep = '\t',
+  col.names = NA
+)
+
+rm(limmaContrasts, number_significantProteins)
+```
+
+
+
+# Bland-Altman
+```{r}
+blandAltmanPlot <- Plot_BlandAltman(
+  limmaResult,
+  genesToHighLight_BlandAltman,
+  labels = fancyLabels
+)
+
+ggplot2::ggsave(
+  paste0("Bland_Altman", ".png"),
+  path = "./data/output/",
+  plot = blandAltmanPlot,
+  width = 25,
+  height = 12,
+  units = "in",
+  dpi = 300,
+  bg = "white"
+)
+
+
+rm(blandAltmanPlot)
+```
+
+
+# Compare Proteins Abundance
+```{r}
+proteinComparisonPlot <- Compare_Abundance(
+  imputed,
+  genes = genesToCompare,
+  colorList = colors,
+  labels = fancyLabels,
+  n_columns = 5
+)
+
+
+ggplot2::ggsave(
+  paste0("Proteins_Comparison", ".png"),
+  path = "./data/output/",
+  plot = proteinComparisonPlot,
+  width = 25,
+  height = 8,
+  units = "in",
+  dpi = 300,
+  bg = "white"
+)
+
+rm(proteinComparisonPlot)
+```
+
